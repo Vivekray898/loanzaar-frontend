@@ -1,0 +1,34 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # ✅ ROUTING FIX FOR REACT SPA
+  # Rewrite all requests to index.html for SPA client-side routing
+  # This allows React Router to handle all routes on the client side
+
+  # Don't rewrite actual files or directories
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+
+  # Rewrite everything else to index.html
+  RewriteRule ^ index.html [QSA,L]
+
+  # Disable directory listing for security
+  Options -Indexes
+</IfModule>
+
+# ✅ CACHING HEADERS FOR SPA
+# Cache static assets with proper versioning (Vite adds hashes to filenames)
+<FilesMatch "\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$">
+  Header set Cache-Control "max-age=31536000, public"
+</FilesMatch>
+
+# Don't cache HTML files (always check for updates)
+<FilesMatch "\.html$">
+  Header set Cache-Control "max-age=0, must-revalidate, public"
+</FilesMatch>
+
+# ✅ GZIP COMPRESSION
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
