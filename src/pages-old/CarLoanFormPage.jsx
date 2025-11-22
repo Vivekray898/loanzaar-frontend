@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import Meta from '../components/Meta';
 import { submitLoanApplication } from '../config/api';
+import StructuredData from '../components/StructuredData';
+import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
+import { isValidPhoneNumber, formatE164 } from '../utils/phone';
 
 const CarLoanFormPage = () => {
   // State for tabs, EMI calculator, and FAQs
@@ -285,8 +288,29 @@ const CarLoanFormPage = () => {
     { question: 'How to get an NOC from a bank for a car loan?', answer: 'Contact your current lender, submit a NOC request with necessary documents, and pay any applicable fees. The process usually takes 7-15 days.' }
   ];
 
+  const schemas = [
+    generateLoanSchema({
+      name: 'Car Loan',
+      description: 'Get approved for a car loan quickly with competitive rates and flexible EMI options. New or used car financing available with tenure up to 7 years.',
+      loanType: 'Car Loan',
+      interestRate: '8-12',
+      tenure: '1-7 years',
+      amount: '1,00,000 - 50,00,000'
+    }),
+    generateWebPageSchema({
+      name: 'Car Loan Application - Loanzaar',
+      description: 'Get approved for a car loan quickly with competitive rates and flexible EMI options. New or used car financing available at Loanzaar.',
+      url: 'https://loanzaar.in/car-loan',
+      breadcrumbs: [
+        { name: 'Home', url: 'https://loanzaar.in' },
+        { name: 'Car Loan', url: 'https://loanzaar.in/car-loan' }
+      ]
+    })
+  ];
+
   return (
     <div className="min-h-screen bg-white">
+      <StructuredData schema={schemas} />
       <Meta 
         title="Car Loan Application - Loanzaar" 
         description="Get approved for a car loan quickly with competitive rates and flexible EMI options. New or used car financing available at Loanzaar."

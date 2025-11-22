@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState } from 'react';
+import StructuredData from '../components/StructuredData';
+import { generateWebPageSchema } from '../utils/schema';
 // import Link from 'next/link'; // Removed for single-file compatibility
 
 // --- ICONS (Replaced Emojis with Lucide Icons for a professional feel) ---
@@ -341,17 +343,26 @@ const HeroGraphic = () => (
 const HomePage = () => {
   const [openFaq, setOpenFaq] = useState(0); // Open the first FAQ by default
 
+
+  const schema = generateWebPageSchema({
+    name: 'Loanzaar - Compare Loan Offers & Get Instant Approval',
+    description: 'Fast loan approval in 2-24 hours. Compare personal loans, home loans, car loans & more from 120+ lenders. Get your best loan offer instantly!',
+    url: 'https://loanzaar.in',
+    breadcrumbs: [
+      { name: 'Home', url: 'https://loanzaar.in' }
+    ]
+  });
+
   return (
     <>
+      <StructuredData schema={schema} />
       {/* Meta component was here, but it's not defined in this file. 
         In a real Next.js app, you'd import and use it like:
         <Meta
-          title="Loanzaar - Compare Loan Offers & Get Instant Approval | India's #1 Loan Platform"
-          description="Fast loan approval in 2-24 hours. Compare personal loans, home loans, car loans & more from 120+ lenders. Get your best loan offer instantly!"
+          title="Loanzaar - Compare Loan Offers & Get Instant Approval | India's #1 Loan Platform"
+          description="Fast loan approval in 2-24 hours. Compare personal loans, home loans, car loans & more from 120+ lenders. Get your best loan offer instantly!"
         />
-      */}
-
-      <div className="min-h-screen bg-white font-sans">
+      */}      <div className="min-h-screen bg-white font-sans">
         
         {/* Hero Section - New Minimal Design */}
         <section className="relative overflow-hidden bg-gray-900 text-white pt-32 pb-32 px-4">

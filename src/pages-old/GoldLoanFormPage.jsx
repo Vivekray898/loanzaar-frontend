@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import Meta from '../components/Meta';
 import { submitLoanApplication } from '../config/api';
+import StructuredData from '../components/StructuredData';
+import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
+import { isValidPhoneNumber, formatE164 } from '../utils/phone';
 
 const GoldLoanFormPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -343,8 +346,29 @@ const GoldLoanFormPage = () => {
     { question: 'Is there a difference between a Gold Loan and a Personal Loan?', answer: 'Yes, gold loans are secured loans backed by gold collateral, offering lower interest rates and higher loan amounts compared to unsecured personal loans.' }
   ];
 
+  const schemas = [
+    generateLoanSchema({
+      name: 'Gold Loan',
+      description: 'Apply for a gold loan with instant approval and competitive interest rates. Quick disbursal and secure storage with flexible repayment options.',
+      loanType: 'Gold Loan',
+      interestRate: '7-12',
+      tenure: '3 months - 3 years',
+      amount: '10,000 - 50,00,000'
+    }),
+    generateWebPageSchema({
+      name: 'Gold Loan Application - Loanzaar',
+      description: 'Apply for a gold loan with instant approval and competitive interest rates. Quick disbursal and secure storage at Loanzaar.',
+      url: 'https://loanzaar.in/gold-loan',
+      breadcrumbs: [
+        { name: 'Home', url: 'https://loanzaar.in' },
+        { name: 'Gold Loan', url: 'https://loanzaar.in/gold-loan' }
+      ]
+    })
+  ];
+
   return (
     <div className="min-h-screen bg-white">
+      <StructuredData schema={schemas} />
       <Meta 
         title="Gold Loan Application - Loanzaar" 
         description="Apply for a gold loan with instant approval and competitive interest rates. Quick disbursal and secure storage at Loanzaar."

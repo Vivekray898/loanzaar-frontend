@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import Meta from '../components/Meta';
 import { submitLoanApplication } from '../config/api';
+import StructuredData from '../components/StructuredData';
+import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
+import { isValidPhoneNumber, formatE164 } from '../utils/phone';
 
 const MachineryLoanPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -326,8 +329,29 @@ const MachineryLoanPage = () => {
     { question: 'Is a machinery loan secured or unsecured?', answer: 'Machinery loans can be both secured (with collateral) or unsecured, depending on the lender\'s policies and your credit profile.' }
   ];
 
+  const schemas = [
+    generateLoanSchema({
+      name: 'Machinery Loan',
+      description: 'Finance your industrial equipment and machinery with dedicated business loans. Fast approval for MSME sector with flexible repayment options.',
+      loanType: 'Machinery Loan',
+      interestRate: '10-16',
+      tenure: '2-5 years',
+      amount: '5,00,000 - 2,00,00,000'
+    }),
+    generateWebPageSchema({
+      name: 'Machinery Loan - For MSME Business Expansion | Loanzaar',
+      description: 'Finance your industrial equipment and machinery with dedicated business loans. Fast approval for MSME sector at Loanzaar.',
+      url: 'https://loanzaar.in/machinery-loan',
+      breadcrumbs: [
+        { name: 'Home', url: 'https://loanzaar.in' },
+        { name: 'Machinery Loan', url: 'https://loanzaar.in/machinery-loan' }
+      ]
+    })
+  ];
+
   return (
     <div className="min-h-screen bg-white">
+      <StructuredData schema={schemas} />
       <Meta 
         title="Machinery Loan - For MSME Business Expansion | Loanzaar" 
         description="Finance your industrial equipment and machinery with dedicated business loans. Fast approval for MSME sector at Loanzaar."

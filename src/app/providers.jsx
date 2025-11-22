@@ -11,6 +11,7 @@ import NavBar from '@/components/NavBar'
 import Footer from '@/components/Footer'
 import ScrollToTop from '@/components/ScrollToTop'
 import SessionManager from '@/components/SessionManager'
+import StickyCalculator from '@/components/StickyCalculator'
 import { AdminAuthProvider } from '@/context/AdminAuthContext'
 import { UserAuthProvider } from '@/context/UserAuthContext'
 import { usePathname } from 'next/navigation'
@@ -36,6 +37,7 @@ export default function Providers({ children }) {
         </main>
         <Footer />
       </div>
+      <StickyCalculator />
     </>
   )
 

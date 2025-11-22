@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import Meta from '../components/Meta';
 import { submitLoanApplication } from '../config/api';
+import StructuredData from '../components/StructuredData';
+import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
+import { isValidPhoneNumber, formatE164 } from '../utils/phone';
 
 const BusinessLoanFormPage = () => {
   // State for tabs, EMI calculator, and FAQs
@@ -349,8 +352,29 @@ const BusinessLoanFormPage = () => {
     { question: 'Can I pay off a business loan early?', answer: 'Yes, most lenders allow you to prepay your business loan. However, check with your lender about any potential prepayment penalties or charges.' }
   ];
 
+  const schemas = [
+    generateLoanSchema({
+      name: 'Business Loan',
+      description: 'Apply for business loans to expand your business, purchase equipment, or manage working capital with tenure up to 5 years. Get quick approval and competitive rates.',
+      loanType: 'Business Loan',
+      interestRate: '11-18',
+      tenure: '1-5 years',
+      amount: '1,00,000 - 50,00,000'
+    }),
+    generateWebPageSchema({
+      name: 'Business Loan Application - Loanzaar',
+      description: 'Apply for business loans to expand your business, purchase equipment, or manage working capital. Get quick approval and competitive rates on Loanzaar.',
+      url: 'https://loanzaar.in/business-loan',
+      breadcrumbs: [
+        { name: 'Home', url: 'https://loanzaar.in' },
+        { name: 'Business Loan', url: 'https://loanzaar.in/business-loan' }
+      ]
+    })
+  ];
+
   return (
     <div className="min-h-screen bg-white">
+      <StructuredData schema={schemas} />
       <Meta 
         title="Business Loan Application - Loanzaar" 
         description="Apply for business loans to expand your business, purchase equipment, or manage working capital. Get quick approval and competitive rates on Loanzaar."

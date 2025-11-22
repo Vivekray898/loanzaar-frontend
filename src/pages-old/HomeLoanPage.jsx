@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import Meta from '../components/Meta';
 import { submitLoanApplication } from '../config/api';
+import StructuredData from '../components/StructuredData';
+import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
+import { isValidPhoneNumber, formatE164 } from '../utils/phone';
 
 const HomeLoanPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -101,11 +104,13 @@ const HomeLoanPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const phoneRegex = /^[6-9]\d{9}$/;
-    if (!phoneRegex.test(formData.phone)) {
-      alert('Please enter a valid 10-digit phone number starting with 6-9');
+    
+    // Validate phone number using helper
+    if (!isValidPhoneNumber(formData.phone)) {
+      alert('Please enter a valid phone number');
       return;
     }
+    
     if (!formData.consent) {
       alert('Please agree to be contacted');
       return;
@@ -120,6 +125,7 @@ const HomeLoanPage = () => {
     // Prepare loan data for backend
     const loanData = {
       ...formData,
+      phone: formatE164(formData.phone) || formData.phone, // Format to E.164 if possible
       loanType: 'Home',
       captchaToken: captchaToken,
     };
@@ -199,8 +205,8 @@ const HomeLoanPage = () => {
       
       case 'phone':
         if (!value) return 'Phone number is required';
-        if (!/^[6-9]\d{9}$/.test(value.replace(/\D/g, ''))) 
-          return 'Phone number must be 10 digits starting with 6-9';
+        if (!isValidPhoneNumber(value)) 
+          return 'Please enter a valid phone number';
         return '';
       
       case 'email':
@@ -382,8 +388,29 @@ const HomeLoanPage = () => {
     { particular: 'EMI / Cheque Bounce', charges: 'Approximately ₹500 per instance' }
   ];
 
+  const schemas = [
+    generateLoanSchema({
+      name: 'Home Loan',
+      description: 'Get home loans with competitive interest rates, flexible tenure up to 30 years, and quick approval. Calculate your EMI and apply online.',
+      loanType: 'Home Loan',
+      interestRate: '7-9',
+      tenure: '5-30 years',
+      amount: '5,00,000 - 5,00,00,000'
+    }),
+    generateWebPageSchema({
+      name: 'Home Loan Application - Loanzaar',
+      description: 'Get home loans with competitive interest rates, flexible tenure, and quick approval. Calculate your EMI and apply online at Loanzaar.',
+      url: 'https://loanzaar.in/home-loan',
+      breadcrumbs: [
+        { name: 'Home', url: 'https://loanzaar.in' },
+        { name: 'Home Loan', url: 'https://loanzaar.in/home-loan' }
+      ]
+    })
+  ];
+
   return (
     <div className="min-h-screen bg-white">
+      <StructuredData schema={schemas} />
       <Meta 
         title="Home Loan Application - Loanzaar" 
         description="Get home loans with competitive interest rates, flexible tenure, and quick approval. Calculate your EMI and apply online at Loanzaar."

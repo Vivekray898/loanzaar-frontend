@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import Meta from '../components/Meta';
 import { submitLoanApplication } from '../config/api';
+import StructuredData from '../components/StructuredData';
+import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
+import { isValidPhoneNumber, formatE164 } from '../utils/phone';
 
 const PersonalLoanFormPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -105,11 +108,13 @@ const PersonalLoanFormPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const phoneRegex = /^[6-9]\d{9}$/;
-    if (!phoneRegex.test(formData.phone)) {
-      alert('Please enter a valid 10-digit phone number starting with 6-9');
+    
+    // Validate phone number using helper
+    if (!isValidPhoneNumber(formData.phone)) {
+      alert('Please enter a valid phone number');
       return;
     }
+    
     if (!formData.consent) {
       alert('Please agree to be contacted');
       return;
@@ -182,8 +187,8 @@ const PersonalLoanFormPage = () => {
       
       case 'phone':
         if (!value) return 'Phone number is required';
-        if (!/^[6-9]\d{9}$/.test(value.replace(/\D/g, ''))) 
-          return 'Phone number must be 10 digits starting with 6-9';
+        if (!isValidPhoneNumber(value)) 
+          return 'Please enter a valid phone number';
         return '';
       
       case 'email':
@@ -323,8 +328,29 @@ const PersonalLoanFormPage = () => {
     { category: 'Income tax returns', icon: 'receipt', items: ['Documents of the past 2-3 years to verify income and tax payment history'] }
   ];
 
+  const schemas = [
+    generateLoanSchema({
+      name: 'Personal Loan',
+      description: 'Apply for a personal loan with flexible terms up to 7 years, quick approval, and competitive rates. Calculate EMI and get instant offers.',
+      loanType: 'Personal Loan',
+      interestRate: '10-15',
+      tenure: '1-7 years',
+      amount: '50,000 - 25,00,000'
+    }),
+    generateWebPageSchema({
+      name: 'Personal Loan Application - Loanzaar',
+      description: 'Apply for a personal loan with flexible terms, quick approval, and competitive rates. Calculate EMI and get instant offers on Loanzaar.',
+      url: 'https://loanzaar.in/personal-loan',
+      breadcrumbs: [
+        { name: 'Home', url: 'https://loanzaar.in' },
+        { name: 'Personal Loan', url: 'https://loanzaar.in/personal-loan' }
+      ]
+    })
+  ];
+
   return (
     <div className="min-h-screen bg-white">
+      <StructuredData schema={schemas} />
       <Meta 
         title="Personal Loan Application - Loanzaar" 
         description="Apply for a personal loan with flexible terms, quick approval, and competitive rates. Calculate EMI and get instant offers on Loanzaar."

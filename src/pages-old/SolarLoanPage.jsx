@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import Meta from '../components/Meta';
 import { submitLoanApplication } from '../config/api';
+import StructuredData from '../components/StructuredData';
+import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
+import { isValidPhoneNumber, formatE164 } from '../utils/phone';
 
 const SolarLoanPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -160,7 +163,7 @@ const SolarLoanPage = () => {
         return '';
       case 'phoneNumber':
         if (!value.trim()) return 'Phone number is required';
-        if (!/^[6-9]\d{9}$/.test(value)) return 'Phone must be 10 digits starting with 6-9';
+        if (!isValidPhoneNumber(value)) return 'Please enter a valid phone number';
         return '';
       case 'emailAddress':
         if (value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Invalid email format';
@@ -393,8 +396,29 @@ const SolarLoanPage = () => {
     { question: 'Can I prepay my solar panel loan?', answer: 'Yes, most lenders allow prepayment with minimal or no prepayment charges, especially if you have surplus funds from energy savings.' }
   ];
 
+  const schemas = [
+    generateLoanSchema({
+      name: 'Solar Loan',
+      description: 'Get solar panel loans with attractive interest rates and government schemes. Go green and save on electricity with flexible financing up to 10 years.',
+      loanType: 'Solar Loan',
+      interestRate: '8-12',
+      tenure: '5-10 years',
+      amount: '50,000 - 25,00,000'
+    }),
+    generateWebPageSchema({
+      name: 'Solar Loan - Finance Your Solar Installation | Loanzaar',
+      description: 'Get solar panel loans with attractive interest rates and government schemes. Go green and save on electricity at Loanzaar.',
+      url: 'https://loanzaar.in/solar-loan',
+      breadcrumbs: [
+        { name: 'Home', url: 'https://loanzaar.in' },
+        { name: 'Solar Loan', url: 'https://loanzaar.in/solar-loan' }
+      ]
+    })
+  ];
+
   return (
     <div className="min-h-screen bg-white">
+      <StructuredData schema={schemas} />
       <Meta 
         title="Solar Loan - Finance Your Solar Installation | Loanzaar" 
         description="Get solar panel loans with attractive interest rates and government schemes. Go green and save on electricity at Loanzaar."

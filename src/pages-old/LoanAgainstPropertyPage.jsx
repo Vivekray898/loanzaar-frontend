@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import Meta from '../components/Meta';
 import { submitLoanApplication } from '../config/api';
+import StructuredData from '../components/StructuredData';
+import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
+import { isValidPhoneNumber, formatE164 } from '../utils/phone';
 
 const LoanAgainstPropertyPage = () => {
   // State for tabs, EMI calculator, and FAQs
@@ -320,8 +323,29 @@ const LoanAgainstPropertyPage = () => {
     { question: 'Can I prepay/foreclose my Loan Against Property in advance?', answer: 'Yes, most lenders allow prepayment or foreclosure, but check for applicable charges.' }
   ];
 
+  const schemas = [
+    generateLoanSchema({
+      name: 'Loan Against Property',
+      description: 'Get a loan against your property with competitive rates and flexible tenure up to 20 years. Unlock your property\'s value with minimal documentation.',
+      loanType: 'Loan Against Property',
+      interestRate: '8-14',
+      tenure: '5-20 years',
+      amount: '5,00,000 - 5,00,00,000'
+    }),
+    generateWebPageSchema({
+      name: 'Loan Against Property - Loanzaar',
+      description: 'Get a loan against your property with competitive rates and flexible tenure. Unlock your property\'s value at Loanzaar.',
+      url: 'https://loanzaar.in/loan-against-property',
+      breadcrumbs: [
+        { name: 'Home', url: 'https://loanzaar.in' },
+        { name: 'Loan Against Property', url: 'https://loanzaar.in/loan-against-property' }
+      ]
+    })
+  ];
+
   return (
     <div className="min-h-screen bg-white">
+      <StructuredData schema={schemas} />
       <Meta 
         title="Loan Against Property - Loanzaar" 
         description="Get a loan against your property with competitive rates and flexible tenure. Unlock your property's value at Loanzaar."

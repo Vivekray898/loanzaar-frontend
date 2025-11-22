@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import Meta from '../components/Meta';
 import { submitLoanApplication } from '../config/api';
+import StructuredData from '../components/StructuredData';
+import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
+import { isValidPhoneNumber, formatE164 } from '../utils/phone';
 
 const EducationLoanPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -365,8 +368,29 @@ const EducationLoanPage = () => {
     { question: 'When is the most suitable time to apply for an Education Loan?', answer: 'The best time is after receiving admission confirmation but before the academic session begins, to ensure timely fund disbursement.' }
   ];
 
+  const schemas = [
+    generateLoanSchema({
+      name: 'Education Loan',
+      description: 'Finance your child\'s education with flexible education loans from top lenders. Quick approval, easy documentation, and affordable EMI with tenure up to 15 years.',
+      loanType: 'Education Loan',
+      interestRate: '8-15',
+      tenure: '5-15 years',
+      amount: '50,000 - 1,00,00,000'
+    }),
+    generateWebPageSchema({
+      name: 'Education Loan Application - Loanzaar',
+      description: 'Finance your child\'s education with flexible education loans from top lenders. Quick approval, easy documentation, and affordable EMI at Loanzaar.',
+      url: 'https://loanzaar.in/education-loan',
+      breadcrumbs: [
+        { name: 'Home', url: 'https://loanzaar.in' },
+        { name: 'Education Loan', url: 'https://loanzaar.in/education-loan' }
+      ]
+    })
+  ];
+
   return (
     <div className="min-h-screen bg-white">
+      <StructuredData schema={schemas} />
       <Meta 
         title="Education Loan Application - Loanzaar" 
         description="Finance your child's education with flexible education loans from top lenders. Quick approval, easy documentation, and affordable EMI at Loanzaar."

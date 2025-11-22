@@ -4,6 +4,9 @@ import React, { useState, useRef } from 'react';
 import Meta from '../components/Meta';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { submitContactForm } from '../config/api';
+import StructuredData from '../components/StructuredData';
+import { generateWebPageSchema } from '../utils/schema';
+import { isValidPhoneNumber, formatE164 } from '../utils/phone';
 
 const ContactUsPage = () => {
   const recaptchaRef = useRef(null);
@@ -36,9 +39,7 @@ const ContactUsPage = () => {
         return '';
       case 'mobile':
         if (!value.trim()) return 'Mobile number is required';
-        const mobileDigits = value.replace(/\D/g, '');
-        if (mobileDigits.length !== 10) return 'Mobile number must be exactly 10 digits';
-        if (!/^[6-9]\d{9}$/.test(mobileDigits)) return 'Mobile number must start with 6-9';
+        if (!isValidPhoneNumber(value)) return 'Please enter a valid mobile number';
         return '';
       case 'state':
         if (!value.trim()) return 'State is required';
@@ -200,8 +201,19 @@ const ContactUsPage = () => {
     'Other'
   ];
 
+  const schema = generateWebPageSchema({
+    name: 'Contact Us - Loanzaar Support',
+    description: 'Get in touch with our support team. We\'re here to help with your loan applications, insurance queries, and any other questions about Loanzaar.',
+    url: 'https://loanzaar.in/contact-us',
+    breadcrumbs: [
+      { name: 'Home', url: 'https://loanzaar.in' },
+      { name: 'Contact Us', url: 'https://loanzaar.in/contact-us' }
+    ]
+  });
+
   return (
     <section className="min-h-screen bg-slate-50">
+      <StructuredData schema={schema} />
       <Meta 
         title="Contact Us - Loanzaar Support" 
         description="Get in touch with our support team. We're here to help with your loan applications, insurance queries, and any other questions about Loanzaar."
