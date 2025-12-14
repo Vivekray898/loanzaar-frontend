@@ -5,7 +5,7 @@ import Meta from '../components/Meta';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ReCAPTCHA from 'react-google-recaptcha';
-import { signUpWithEmailPassword } from '../services/firebaseAuthService';
+import { signUpWithEmailPassword } from '../services/supabaseAuthService';
 import { createOrUpdateUserProfile } from '../services/firebaseAuthApi';
 
 // SignUpPage Component

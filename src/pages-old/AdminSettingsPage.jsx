@@ -4,11 +4,10 @@ import React, { useState, useEffect } from 'react';
 import Meta from '../components/Meta';
 import { Settings as SettingsIcon, User, Lock, Bell, Database, CheckCircle, XCircle } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
-import { getAuth, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { supabase } from '@/config/supabase';
 
 function AdminSettingsPage() {
-  const { admin, firebaseUser, updateAdminProfile } = useAdminAuth();
-  const auth = getAuth();
+  const { admin, supabaseUser, updateAdminProfile } = useAdminAuth();
   
   const [adminProfile, setAdminProfile] = useState({
     fullName: '',
@@ -117,22 +116,42 @@ function AdminSettingsPage() {
         return;
       }
 
-      if (!firebaseUser || !firebaseUser.email) {
+      // Ensure Supabase session exists
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
         showStatus(setPasswordStatus, false, 'User not authenticated');
         setChangingPassword(false);
         return;
       }
 
-      // Re-authenticate user before changing password
-      const credential = EmailAuthProvider.credential(
-        firebaseUser.email,
-        passwordData.currentPassword
-      );
-
-      await reauthenticateWithCredential(firebaseUser, credential);
-
-      // Update password
-      await updatePassword(firebaseUser, passwordData.newPassword);
+      // Supabase: update user password
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword
+      });
+      if (error) {
+        // Map common errors to friendly messages
+        let errorMessage = 'Failed to change password';
+        const msg = (error.message || '').toLowerCase();
+        if (msg.includes('weak')) {
+          errorMessage = 'Password is too weak';
+        } else if (msg.includes('requires reauthentication')) {
+          // Redirect to admin login and preserve intent
+          const intent = '/admin/settings';
+          const redirectUrl = `/admin/login?next=${encodeURIComponent(intent)}`;
+          showStatus(setPasswordStatus, false, 'Please sign in again. Redirecting to login...');
+          // Use window.location to avoid router import here
+          if (typeof window !== 'undefined') {
+            window.location.href = redirectUrl;
+          }
+          setChangingPassword(false);
+          return;
+        } else if (msg.includes('invalid')) {
+          errorMessage = 'Invalid password format';
+        }
+        showStatus(setPasswordStatus, false, errorMessage);
+        setChangingPassword(false);
+        return;
+      }
 
       // Clear form
       setPasswordData({
@@ -144,18 +163,7 @@ function AdminSettingsPage() {
       showStatus(setPasswordStatus, true, 'Password changed successfully!');
     } catch (error) {
       console.error('Error changing password:', error);
-      
-      // Provide user-friendly error messages
-      let errorMessage = 'Failed to change password';
-      if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Current password is incorrect';
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = 'Password is too weak';
-      } else if (error.code === 'auth/requires-recent-login') {
-        errorMessage = 'Please log out and log back in before changing your password';
-      }
-      
-      showStatus(setPasswordStatus, false, errorMessage);
+      showStatus(setPasswordStatus, false, 'Failed to change password');
     } finally {
       setChangingPassword(false);
     }

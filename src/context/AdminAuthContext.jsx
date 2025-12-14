@@ -2,14 +2,7 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  getAuth, 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut as firebaseSignOut
-} from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { supabase } from '../config/supabase';
 
 const AdminAuthContext = createContext();
 
@@ -23,154 +16,175 @@ export const useAdminAuth = () => {
 
 export const AdminAuthProvider = ({ children }) => {
   const [admin, setAdmin] = useState(null);
-  const [firebaseUser, setFirebaseUser] = useState(null);
-  const [loading, setLoading] = useState(true); // ✅ Stays true until Firebase initializes
-  const [authInitialized, setAuthInitialized] = useState(false); // ✅ Tracks if Firebase has checked session
+  const [supabaseUser, setSupabaseUser] = useState(null);
+  const [loading, setLoading] = useState(true); // ✅ Stays true until Supabase initializes
+  const [authInitialized, setAuthInitialized] = useState(false); // ✅ Tracks if Supabase has checked session
   const router = useRouter();
-  const auth = getAuth();
-  const db = getFirestore();
 
-  // Listen to Firebase Auth state changes
+  // Listen to Supabase Auth state changes
   useEffect(() => {
-    console.log('🔍 Setting up Firebase auth listener for admin...');
+    console.log('🔍 Setting up Supabase auth listener for admin...');
     
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('🔔 Firebase auth state changed:', user ? `Admin logged in: ${user.email}` : 'Admin logged out');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔔 Supabase auth state changed:', session?.user ? `Admin logged in: ${session.user.email}` : 'Admin logged out');
       console.log(`📊 Auth initialization complete - loading will set to false`);
       
       
-      if (user) {
-        // User is signed in - fetch or create admin data from Firestore
+      if (session?.user) {
+        const user = session.user;
+        // User is signed in - fetch or create admin data from Supabase
         try {
-          const adminDocRef = doc(db, 'admin_users', user.uid);
-          let adminDoc = await getDoc(adminDocRef);
+          let { data: adminDoc, error: fetchError } = await supabase
+            .from('admin_users')
+            .select('*')
+            .eq('id', user.id)
+            .single();
           
           // If admin document doesn't exist, create it automatically
-          if (!adminDoc.exists()) {
+          if (fetchError && fetchError.code === 'PGRST116') {
             console.warn('⚠️ Admin document not found during auth state check, creating one automatically...');
             const newAdminData = {
-              fullName: user.email.split('@')[0],
+              id: user.id,
+              full_name: user.email.split('@')[0],
               email: user.email,
               phone: '',
               role: 'admin',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             };
             
-            try {
-              await setDoc(adminDocRef, newAdminData);
-              console.log('✅ Admin document created automatically');
-              
-              // Fetch the newly created document
-              adminDoc = await getDoc(adminDocRef);
-            } catch (createError) {
+            const { data: createdAdmin, error: createError } = await supabase
+              .from('admin_users')
+              .insert([newAdminData])
+              .select()
+              .single();
+            
+            if (createError) {
               console.error('⚠️ Error creating admin document:', createError);
               // Even if creation fails, continue to allow login
               const adminData = {
-                uid: user.uid,
+                uid: user.id,
                 email: user.email,
                 fullName: user.email.split('@')[0],
                 role: 'admin'
               };
               setAdmin(adminData);
-              setFirebaseUser(user);
+              setSupabaseUser(user);
               setLoading(false);
               return;
             }
+            
+            adminDoc = createdAdmin;
+            console.log('✅ Admin document created automatically');
           }
           
-          if (adminDoc.exists()) {
+          if (adminDoc) {
             const adminData = {
-              uid: user.uid,
+              uid: user.id,
               email: user.email,
-              ...adminDoc.data()
+              fullName: adminDoc.full_name,
+              phone: adminDoc.phone,
+              role: adminDoc.role,
+              createdAt: adminDoc.created_at,
+              updatedAt: adminDoc.updated_at
             };
             setAdmin(adminData);
-            setFirebaseUser(user);
-            console.log('✅ Admin data loaded from Firestore');
+            setSupabaseUser(user);
+            console.log('✅ Admin data loaded from Supabase');
           } else {
             console.warn('⚠️ Admin document still not found after creation attempt');
             setAdmin(null);
-            setFirebaseUser(null);
+            setSupabaseUser(null);
           }
         } catch (error) {
           console.error('❌ Error fetching/creating admin data:', error);
-          // Even if Firestore fails, allow basic authentication
-          if (error.code === 'permission-denied') {
-            console.warn('⚠️ Permission denied - allowing login anyway');
-            const adminData = {
-              uid: user.uid,
-              email: user.email,
-              fullName: user.email.split('@')[0],
-              role: 'admin'
-            };
-            setAdmin(adminData);
-            setFirebaseUser(user);
-          } else {
-            setAdmin(null);
-            setFirebaseUser(null);
-          }
+          // Even if database fails, allow basic authentication
+          const adminData = {
+            uid: user.id,
+            email: user.email,
+            fullName: user.email.split('@')[0],
+            role: 'admin'
+          };
+          setAdmin(adminData);
+          setSupabaseUser(user);
         }
       } else {
         // User is signed out
         setAdmin(null);
-        setFirebaseUser(null);
+        setSupabaseUser(null);
       }
       
-      // ✅ CRITICAL: Set loading=false AFTER Firebase finishes checking session
+      // ✅ CRITICAL: Set loading=false AFTER Supabase finishes checking session
       // This ensures components don't make API calls before auth is ready
       setLoading(false);
       setAuthInitialized(true);
-      console.log('✅ Firebase auth check complete - loading state now false');
+      console.log('✅ Supabase auth check complete - loading state now false');
     });
 
     return () => {
-      console.log('🧹 Cleaning up Firebase auth listener');
-      unsubscribe();
+      console.log('🧹 Cleaning up Supabase auth listener');
+      subscription.unsubscribe();
     };
-  }, [auth, db]);
+  }, []);
 
   /**
-   * Login admin using Firebase Authentication
+   * Login admin using Supabase Authentication
    */
   const login = async (email, password) => {
     try {
-      console.log('🔐 Logging in admin via Firebase...');
+      console.log('🔐 Logging in admin via Supabase...');
       
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      // Fetch or create admin data in Firestore
-      const adminDocRef = doc(db, 'admin_users', user.uid);
-      let adminDoc = await getDoc(adminDocRef);
+      if (signInError) throw signInError;
+      
+      const user = data.user;
+      
+      // Fetch or create admin data in Supabase
+      let { data: adminDoc, error: fetchError } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
       
       // If admin document doesn't exist, create it automatically
-      if (!adminDoc.exists()) {
+      if (fetchError && fetchError.code === 'PGRST116') {
         console.warn('⚠️ Admin document not found, creating one automatically...');
         const newAdminData = {
-          fullName: email.split('@')[0],  // Use email prefix as default name
+          id: user.id,
+          full_name: email.split('@')[0],  // Use email prefix as default name
           email: user.email,
           phone: '',
           role: 'admin',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         };
         
-        await setDoc(adminDocRef, newAdminData);
-        console.log('✅ Admin document created automatically');
+        const { data: createdAdmin, error: createError } = await supabase
+          .from('admin_users')
+          .insert([newAdminData])
+          .select()
+          .single();
         
-        // Fetch the newly created document
-        adminDoc = await getDoc(adminDocRef);
+        if (createError) throw createError;
+        
+        adminDoc = createdAdmin;
+        console.log('✅ Admin document created automatically');
       }
       
       const adminData = {
-        uid: user.uid,
+        uid: user.id,
         email: user.email,
-        ...adminDoc.data()
+        fullName: adminDoc.full_name,
+        phone: adminDoc.phone,
+        role: adminDoc.role
       };
       
       setAdmin(adminData);
-      setFirebaseUser(user);
+      setSupabaseUser(user);
       
       console.log('✅ Admin logged in successfully');
       return { success: true, admin: adminData };
@@ -178,11 +192,11 @@ export const AdminAuthProvider = ({ children }) => {
       console.error('❌ Login error:', error);
       let message = 'Login failed. Please try again.';
       
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+      if (error.message?.includes('Invalid login credentials')) {
         message = 'Invalid email or password';
-      } else if (error.code === 'auth/invalid-email') {
-        message = 'Invalid email address';
-      } else if (error.code === 'auth/too-many-requests') {
+      } else if (error.message?.includes('Email not confirmed')) {
+        message = 'Please verify your email address';
+      } else if (error.message?.includes('Email rate limit exceeded')) {
         message = 'Too many failed attempts. Please try again later.';
       }
       
@@ -195,36 +209,51 @@ export const AdminAuthProvider = ({ children }) => {
    */
   const signup = async (email, password, fullName, phone, role = 'admin') => {
     try {
-      console.log('� Creating admin account via Firebase...');
+      console.log('📝 Creating admin account via Supabase...');
       
-      // Create Firebase Auth user
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      // Create Supabase Auth user
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName
+          }
+        }
+      });
       
-      // Store admin data in Firestore
+      if (signUpError) throw signUpError;
+      
+      const user = data.user;
+      
+      // Store admin data in Supabase
       const adminData = {
-        fullName,
+        id: user.id,
+        full_name: fullName,
         email,
         phone,
         role,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
       
-      const adminDocRef = doc(db, 'admin_users', user.uid);
-      await setDoc(adminDocRef, adminData);
+      const { error: insertError } = await supabase
+        .from('admin_users')
+        .insert([adminData]);
+      
+      if (insertError) throw insertError;
       
       console.log('✅ Admin account created successfully');
-      return { success: true, uid: user.uid };
+      return { success: true, uid: user.id };
     } catch (error) {
       console.error('❌ Signup error:', error);
       let message = 'Signup failed. Please try again.';
       
-      if (error.code === 'auth/email-already-in-use') {
+      if (error.message?.includes('already registered')) {
         message = 'Email already registered';
-      } else if (error.code === 'auth/invalid-email') {
+      } else if (error.message?.includes('invalid email')) {
         message = 'Invalid email address';
-      } else if (error.code === 'auth/weak-password') {
+      } else if (error.message?.includes('Password')) {
         message = 'Password is too weak. Use at least 8 characters.';
       }
       
@@ -233,16 +262,16 @@ export const AdminAuthProvider = ({ children }) => {
   };
 
   /**
-   * Logout admin - Firebase sign out
+   * Logout admin - Supabase sign out
    */
   const logout = async (reason = 'manual') => {
     try {
       console.log(`🚪 Logging out admin (reason: ${reason})...`);
       
-      await firebaseSignOut(auth);
+      await supabase.auth.signOut();
       
       setAdmin(null);
-      setFirebaseUser(null);
+      setSupabaseUser(null);
       
       console.log('✅ Admin logout complete');
       router.push('/admin/login');
@@ -250,7 +279,7 @@ export const AdminAuthProvider = ({ children }) => {
       console.error('❌ Logout error:', error);
       // Force logout even if there's an error
       setAdmin(null);
-      setFirebaseUser(null);
+      setSupabaseUser(null);
       router.push('/admin/login');
     }
   };
@@ -259,41 +288,44 @@ export const AdminAuthProvider = ({ children }) => {
    * Check if admin is authenticated
    */
   const isAuthenticated = () => {
-    return !!admin && !!firebaseUser;
+    return !!admin && !!supabaseUser;
   };
 
   /**
-   * Get current admin Firebase token
+   * Get current admin Supabase token
    */
   const getAdminToken = async () => {
-    if (firebaseUser) {
-      try {
-        return await firebaseUser.getIdToken();
-      } catch (error) {
-        console.error('❌ Error getting token:', error);
-        return null;
-      }
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      return session?.access_token || null;
+    } catch (error) {
+      console.error('❌ Error getting token:', error);
+      return null;
     }
-    return null;
   };
 
   /**
-   * Update admin profile in Firestore
+   * Update admin profile in Supabase
    */
   const updateAdminProfile = async (newAdminData) => {
-    if (!admin || !firebaseUser) {
+    if (!admin || !supabaseUser) {
       console.error('❌ No admin logged in');
       return { success: false, error: 'Not authenticated' };
     }
     
     try {
-      const adminDocRef = doc(db, 'admin_users', firebaseUser.uid);
       const updatedData = {
         ...newAdminData,
-        updatedAt: new Date().toISOString()
+        updated_at: new Date().toISOString()
       };
       
-      await setDoc(adminDocRef, updatedData, { merge: true });
+      const { error } = await supabase
+        .from('admin_users')
+        .update(updatedData)
+        .eq('id', supabaseUser.id);
+      
+      if (error) throw error;
       
       const updated = { ...admin, ...updatedData };
       setAdmin(updated);
@@ -308,7 +340,7 @@ export const AdminAuthProvider = ({ children }) => {
 
   const value = {
     admin,
-    firebaseUser,
+    supabaseUser,
     login,
     signup,
     logout,

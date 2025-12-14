@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Meta from '../components/Meta';
 import { FileText, Search, Filter, AlertCircle } from 'lucide-react';
 import { getUserSubmissions, listenToUserSubmissions } from '../services/firestoreService';
-import { getAuth } from 'firebase/auth';
-import { fetchWithFirebaseToken } from '../utils/firebaseTokenHelper';
+import { supabase } from '@/config/supabase';
+import { authenticatedFetch as fetchWithFirebaseToken } from '../utils/supabaseTokenHelper';
 import { useUserAuth } from '../context/UserAuthContext';
 
 function UserApplicationsPage() {
@@ -21,8 +21,8 @@ function UserApplicationsPage() {
     let unsubscribeFirestore = null;
     
     const setupRealTimeUpdates = async () => {
-      const auth = getAuth();
-      let user = auth.currentUser;
+      const { data: { user: supaUser } } = await supabase.auth.getUser();
+      let user = supaUser;
       
       // Fallback to UserAuthContext if Firebase auth not ready
       if (!user && isAuthenticated && authUser) {
@@ -45,7 +45,7 @@ function UserApplicationsPage() {
           updateApplications(firestoreSubmissions);
         },
         null,
-        user.uid || authUser?.id  // User ID from Firebase or from UserAuthContext
+        user?.id || authUser?.id  // User ID from Supabase or from UserAuthContext
       );
 
       // Initial fetch for MongoDB data
@@ -64,8 +64,8 @@ function UserApplicationsPage() {
 
   const fetchMongoDBApplications = async () => {
     try {
-      const auth = getAuth();
-      let user = auth.currentUser;
+      const { data: { user: supaUser } } = await supabase.auth.getUser();
+      let user = supaUser;
       
       // Fallback to UserAuthContext if Firebase auth not ready
       if (!user && isAuthenticated && authUser) {
@@ -77,18 +77,7 @@ function UserApplicationsPage() {
         return;
       }
 
-      // Get fresh ID token from Firebase (if available) or use stored token
-      let token = null;
-      if (auth.currentUser) {
-        token = await auth.currentUser.getIdToken();
-        console.log('🔑 Got fresh Firebase token for API calls');
-      } else if (localStorage.getItem('userToken')) {
-        token = localStorage.getItem('userToken');
-        console.log('🔑 Using stored user token from localStorage');
-      } else {
-        console.log('❌ No token available');
-        return;
-      }
+      // Token is handled inside authenticatedFetch; no need to get manually
 
       // Get approved loans from MongoDB
       let mongoApps = [];
@@ -189,15 +178,17 @@ function UserApplicationsPage() {
   // Remove the old fetchApplications function and useEffect that called it
   useEffect(() => {
     // This will trigger re-filtering when filters change
-    const auth = getAuth();
-    const user = auth.currentUser;
-    
-    if (user) {
-      // Re-trigger the real-time update with current filters
-      listenToUserSubmissions((firestoreSubmissions) => {
-        updateApplications(firestoreSubmissions);
-      });
-    }
+    // Re-trigger the real-time update with current filters (no-op stub currently)
+    const reapply = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Re-trigger the real-time update with current filters
+        listenToUserSubmissions((firestoreSubmissions) => {
+          updateApplications(firestoreSubmissions);
+        });
+      }
+    };
+    reapply();
   }, [filterType, filterStatus, searchTerm]);
 
   const getStatusColor = (status) => {

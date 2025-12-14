@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Meta from '../components/Meta';
 import { Search, Users, Eye, Trash2, RefreshCw, UserPlus } from 'lucide-react';
-import { fetchWithFirebaseToken } from '../utils/firebaseTokenHelper';
+import { authenticatedFetch as fetchWithFirebaseToken } from '../utils/supabaseTokenHelper';
 
 function UsersManagementPage() {
   const pageMeta = { title: 'Users Management | Admin - Loanzaar', description: 'Admin panel to view, edit and manage registered users.' };

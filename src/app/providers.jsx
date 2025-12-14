@@ -4,8 +4,8 @@ import React from 'react'
 import '../index.css'
 import '../App.css'
 
-// Initialize Firebase on app load
-import '../config/firebase'
+// Initialize Supabase on app load
+import '../config/supabase'
 
 import NavBar from '@/components/NavBar'
 import Footer from '@/components/Footer'
@@ -20,12 +20,10 @@ export default function Providers({ children }) {
   const pathname = usePathname()
   const isAdminRoute = pathname?.startsWith('/admin')
   const isUserRoute = pathname?.startsWith('/dashboard') ||
-                      pathname?.startsWith('/user-dashboard') ||
                       pathname === '/signin' ||
                       pathname === '/signup' ||
                       pathname === '/forgot-password' ||
-                      pathname === '/finish-signup' ||
-                      pathname === '/complete-profile'
+                      pathname === '/finish-signup'
 
   let content = (
     <>

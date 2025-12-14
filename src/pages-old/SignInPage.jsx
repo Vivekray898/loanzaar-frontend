@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 const ReCAPTCHA = dynamic(() => import('react-google-recaptcha'), { ssr: false });
-import { signInWithEmailPassword } from '../services/firebaseAuthService';
+import { signInWithEmailPassword } from '../services/supabaseAuthService';
 import { getUserProfileByUID, createOrUpdateUserProfile } from '../services/firebaseAuthApi';
 
 // SignInPage Component
@@ -26,10 +26,10 @@ function SignInPage() {
     switch (fieldName) {
       case 'email':
         if (!value.trim()) return 'Email is required';
-        
+
         // Check if it's a valid email
         const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
-        
+
         if (!isValidEmail) {
           return 'Please enter a valid email address';
         }
@@ -46,7 +46,7 @@ function SignInPage() {
   const validateForm = () => {
     const errors = {};
     const fields = ['email', 'password'];
-    
+
     fields.forEach(field => {
       const error = validateField(field, formData[field]);
       if (error) {
@@ -94,78 +94,74 @@ function SignInPage() {
       console.log('🧹 Clearing old tokens...');
       localStorage.removeItem('firebaseToken');
       localStorage.removeItem('userToken');
-      
-      // Step 2: Sign in with Firebase
-      console.log('🔐 Signing in with Firebase...');
-      const firebaseResult = await signInWithEmailPassword(formData.email, formData.password);
-      
-      if (firebaseResult.success) {
-        console.log('✅ Firebase sign-in successful, UID:', firebaseResult.uid);
-        console.log('🔑 Fresh token received, length:', firebaseResult.token.length);
+
+      // Step 2: Sign in with Supabase
+      console.log('🔐 Signing in via Supabase...');
+      const supabaseResult = await signInWithEmailPassword(formData.email, formData.password);
+
+      if (supabaseResult.success) {
+        console.log('✅ Supabase sign-in successful, UID:', supabaseResult.uid);
+        console.log('🔑 Fresh token received, length:', supabaseResult.token.length);
         setMessage({ type: 'success', text: 'Sign in successful! Fetching your profile...' });
 
         // Step 3: Get or create user profile in MongoDB
         try {
           console.log('👤 Fetching user profile from MongoDB...');
-          const profile = await getUserProfileByUID(firebaseResult.uid);
-          
+          const profile = await getUserProfileByUID(supabaseResult.uid);
+
           if (profile.success) {
             console.log('✅ Profile found:', profile.data.userId);
-            
+
             // Store fresh tokens and user data
             console.log('💾 Storing fresh token and user data...');
-            localStorage.setItem('firebaseToken', firebaseResult.token);
-            localStorage.setItem('userToken', firebaseResult.token); // For UserAuthContext
+            localStorage.setItem('firebaseToken', supabaseResult.token);
+            localStorage.setItem('userToken', supabaseResult.token); // For UserAuthContext
             localStorage.setItem('userId', profile.data.userId);
-            localStorage.setItem('firebaseUID', firebaseResult.uid);
+            localStorage.setItem('firebaseUID', supabaseResult.uid);
             localStorage.setItem('userName', profile.data.name);
             localStorage.setItem('userRole', profile.data.role);
-            
+
             // Store userData object for UserAuthContext
             const userData = {
               userId: profile.data.userId,
-              firebaseUID: firebaseResult.uid,
+              firebaseUID: supabaseResult.uid,
               name: profile.data.name,
               role: profile.data.role,
               email: formData.email
             };
             localStorage.setItem('userData', JSON.stringify(userData));
-            
-            console.log('✅ Token and user data stored successfully');
-            
-            // Trigger custom event to notify UserAuthContext immediately
-            console.log('🔔 Dispatching userAuthChanged event...');
-            window.dispatchEvent(new Event('userAuthChanged'));
 
-            // Role-based redirection - immediate, no setTimeout
+            console.log('✅ Token and user data stored successfully');
+
+            // Role-based redirection
             if (profile.data.role === 'admin') {
               console.log('✅ Admin user, redirecting to admin dashboard');
-              window.location.href = '/admin/dashboard';
+              router.push('/admin/dashboard');
             } else {
               console.log('✅ Regular user, redirecting to user dashboard');
-              window.location.href = '/dashboard';
+              router.push('/dashboard');
             }
           }
         } catch (profileError) {
           console.error('Profile fetch error:', profileError);
           // Store token even if profile fetch fails - user may not have completed profile yet
-          localStorage.setItem('firebaseToken', firebaseResult.token);
-          localStorage.setItem('userToken', firebaseResult.token); // For UserAuthContext
-          localStorage.setItem('firebaseUID', firebaseResult.uid);
-          localStorage.setItem('firebaseEmail', firebaseResult.email);
-          
-          setMessage({ 
-            type: 'warning', 
-            text: 'Profile not found. Please complete your profile setup. Redirecting to profile completion...' 
+          localStorage.setItem('firebaseToken', supabaseResult.token);
+          localStorage.setItem('userToken', supabaseResult.token); // For UserAuthContext
+          localStorage.setItem('firebaseUID', supabaseResult.uid);
+          localStorage.setItem('firebaseEmail', supabaseResult.email);
+
+          setMessage({
+            type: 'warning',
+            text: 'Profile not found. Please complete your profile setup. Redirecting to profile page...'
           });
-          
-          // Redirect to profile completion page - immediate
-          console.log('🔄 Redirecting to profile completion');
-          window.location.href = '/complete-profile';
+
+          // Redirect to dashboard profile page (where they can complete their profile)
+          console.log('🔄 Redirecting to profile page');
+          router.push('/dashboard/profile');
         }
       }
     } catch (error) {
-      console.error('Firebase sign-in error:', error);
+      console.error('❌ Supabase sign-in error:', error);
       setMessage({ type: 'error', text: error.message || 'Failed to sign in. Please check your credentials.' });
     } finally {
       setIsLoading(false);
@@ -177,8 +173,8 @@ function SignInPage() {
       <Meta title="Login | Loanzaar" description="Access your Loanzaar account securely to manage loans and updates." />
       <div className="flex justify-center min-h-screen">
         {/* Background Image/Branding Section */}
-        <div 
-          className="hidden bg-cover lg:block lg:w-2/3" 
+        <div
+          className="hidden bg-cover lg:block lg:w-2/3"
           style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?q=80&w=2070&auto=format&fit=crop)' }}
         >
           <div className="flex items-center h-full px-20 bg-gray-900 bg-opacity-40">
@@ -195,11 +191,11 @@ function SignInPage() {
         <div className="flex items-center w-full max-w-md px-6 mx-auto lg:w-1/3">
           <div className="flex-1">
             <div className="text-center">
-               <img
-                  src="https://placehold.co/180x50/ef4444/white?text=RU+LOANS"
-                  alt="RU LOANS Logo"
-                  className="w-auto h-10 sm:h-12 mx-auto"
-                />
+              <img
+                src="https://placehold.co/180x50/ef4444/white?text=RU+LOANS"
+                alt="RU LOANS Logo"
+                className="w-auto h-10 sm:h-12 mx-auto"
+              />
               <p className="mt-3 text-gray-500">Sign in to access your account</p>
             </div>
 
@@ -217,9 +213,8 @@ function SignInPage() {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="you@example.com"
-                    className={`block w-full px-4 py-2.5 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-300 transition ${
-                      fieldErrors.email ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
-                    }`}
+                    className={`block w-full px-4 py-2.5 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-300 transition ${fieldErrors.email ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
+                      }`}
                   />
                   {fieldErrors.email && (
                     <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
@@ -244,9 +239,8 @@ function SignInPage() {
                       value={formData.password}
                       onChange={handleInputChange}
                       placeholder="Enter your password"
-                      className={`block w-full px-4 py-2.5 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-300 transition pr-10 ${
-                        fieldErrors.password ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
-                      }`}
+                      className={`block w-full px-4 py-2.5 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-300 transition pr-10 ${fieldErrors.password ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
+                        }`}
                     />
                     <button
                       type="button"
@@ -271,12 +265,12 @@ function SignInPage() {
                     </p>
                   )}
                 </div>
-                
+
                 {/* Message display */}
                 {message && (
-                    <div className={`mt-4 text-sm font-medium text-center p-3 rounded-lg border ${message.type === 'error' ? 'text-red-800 bg-red-100 border-red-300' : 'text-green-800 bg-green-100 border-green-300'}`}>
-                        {message.text}
-                    </div>
+                  <div className={`mt-4 text-sm font-medium text-center p-3 rounded-lg border ${message.type === 'error' ? 'text-red-800 bg-red-100 border-red-300' : 'text-green-800 bg-green-100 border-green-300'}`}>
+                    {message.text}
+                  </div>
                 )}
 
                 <div className="my-6">

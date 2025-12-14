@@ -29,15 +29,15 @@ export default function DashboardSidebar() {
     {
       label: 'Overview',
       icon: TrendingUp,
-      link: '/user-dashboard',
+      link: '/dashboard',
       exact: true
     },
     {
       label: 'My Applications',
       icon: FileText,
       submenu: [
-        { label: 'Loans', link: '/dashboard/my-loans' },
-        { label: 'Insurance', link: '/dashboard/my-insurance' },
+        { label: 'Loans', link: '/dashboard/applications' },
+        { label: 'Insurance', link: '/dashboard/insurance' },
       ]
     },
     {
@@ -56,7 +56,7 @@ export default function DashboardSidebar() {
     {
       label: 'Support & Help',
       icon: MessageSquare,
-      link: '/user-dashboard?tab=support'
+      link: '/dashboard/support'
     },
     {
       label: 'Security',

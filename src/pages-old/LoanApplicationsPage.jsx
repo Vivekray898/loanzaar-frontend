@@ -5,7 +5,7 @@ import Meta from '../components/Meta';
 import { Search, Filter, Eye, Edit2, Trash2, Download, RefreshCw, FileText, CreditCard } from 'lucide-react';
 import { getPendingSubmissions } from '../services/firestoreService';
 import { doc, updateDoc, getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { fetchWithFirebaseToken } from '../utils/firebaseTokenHelper';
+import { authenticatedFetch as fetchWithFirebaseToken } from '../utils/supabaseTokenHelper';
 
 function LoanApplicationsPage() {
   const [loans, setLoans] = useState([]);

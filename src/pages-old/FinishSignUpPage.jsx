@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import Meta from '../components/Meta';
 import { useRouter } from 'next/navigation';
-import { completeSignInWithEmailLink } from '../services/firebaseAuthService';
+import { completeSignInWithEmailLink } from '../services/supabaseAuthService';
 import { createOrUpdateUserProfile } from '../services/firebaseAuthApi';
 
 const FinishSignUpPageContent = () => {

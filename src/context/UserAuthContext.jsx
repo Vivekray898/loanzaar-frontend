@@ -2,6 +2,7 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '../config/supabase';
 
 export const UserAuthContext = createContext();
 
@@ -18,66 +19,93 @@ export const UserAuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Define logout first so it can be used in checkAuth
-  const logout = () => {
-    console.log('🚪 UserAuthContext: Logging out user');
-    localStorage.removeItem('userToken');
-    localStorage.removeItem('userData');
-    setUser(null);
-    router.push('/signin');
-  };
-
-  // Check authentication status on mount and when storage changes
   useEffect(() => {
-    console.log('🔍 UserAuthProvider: Checking authentication...');
-    const checkAuth = () => {
-      const token = localStorage.getItem('userToken');
-      const userData = localStorage.getItem('userData');
+    console.log('🔍 UserAuthProvider: Setting up Supabase auth listener...');
 
-      console.log('🔑 Token exists:', !!token);
-      console.log('👤 UserData exists:', !!userData);
+    // Listen for Supabase Auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        console.log('✅ User authenticated via Supabase:', session.user.id);
 
-      if (token && userData) {
-        try {
-          const parsedUser = JSON.parse(userData);
-          console.log('✅ User authenticated:', parsedUser.name);
-          setUser(parsedUser);
-          setLoading(false);
-        } catch (error) {
-          console.error('❌ Error parsing user data:', error);
-          logout();
-          setLoading(false);
+        // Store token
+        localStorage.setItem('userToken', session.access_token);
+        localStorage.setItem('firebaseUID', session.user.id);
+
+        // Try to get extended user data from localStorage
+        const storedUserData = localStorage.getItem('userData');
+        let parsedUserData = null;
+
+        if (storedUserData) {
+          try {
+            parsedUserData = JSON.parse(storedUserData);
+          } catch (e) {
+            console.error('Error parsing stored user data', e);
+          }
+        }
+
+        // Construct user object
+        const userObj = {
+          uid: session.user.id,
+          email: session.user.email,
+          emailVerified: session.user.email_confirmed_at !== null,
+          name: session.user.user_metadata?.full_name || (parsedUserData ? parsedUserData.name : 'User'),
+          displayName: session.user.user_metadata?.full_name || null,
+          photoURL: session.user.user_metadata?.avatar_url || null,
+          role: parsedUserData ? parsedUserData.role : 'user',
+          getIdToken: async () => session.access_token,
+          ...parsedUserData
+        };
+
+        setUser(userObj);
+
+        // Update localStorage if needed
+        if (!storedUserData) {
+          localStorage.setItem('userData', JSON.stringify(userObj));
         }
       } else {
-        console.log('⚠️ No auth data found');
+        console.log('❌ No authenticated user');
         setUser(null);
-        setLoading(false);
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userData');
+        localStorage.removeItem('firebaseUID');
       }
-    };
-
-    checkAuth();
-
-    // Listen for storage changes (in case user signs in from another tab/window)
-    window.addEventListener('storage', checkAuth);
-    
-    // Custom event for same-tab storage changes
-    window.addEventListener('userAuthChanged', checkAuth);
+      setLoading(false);
+    });
 
     return () => {
-      window.removeEventListener('storage', checkAuth);
-      window.removeEventListener('userAuthChanged', checkAuth);
+      subscription.unsubscribe();
     };
   }, []);
 
-  const login = (userData, token) => {
-    console.log('🔐 UserAuthContext: Logging in user:', userData.name);
+  const login = async (userData, token) => {
+    // This is now mostly a fallback or for setting initial local state
+    // The real work happens in onAuthStateChanged
+    console.log('🔐 Manual login trigger:', userData.name);
     localStorage.setItem('userToken', token);
     localStorage.setItem('userData', JSON.stringify(userData));
     setUser(userData);
-    setLoading(false);
-    
-    // Dispatch custom event to trigger auth check
-    window.dispatchEvent(new Event('userAuthChanged'));
+  };
+
+  const logout = async (reason = 'user-action') => {
+    console.log(`🚪 Logging out user (reason: ${reason})`);
+    try {
+      // Clear local storage
+      localStorage.removeItem('userToken');
+      localStorage.removeItem('userData');
+      localStorage.removeItem('firebaseUID');
+      localStorage.removeItem('firebaseEmail');
+      
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+      
+      // Reset state
+      setUser(null);
+      
+      // Redirect to login
+      router.push('/auth/signin');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   const value = {

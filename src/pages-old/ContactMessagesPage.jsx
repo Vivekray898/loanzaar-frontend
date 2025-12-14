@@ -5,7 +5,7 @@ import Meta from '../components/Meta';
 import { getPendingSubmissions } from '../services/firestoreService';
 import { Search, MessageSquare, Eye, Trash2, RefreshCw } from 'lucide-react';
 import { getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { fetchWithFirebaseToken } from '../utils/firebaseTokenHelper';
+import { authenticatedFetch as fetchWithFirebaseToken } from '../utils/supabaseTokenHelper';
 
 function ContactMessagesPage() {
   const [messages, setMessages] = useState([]);

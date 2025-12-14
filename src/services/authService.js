@@ -6,17 +6,19 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  sendPasswordResetEmail,
-  sendEmailVerification,
-  updateProfile,
   onAuthStateChanged,
-  signInWithEmailLink,
-  sendSignInLinkToEmail,
-  isSignInWithEmailLink
-} from 'firebase/auth';
+} from '../config/firebase';
 import app from '../config/firebase';
 
 const auth = getAuth(app);
+
+// Temporary stubs for unimplemented Firebase helpers
+const updateProfile = async () => {};
+const sendPasswordResetEmail = async () => {};
+const sendEmailVerification = async () => {};
+const signInWithEmailLink = async () => {};
+const sendSignInLinkToEmail = async () => {};
+const isSignInWithEmailLink = () => false;
 
 /**
  * Sign up with email and password

@@ -4,104 +4,65 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { UserAuthContext } from '../context/UserAuthContext';
+import { ChevronDown, Menu, X, Phone, LogOut, LayoutDashboard, User } from 'lucide-react';
 
 export default function NavBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hoverOpen, setHoverOpen] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [expandedSubDropdown, setExpandedSubDropdown] = useState(null);
-  const [mobileNavHistory, setMobileNavHistory] = useState([]);
 
   const dropdownRefs = useRef({});
   const userMenuRef = useRef(null);
   const pathname = usePathname();
   const router = useRouter();
-  
-  // Get authentication state from context (with fallback for public routes)
+
   const authContext = useContext(UserAuthContext);
   const user = authContext?.user ?? null;
-  const isAuthenticated = !!user; // User is authenticated if user object exists
+  const isAuthenticated = !!user;
   const logout = authContext?.logout ?? (() => router.push('/signin'));
-  
-  // Debug authentication state
-  React.useEffect(() => {
-    console.log('🔐 NavBar Auth State:', {
-      isAuthenticated,
-      userName: user?.name,
-      userEmail: user?.email,
-      userRole: user?.role,
-      hasContext: !!authContext,
-      contextUser: authContext?.user
-    });
-  }, [isAuthenticated, user, authContext]);
 
   const handleLogout = () => {
-    logout(); // Use context logout which handles cleanup and redirect
+    logout();
     setShowUserMenu(false);
   };
 
+  // Simplified Navigation Structure
   const navItems = [
-    { label: 'About Us', link: '/about-us', type: 'link' },
     {
-      label: 'Loans',
-      link: '/loans',
+      label: 'Explore Products',
       type: 'dropdown',
       children: [
         { label: 'Personal Loan', link: '/personal-loan' },
-        { label: 'Home Loan', link: '/home-loan' },
         { label: 'Business Loan', link: '/business-loan' },
-        {
-          label: 'Car Loan',
-          link: '/car-loan',
-          type: 'sub-dropdown', // This will now open on hover on desktop
-          children: [
-            { label: 'New Car Loan', link: '/car-loan/new-car-loan' },
-            { label: 'Used Car Loan', link: '/car-loan/used-car-loan' },
-            { label: 'Car Refinance', link: '/car-loan/car-refinance' },
-          ],
-        },
+        { label: 'Home Loan', link: '/home-loan' },
+        { label: 'Credit Cards', link: '/credit-cards' },
         { label: 'Loan Against Property', link: '/loan-against-property' },
-        { label: 'Machinery Loan', link: '/machinery-loan' },
-        { label: 'Education Loan', link: '/education-loan' },
-        { label: 'Gold Loan', link: '/gold-loan' },
-        { label: 'Solar Loan', link: '/solar-loan' },
-      ],
+        { label: 'Mutual Funds', link: '/mutual-funds' },
+      ]
     },
-    /* DSA nav temporarily disabled - uncomment when needed
-    {
-      label: 'DSA',
-      link: '/dsa',
-      type: 'dropdown',
-      children: [
-        { label: 'Partner Signup', link: '/dsa/signup' },
-        { label: 'Partner Dashboard', link: '/dsa/dashboard' },
-      ],
-    },
-    */
-    { label: 'Credit Cards', link: '/credit-cards', type: 'link' },
     {
       label: 'Insurance',
-      link: '/insurance',
       type: 'dropdown',
       children: [
-        { label: 'All Insurance', link: '/insurance/all-insurance' },
         { label: 'Life Insurance', link: '/insurance/life-insurance' },
         { label: 'Health Insurance', link: '/insurance/health-insurance' },
         { label: 'General Insurance', link: '/insurance/general-insurance' },
-      ],
+        { label: 'All Insurance', link: '/insurance/all-insurance' },
+      ]
     },
-   /* { label: 'Become a Partner', link: '/become-partner', type: 'link' }, */
     {
-      label: 'Check Cibil Score',
-      link: '/check-cibil-score',
-      type: 'link',
-      badge: { text: 'NEW' },
+      label: 'Learn & Resources',
+      type: 'dropdown',
+      children: [
+        { label: 'Blogs', link: '/blogs' },
+        { label: 'Credit Score Guide', link: '/credit-score-guide' },
+        { label: 'EMI Calculator', link: '/calculators' },
+        { label: 'Financial Glossary', link: '/glossary' },
+      ]
     },
-    { label: 'Blogs', link: '/blogs', type: 'link' },
     { label: 'Contact Us', link: '/contact-us', type: 'link' },
   ];
 
-  // Effect to handle clicks outside of active elements
   useEffect(() => {
     const handleOutsideClick = (event) => {
       if (hoverOpen && dropdownRefs.current[hoverOpen] && !dropdownRefs.current[hoverOpen].contains(event.target)) {
@@ -115,244 +76,203 @@ export default function NavBar() {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [hoverOpen, showUserMenu]);
 
-  // Close mobile menu on route change
   useEffect(() => {
     if (mobileOpen) {
-      closeMobileMenu();
+      setMobileOpen(false);
     }
   }, [pathname]);
 
-  const getDashboardLink = () => (user?.role === 'admin' ? '/admin/dashboard' : '/user-dashboard');
-
-  // --- Mobile Navigation Logic ---
-  const closeMobileMenu = () => {
-    setMobileOpen(false);
-    // Delay resetting history to allow for slide-out animation
-    setTimeout(() => setMobileNavHistory([]), 300);
-  };
-
-  const currentMobileMenu = mobileNavHistory.length > 0 ? mobileNavHistory[mobileNavHistory.length - 1] : { children: navItems };
-  const currentMobileTitle = mobileNavHistory.length > 0 ? mobileNavHistory[mobileNavHistory.length - 1].label : 'Loanzaar';
-
-  const handleMobileNavForward = (item) => setMobileNavHistory([...mobileNavHistory, item]);
-  const handleMobileNavBack = () => setMobileNavHistory(mobileNavHistory.slice(0, -1));
+  const getDashboardLink = () => (user?.role === 'admin' ? '/admin/dashboard' : '/dashboard');
 
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-3 focus:outline-none">
+        <div className="flex items-center justify-between h-20">
+
+          {/* Logo & Desktop Nav */}
+          <div className="flex items-center gap-12">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2 focus:outline-none">
               <img
                 src="/images/loanzaar--logo.avif"
-                alt="Loanzaar - much more than money"
-                className="h-[30px] min-[1153px]:h-[45px] w-auto object-contain"
+                alt="Loanzaar"
+                className="h-8 md:h-10 w-auto object-contain"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = 'https://placehold.co/160x40/f8fafc/dc2626?text=Loanzaar&font=sans';
+                  e.target.src = 'https://placehold.co/160x40/f8fafc/0ea5e9?text=Loanzaar&font=sans';
                 }}
               />
             </Link>
+
+            {/* Desktop Nav Links */}
+            <nav className="hidden min-[1153px]:flex items-center space-x-8">
+              {navItems.map((item) => (
+                <div key={item.label} className="relative" ref={(el) => (dropdownRefs.current[item.label] = el)}>
+                  {item.type === 'link' ? (
+                    <Link href={item.link} className="text-[15px] font-semibold text-slate-700 hover:text-blue-600 transition-colors py-2">
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <div
+                      onMouseEnter={() => setHoverOpen(item.label)}
+                      onMouseLeave={() => setHoverOpen(null)}
+                      className="relative py-2"
+                    >
+                      <button
+                        className={`text-[15px] font-semibold transition-colors inline-flex items-center gap-1 ${hoverOpen === item.label ? 'text-blue-600' : 'text-slate-700 hover:text-blue-600'}`}
+                        aria-expanded={hoverOpen === item.label}
+                      >
+                        <span>{item.label}</span>
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${hoverOpen === item.label ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {/* Dropdown Menu */}
+                      {hoverOpen === item.label && (
+                        <div className="absolute left-0 top-full mt-1 w-56 rounded-xl bg-white shadow-xl border border-slate-100 p-2 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
+                          {item.children.map((child) => (
+                            <Link
+                              key={child.label}
+                              href={child.link}
+                              className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors"
+                            >
+                              {child.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </nav>
           </div>
 
-          {/* Desktop nav */}
-          <nav className="hidden min-[1153px]:flex items-center space-x-6">
-            {navItems.map((item) => (
-              <div key={item.label} className="relative" ref={(el) => (dropdownRefs.current[item.label] = el)}>
-                {item.type === 'link' ? (
-                  <Link href={item.link} className="text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors flex items-center gap-2">
-                    <span>{item.label}</span>
-                    {item.badge && <span className="ml-1 inline-flex items-center rounded-full bg-red-600 px-2 py-0.5 text-xs font-semibold text-white">{item.badge.text}</span>}
-                  </Link>
-                ) : (
-                  <>
-                    <button
-                      className="text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors inline-flex items-center gap-2"
-                      aria-expanded={hoverOpen === item.label}
-                      onClick={() => setHoverOpen(hoverOpen === item.label ? null : item.label)}
-                    >
-                      <span>{item.label}</span>
-                      <svg className="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                    {/* Dropdown */}
-                    {hoverOpen === item.label && (
-                      <div className="absolute left-0 mt-2 w-56 rounded-lg bg-white shadow-lg border border-slate-100 p-2 z-10">
-                        {item.children.map((c) => (
-                          <div
-                            key={c.label}
-                            className="relative"
-                            onMouseEnter={() => c.type === 'sub-dropdown' && setExpandedSubDropdown(c.label)}
-                            onMouseLeave={() => c.type === 'sub-dropdown' && setExpandedSubDropdown(null)}
-                          >
-                            {c.type === 'sub-dropdown' ? (
-                              <>
-                                <Link
-                                  href={c.link}
-                                  onClick={() => setHoverOpen(null)}
-                                  className="w-full flex items-center justify-between px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded transition-colors"
-                                >
-                                  <span>{c.label}</span>
-                                  <svg className="h-4 w-4 text-slate-500 -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                  </svg>
-                                </Link>
-                                {expandedSubDropdown === c.label && (
-                                  <div className="absolute left-full top-0 w-48 rounded-lg bg-white shadow-lg border border-slate-100 p-2 z-20 -mt-1">
-                                    {c.children.map((subItem) => (
-                                      <Link
-                                        key={subItem.label}
-                                        href={subItem.link}
-                                        onClick={() => {
-                                          setHoverOpen(null);
-                                          setExpandedSubDropdown(null);
-                                        }}
-                                        className="block px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded transition-colors"
-                                      >
-                                        {subItem.label}
-                                      </Link>
-                                    ))}
-                                  </div>
-                                )}
-                              </>
-                            ) : (
-                            <Link href={c.link} onClick={() => setHoverOpen(null)} className="block px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded transition-colors">
-                                {c.label}
-                              </Link>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            ))}
-          </nav>
+          {/* Right Side Actions */}
+          <div className="flex items-center gap-4">
 
-          {/* Right side: Auth + Mobile Hamburger */}
-          <div className="flex items-center gap-3">
+            {/* Talk to Expert Button (Desktop) */}
+            <a
+              href="tel:1800-123-4567"
+              className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-md border border-blue-600 text-blue-600 font-semibold text-sm hover:bg-blue-50 transition-colors"
+            >
+              <Phone className="w-4 h-4" />
+              Talk to Expert
+            </a>
+
+            {/* Auth / User Menu */}
             {isAuthenticated ? (
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="hidden min-[1153px]:flex items-center gap-2 p-2 rounded-full hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-rose-300"
+                  className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all focus:outline-none"
                 >
-                  <div className="w-8 h-8 rounded-full bg-rose-500 flex items-center justify-center text-white font-semibold">{user?.name?.charAt(0).toUpperCase() || 'U'}</div>
-                  <svg className={`w-4 h-4 text-slate-600 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm border border-blue-200">
+                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
                 </button>
+
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-56 rounded-lg bg-white shadow-lg border border-slate-100 p-2 z-50">
-                    <div className="px-3 py-2 border-b border-slate-100 mb-2">
-                      <p className="text-sm font-semibold text-slate-800">{user?.name || 'User'}</p>
-                      <p className="text-xs text-slate-500">{user?.email || ''}</p>
-                      {user?.role === 'admin' && <span className="inline-block mt-1 text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-medium">Admin</span>}
+                  <div className="absolute right-0 mt-2 w-64 rounded-xl bg-white shadow-xl border border-slate-100 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="px-4 py-3 bg-slate-50 rounded-lg mb-2">
+                      <p className="text-sm font-bold text-slate-900">{user?.name || 'User'}</p>
+                      <p className="text-xs text-slate-500 truncate">{user?.email || ''}</p>
                     </div>
-                    <Link href={getDashboardLink()} onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-md transition-colors">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-                      <span>{user?.role === 'admin' ? 'Admin Dashboard' : 'My Dashboard'}</span>
+                    <Link href={getDashboardLink()} onClick={() => setShowUserMenu(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition-colors">
+                      <LayoutDashboard className="w-4 h-4" />
+                      <span>Dashboard</span>
                     </Link>
-                    <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors mt-1">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                      <span>Logout</span>
+                    <div className="h-px bg-slate-100 my-1"></div>
+                    <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
                     </button>
                   </div>
                 )}
               </div>
             ) : (
-              <Link href="/signin" className="hidden min-[1153px]:inline-flex items-center text-sm font-medium text-red-600 hover:text-red-700">Sign in</Link>
+              <Link
+                href="/signin"
+                className="hidden md:inline-flex items-center justify-center px-6 py-2 rounded-md bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-all shadow-sm hover:shadow-md"
+              >
+                Sign In
+              </Link>
             )}
 
-            <button onClick={() => setMobileOpen(true)} className="min-[1153px]:hidden inline-flex items-center justify-center p-2 rounded-md text-slate-700 hover:bg-slate-100 focus:outline-none">
-              <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+            {/* Mobile Hamburger */}
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="min-[1153px]:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 focus:outline-none"
+            >
+              <Menu className="h-6 w-6" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile slide-in menu */}
-      <div className={`fixed inset-0 z-50 transition-transform transform ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}`} aria-hidden={!mobileOpen}>
-        <div className="absolute inset-0 bg-black/40" onClick={closeMobileMenu} />
-        <aside className="absolute right-0 top-0 h-full w-full max-w-sm bg-white shadow-xl p-6 overflow-y-auto">
-          <div className="flex items-center justify-between mb-6">
-            {mobileNavHistory.length > 0 ? (
-              <button onClick={handleMobileNavBack} className="flex items-center gap-2 p-2 -ml-2 text-slate-700 hover:bg-slate-100 rounded-lg">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                </svg>
-                <span className="text-lg font-bold text-slate-800">{currentMobileTitle}</span>
-              </button>
-            ) : (
-              <Link href="/" className="flex items-center gap-3">
-                <img src="/images/loanzaar--logo.avif" alt="Loanzaar" className="h-[30px] min-[1153px]:h-[45px] w-auto object-contain" />
-              </Link>
-            )}
-            <button onClick={closeMobileMenu} className="p-2 rounded-md text-slate-600 hover:bg-slate-100">
-              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      {/* Mobile Menu Overlay */}
+      <div className={`fixed inset-0 z-50 transition-transform duration-300 ease-in-out transform ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}`} aria-hidden={!mobileOpen}>
+        <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+        <aside className="absolute right-0 top-0 h-full w-full max-w-xs bg-white shadow-2xl flex flex-col">
+          <div className="flex items-center justify-between p-5 border-b border-slate-100">
+            <span className="font-bold text-xl text-slate-900">Menu</span>
+            <button onClick={() => setMobileOpen(false)} className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+              <X className="h-6 w-6" />
             </button>
           </div>
 
-          <nav className="flex-grow">
-            <ul className="space-y-2">
-              {currentMobileMenu.children.map((item) => (
-                <li key={item.label}>
-                  {item.type === 'link' || !item.children ? (
-                    <Link
-                      href={item.link}
-                      onClick={closeMobileMenu}
-                      className="flex items-center justify-between w-full rounded-lg px-4 py-3 text-base font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                    >
-                      <span>{item.label}</span>
-                       {item.badge && <span className="ml-2 inline-flex items-center rounded-full bg-red-600 px-2 py-0.5 text-xs font-semibold text-white">{item.badge.text}</span>}
+          <div className="flex-grow overflow-y-auto py-4 px-4 space-y-6">
+            {/* Mobile Nav Links */}
+            <nav className="space-y-4">
+              {navItems.map((item) => (
+                <div key={item.label}>
+                  {item.type === 'link' ? (
+                    <Link href={item.link} className="block text-base font-semibold text-slate-800 py-2">
+                      {item.label}
                     </Link>
                   ) : (
-                    <button
-                      onClick={() => handleMobileNavForward(item)}
-                      className="flex w-full items-center justify-between rounded-lg px-4 py-3 text-base font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-                    >
-                      <span>{item.label}</span>
-                      <svg className="h-5 w-5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          <div className="mt-6 border-t border-slate-100 pt-4">
-            {isAuthenticated ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-lg">
-                    <div className="w-12 h-12 rounded-full bg-rose-500 flex items-center justify-center text-white font-semibold text-lg">{user?.name?.charAt(0).toUpperCase() || 'U'}</div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-slate-800">{user?.name || 'User'}</p>
-                      <p className="text-xs text-slate-500">{user?.email || ''}</p>
-                      {user?.role === 'admin' && <span className="inline-block mt-1 text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-medium">Admin</span>}
+                    <div className="space-y-2">
+                      <div className="text-sm font-bold text-slate-400 uppercase tracking-wider pb-1 border-b border-slate-100">
+                        {item.label}
+                      </div>
+                      <div className="pl-2 space-y-2">
+                        {item.children.map(child => (
+                          <Link key={child.label} href={child.link} className="block text-sm font-medium text-slate-600 py-1.5">
+                            {child.label}
+                          </Link>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <Link href={getDashboardLink()} onClick={closeMobileMenu} className="flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-                    <span className="font-medium">{user?.role === 'admin' ? 'Admin Dashboard' : 'My Dashboard'}</span>
-                  </Link>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      closeMobileMenu();
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                    <span className="font-medium">Logout</span>
-                  </button>
+                  )}
                 </div>
-              ) : (
-                <Link href="/signin" className="block w-full text-center rounded-lg px-4 py-3 font-semibold text-red-600 hover:bg-red-50 transition-colors" onClick={closeMobileMenu}>Sign in</Link>
+              ))}
+            </nav>
+          </div>
+
+          {/* Mobile Bottom Actions */}
+          <div className="p-5 border-t border-slate-100 bg-slate-50 space-y-3">
+            <a
+              href="tel:1800-123-4567"
+              className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg border border-blue-600 text-blue-600 font-bold text-sm bg-white"
+            >
+              <Phone className="w-4 h-4" />
+              Talk to Expert
+            </a>
+
+            {!isAuthenticated ? (
+              <Link
+                href="/signin"
+                className="flex items-center justify-center w-full px-4 py-3 rounded-lg bg-blue-600 text-white font-bold text-sm shadow-sm"
+              >
+                Sign In
+              </Link>
+            ) : (
+              <button
+                onClick={handleLogout}
+                className="flex items-center justify-center w-full px-4 py-3 rounded-lg bg-red-50 text-red-600 font-bold text-sm border border-red-100"
+              >
+                Sign Out
+              </button>
             )}
           </div>
         </aside>

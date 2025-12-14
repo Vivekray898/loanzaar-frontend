@@ -12,7 +12,6 @@ export default function RootLayoutClient({ children }) {
   const pathname = usePathname()
   const isAdminRoute = pathname?.startsWith('/admin')
   const isUserRoute = pathname?.startsWith('/dashboard') ||
-                      pathname?.startsWith('/user-dashboard') ||
                       pathname?.includes('/signin') ||
                       pathname?.includes('/signup') ||
                       pathname?.includes('/forgot-password')

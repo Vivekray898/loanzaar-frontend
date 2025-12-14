@@ -30,19 +30,7 @@ export default function StickyCalculator() {
         <span className="text-sm font-semibold hidden sm:inline">Calculate EMI</span>
       </button>
 
-      {/* Mobile FAB */}
-      <button
-        aria-label="Open EMI calculator"
-        onClick={() => setOpen(true)}
-        className={`fixed bottom-5 right-5 h-14 w-14 rounded-full flex items-center justify-center text-white shadow-xl z-40 sm:hidden transition-all duration-200
-        ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
-        style={{
-          background: 'linear-gradient(135deg, #2563EB 0%, #1E40AF 100%)',
-          boxShadow: '0 10px 20px rgba(37, 99, 235, 0.35)'
-        }}
-      >
-        <Calculator size={22} />
-      </button>
+      {/* Mobile FAB removed: the floating circular button is hidden on small screens per request */}
 
       {/* Modal */}
       <EMICalculatorModal open={open} onClose={() => setOpen(false)} />

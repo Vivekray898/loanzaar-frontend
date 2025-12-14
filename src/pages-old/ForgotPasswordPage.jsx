@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 const ReCAPTCHA = dynamic(() => import('react-google-recaptcha'), { ssr: false });
-import { resetPassword } from '../services/firebaseAuthService';
+import { resetPassword } from '../services/supabaseAuthService';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -70,9 +70,9 @@ export default function ForgotPasswordPage() {
 
     // CAPTCHA validation
     if (!captchaToken) {
-      setMessage({ 
-        type: 'error', 
-        text: 'Please complete the reCAPTCHA verification by checking the "I\'m not a robot" box' 
+      setMessage({
+        type: 'error',
+        text: 'Please complete the reCAPTCHA verification by checking the "I\'m not a robot" box'
       });
       return;
     }
@@ -82,28 +82,28 @@ export default function ForgotPasswordPage() {
     try {
       // Call Firebase to send password reset email
       const response = await resetPassword(formData.email.trim());
-      
+
       if (response.success) {
         console.log('✅ Password reset email sent to:', formData.email);
-        setMessage({ 
-          type: 'success', 
-          text: `Password reset link sent to ${formData.email}. Please check your email and spam folder.` 
+        setMessage({
+          type: 'success',
+          text: `Password reset link sent to ${formData.email}. Please check your email and spam folder.`
         });
         setResetEmailSent(true);
         setCurrentStep(2);
       } else {
         console.error('❌ Failed to send reset email:', response.error);
-        setMessage({ 
-          type: 'error', 
-          text: response.error || 'Failed to send password reset email. Please try again.' 
+        setMessage({
+          type: 'error',
+          text: response.error || 'Failed to send password reset email. Please try again.'
         });
       }
 
     } catch (error) {
       console.error('❌ Error sending reset email:', error);
-      setMessage({ 
-        type: 'error', 
-        text: error.message || 'Network error. Please check your connection and try again.' 
+      setMessage({
+        type: 'error',
+        text: error.message || 'Network error. Please check your connection and try again.'
       });
     } finally {
       setIsLoading(false);
@@ -118,24 +118,24 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
     try {
       const response = await resetPassword(formData.email.trim());
-      
+
       if (response.success) {
         console.log('✅ Password reset email resent');
-        setMessage({ 
-          type: 'success', 
-          text: 'Password reset link resent. Please check your email.' 
+        setMessage({
+          type: 'success',
+          text: 'Password reset link resent. Please check your email.'
         });
       } else {
-        setMessage({ 
-          type: 'error', 
+        setMessage({
+          type: 'error',
           text: response.error || 'Failed to resend email.'
         });
       }
     } catch (error) {
       console.error('❌ Resend error:', error);
-      setMessage({ 
-        type: 'error', 
-        text: 'Failed to resend. Please try again.' 
+      setMessage({
+        type: 'error',
+        text: 'Failed to resend. Please try again.'
       });
     } finally {
       setIsLoading(false);
@@ -144,13 +144,13 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="bg-gradient-to-br from-white via-gray-50 to-gray-100 min-h-screen">
-      <Meta 
-        title="Forgot Password - Reset Account | Loanzaar" 
+      <Meta
+        title="Forgot Password - Reset Account | Loanzaar"
         description="Reset your Loanzaar account password securely. Enter your email and we'll send you a password reset link."
       />
       <div className="flex justify-center min-h-screen">
         {/* Background Section */}
-        <div className="hidden bg-gradient-to-br from-blue-50 via-white to-blue-50 lg:block lg:w-2/3">
+        <div className="hidden bg-gradient-to-br from-rose-50 via-white to-rose-50 lg:block lg:w-2/3">
           <div className="flex items-center h-full px-20">
             <div>
               <h2 className="text-2xl font-bold text-gray-800 sm:text-3xl">Reset Your Password</h2>
@@ -161,11 +161,11 @@ export default function ForgotPasswordPage() {
               {/* Progress Indicator */}
               <div className="mt-8">
                 <div className="flex items-center space-x-4">
-                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 1 ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-600'}`}>
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 1 ? 'bg-rose-500 text-white' : 'bg-gray-300 text-gray-600'}`}>
                     1
                   </div>
-                  <div className={`flex-1 h-1 ${currentStep >= 2 ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
-                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 2 ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-600'}`}>
+                  <div className={`flex-1 h-1 ${currentStep >= 2 ? 'bg-rose-500' : 'bg-gray-300'}`}></div>
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 2 ? 'bg-rose-500 text-white' : 'bg-gray-300 text-gray-600'}`}>
                     2
                   </div>
                 </div>
@@ -216,9 +216,8 @@ export default function ForgotPasswordPage() {
                         value={formData.email}
                         onChange={handleInputChange}
                         placeholder="your@email.com"
-                        className={`block w-full px-4 py-2.5 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 transition ${
-                          fieldErrors.email ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
-                        }`}
+                        className={`block w-full px-4 py-2.5 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-300 transition ${fieldErrors.email ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
+                          }`}
                       />
                       {fieldErrors.email && (
                         <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
@@ -247,14 +246,14 @@ export default function ForgotPasswordPage() {
                       <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full px-4 py-2.5 tracking-wide text-white transition-all duration-300 transform bg-blue-500 rounded-lg hover:bg-blue-600 focus:outline-none focus:bg-blue-600 focus:ring focus:ring-blue-300 focus:ring-opacity-50 disabled:opacity-60 disabled:cursor-not-allowed shadow-md hover:shadow-lg font-semibold"
+                        className="w-full px-4 py-2.5 tracking-wide text-white transition-all duration-300 transform bg-rose-500 rounded-lg hover:bg-rose-600 focus:outline-none focus:bg-rose-600 focus:ring focus:ring-rose-300 focus:ring-opacity-50 disabled:opacity-60 disabled:cursor-not-allowed shadow-md hover:shadow-lg font-semibold"
                       >
                         {isLoading ? 'Sending...' : 'Send Reset Link'}
                       </button>
                     </div>
 
                     <p className="text-center text-sm text-slate-600 mt-4">
-                      Remember your password? <Link href="/signin" className="text-blue-500 font-semibold hover:underline">Sign in</Link>
+                      Remember your password? <Link href="/signin" className="text-rose-500 font-semibold hover:underline">Sign in</Link>
                     </p>
                   </div>
                 </form>
@@ -291,13 +290,13 @@ export default function ForgotPasswordPage() {
                     <button
                       onClick={resendResetEmail}
                       disabled={isLoading}
-                      className="w-full px-4 py-2.5 tracking-wide text-blue-600 transition-all duration-300 border-2 border-blue-500 rounded-lg hover:bg-blue-50 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed font-semibold"
+                      className="w-full px-4 py-2.5 tracking-wide text-rose-600 transition-all duration-300 border-2 border-rose-500 rounded-lg hover:bg-rose-50 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed font-semibold"
                     >
                       {isLoading ? 'Sending...' : 'Didn\'t receive the email? Resend'}
                     </button>
                     <button
                       onClick={handleBackToSignIn}
-                      className="w-full px-4 py-2.5 tracking-wide text-white transition-all duration-300 transform bg-blue-500 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-50 shadow-md hover:shadow-lg font-semibold"
+                      className="w-full px-4 py-2.5 tracking-wide text-white transition-all duration-300 transform bg-rose-500 rounded-lg hover:bg-rose-600 focus:outline-none focus:ring focus:ring-rose-300 focus:ring-opacity-50 shadow-md hover:shadow-lg font-semibold"
                     >
                       Back to Sign In
                     </button>
@@ -311,4 +310,3 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
-

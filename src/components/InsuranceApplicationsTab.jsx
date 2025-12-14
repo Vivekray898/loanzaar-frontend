@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, AlertCircle } from 'lucide-react';
 import { listenToPendingSubmissions, getPendingSubmissions } from '../services/firestoreService';
-import { fetchWithFirebaseToken } from '../utils/firebaseTokenHelper';
+import { authenticatedFetch as fetchWithFirebaseToken } from '../utils/supabaseTokenHelper';
 
 function InsuranceApplicationsTab() {
   const [activeTab, setActiveTab] = useState('firestore-pending'); // Changed default to show Firestore pending

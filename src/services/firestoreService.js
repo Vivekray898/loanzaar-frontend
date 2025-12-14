@@ -3,12 +3,8 @@
 // Public forms (loan, insurance, contact) write to separate collections: admin_loans, admin_insurance, admin_messages
 // Authenticated submissions (chat, ticket) use data_tmp collection
 
-import { getFirestore, collection, addDoc, serverTimestamp, query, where, orderBy, getDocs, doc, updateDoc, onSnapshot } from 'firebase/firestore';
-import app from '../config/firebase';
-import { getAuth } from 'firebase/auth';
-
-const db = getFirestore(app);
-const auth = getAuth(app);
+import { supabase } from '../config/supabase';
+import { getSupabaseToken } from '@/utils/supabaseTokenHelper';
 
 /**
  * Submit form data to Firestore
@@ -36,30 +32,35 @@ export const submitToFirestore = async (type, formData, status = 'pending') => {
   };
 
   try {
-    const user = auth.currentUser;
+    const { data: { user: supaUser } } = await supabase.auth.getUser();
     const isPublicWrite = publicWriteTypes.includes(type);
     const isUserAuth = userAuthTypes.includes(type);
 
     // If this is a user authenticated type, require authenticated user
-    if (isUserAuth && !user) {
+    if (isUserAuth && !supaUser) {
       throw new Error('User not authenticated. Please login first.');
     }
 
     const collectionName = collectionMap[type] || 'loan_applications';
     
-    const docData = {
+    const rowData = {
       type,
-      userId: user ? user.uid : null,
-      formData,
+      user_id: supaUser ? supaUser.id : null,
+      form_data: formData,
       status,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
-    console.log(`📤 Submitting ${type} to collection '${collectionName}'...`);
-    const docRef = await addDoc(collection(db, collectionName), docData);
-    console.log(`✅ ${type} submitted successfully to ${collectionName}:`, docRef.id);
-    return docRef.id;
+    console.log(`📤 Submitting ${type} to table '${collectionName}'...`);
+    const { data, error } = await supabase
+      .from(collectionName)
+      .insert([rowData])
+      .select()
+      .single();
+    if (error) throw error;
+    console.log(`✅ ${type} submitted successfully to ${collectionName}:`, data.id);
+    return data.id;
   } catch (error) {
     console.error(`❌ Error submitting ${type}:`, error);
     // Translate permission/auth errors into friendly messages for the UI
@@ -169,7 +170,7 @@ export const submitSupportTicket = async (ticketData) => {
  */
 export const getUserSubmissions = async (type = null) => {
   try {
-    const user = auth.currentUser;
+    const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       throw new Error('User not authenticated');
@@ -179,18 +180,16 @@ export const getUserSubmissions = async (type = null) => {
     
     // Fetch from loan_applications if type is null or 'loan'
     if (!type || type === 'loan') {
-      const loanRef = collection(db, 'loan_applications');
-      const loanQuery = query(
-        loanRef,
-        where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc')
-      );
-      
-      const loanSnapshot = await getDocs(loanQuery);
-      loanSnapshot.forEach(doc => {
+      const { data: loans, error } = await supabase
+        .from('loan_applications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      (loans || []).forEach(row => {
         submissions.push({
-          id: doc.id,
-          ...doc.data(),
+          id: row.id,
+          ...row,
           applicationType: 'loan'
         });
       });
@@ -198,18 +197,16 @@ export const getUserSubmissions = async (type = null) => {
     
     // Fetch from insurance_applications if type is null or 'insurance'
     if (!type || type === 'insurance') {
-      const insuranceRef = collection(db, 'insurance_applications');
-      const insuranceQuery = query(
-        insuranceRef,
-        where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc')
-      );
-      
-      const insuranceSnapshot = await getDocs(insuranceQuery);
-      insuranceSnapshot.forEach(doc => {
+      const { data: ins, error } = await supabase
+        .from('insurance_applications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      (ins || []).forEach(row => {
         submissions.push({
-          id: doc.id,
-          ...doc.data(),
+          id: row.id,
+          ...row,
           applicationType: 'insurance'
         });
       });
@@ -217,8 +214,8 @@ export const getUserSubmissions = async (type = null) => {
     
     // Sort by createdAt descending (newest first)
     submissions.sort((a, b) => {
-      const timeA = a.createdAt?.toMillis?.() || 0;
-      const timeB = b.createdAt?.toMillis?.() || 0;
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
       return timeB - timeA;
     });
     
@@ -248,27 +245,18 @@ export const getPendingSubmissions = async (type = null) => {
       contact: 'admin_messages'
     };
 
-    const collectionName = collectionMap[type] || 'data_tmp';
-    const dataRef = collection(db, collectionName);
-    
-    // Note: Removed orderBy to avoid composite index requirement
-    // Sorting will be done client-side after fetching
-    const q = query(
-      dataRef,
-      where('status', '==', 'pending')
-    );
-
-    const snapshot = await getDocs(q);
-    const submissions = [];
-
-    snapshot.forEach(doc => {
-      submissions.push({ id: doc.id, ...doc.data() });
-    });
+    const tableName = collectionMap[type] || 'data_tmp';
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*')
+      .eq('status', 'pending');
+    if (error) throw error;
+    const submissions = (data || []).map(row => ({ id: row.id, ...row }));
 
     // Sort client-side by createdAt descending
     submissions.sort((a, b) => {
-      const timeA = a.createdAt?.toMillis?.() || a.createdAt || 0;
-      const timeB = b.createdAt?.toMillis?.() || b.createdAt || 0;
+      const timeA = new Date(a.created_at).getTime() || a.created_at || 0;
+      const timeB = new Date(b.created_at).getTime() || b.created_at || 0;
       return timeB - timeA;
     });
 
@@ -288,99 +276,30 @@ export const getPendingSubmissions = async (type = null) => {
  * @returns {Function} Unsubscribe function
  */
 export const listenToUserSubmissions = (callback, type = null, userId = null) => {
-  let user = auth.currentUser;
-  const finalUserId = userId || user?.uid;
-  
-  if (!finalUserId) {
-    console.error('❌ User not authenticated - cannot listen to submissions');
-    return () => {};
-  }
-  
-  const unsubscribers = [];
-  
-  // Listen to loan_applications if type is null or 'loan'
+  const channel = supabase.channel('user_submissions_' + (userId || 'anon'));
+  const filters = [];
+  const uid = userId;
+
+  // Listen to inserts/updates for loan_applications
   if (!type || type === 'loan') {
-    const loanRef = collection(db, 'loan_applications');
-    const loanQuery = query(
-      loanRef,
-      where('userId', '==', finalUserId),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const loanUnsubscribe = onSnapshot(loanQuery, (snapshot) => {
-      const allSubmissions = [];
-      
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        allSubmissions.push({
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
-          applicationType: 'loan',
-          source: 'firestore'
-        });
-      });
-      
-      // If we're also listening to insurance, merge results
-      if (!type || type === 'insurance') {
-        // Callback will be triggered again by insurance listener
-      } else {
-        callback(allSubmissions);
-      }
-    }, (error) => {
-      console.error('❌ Error listening to loan submissions:', error);
-    });
-    
-    unsubscribers.push(loanUnsubscribe);
+    filters.push({ schema: 'public', table: 'loan_applications', event: '*', filter: uid ? `user_id=eq.${uid}` : undefined });
   }
-  
-  // Listen to insurance_applications if type is null or 'insurance'
+  // Listen to inserts/updates for insurance_applications
   if (!type || type === 'insurance') {
-    const insuranceRef = collection(db, 'insurance_applications');
-    const insuranceQuery = query(
-      insuranceRef,
-      where('userId', '==', finalUserId),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const insuranceUnsubscribe = onSnapshot(insuranceQuery, (snapshot) => {
-      const allSubmissions = [];
-      
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        allSubmissions.push({
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : data.createdAt,
-          applicationType: 'insurance',
-          source: 'firestore'
-        });
-      });
-      
-      // If listening to both, merge and sort
-      if (!type) {
-        // Fetch current loan apps to merge
-        getUserSubmissions().then(merged => {
-          callback(merged);
-        }).catch(err => {
-          console.error('Error merging submissions:', err);
-          callback(allSubmissions);
-        });
-      } else {
-        callback(allSubmissions);
-      }
-    }, (error) => {
-      console.error('❌ Error listening to insurance submissions:', error);
-    });
-    
-    unsubscribers.push(insuranceUnsubscribe);
+    filters.push({ schema: 'public', table: 'insurance_applications', event: '*', filter: uid ? `user_id=eq.${uid}` : undefined });
   }
-  
-  console.log('🔔 Listening for real-time submission updates...');
-  
-  // Return combined unsubscribe function
+
+  filters.forEach(f => {
+    channel.on('postgres_changes', f, async () => {
+      // Fetch fresh submissions and emit
+      const data = await getUserSubmissions(type);
+      callback(data);
+    });
+  });
+
+  channel.subscribe();
   return () => {
-    unsubscribers.forEach(unsub => unsub());
+    supabase.removeChannel(channel);
   };
 };
 
@@ -392,39 +311,21 @@ export const listenToUserSubmissions = (callback, type = null, userId = null) =>
  * @returns {Function} Unsubscribe function
  */
 export const listenToPendingSubmissions = (callback, type = null) => {
-  // Map type to collection name
-  const collectionMap = {
+  // Map type to table name
+  const tableMap = {
     loan: 'admin_loans',
     insurance: 'admin_insurance',
     contact: 'admin_messages'
   };
+  const tableName = tableMap[type] || 'data_tmp';
 
-  const collectionName = collectionMap[type] || 'data_tmp';
-  const dataRef = collection(db, collectionName);
-  
-  // Query for pending submissions
-  const q = query(
-    dataRef,
-    where('status', '==', 'pending'),
-    orderBy('createdAt', 'desc')
-  );
-  
-  console.log(`🔔 Listening for real-time pending submissions in '${collectionName}'...`);
-  
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const submissions = [];
-    snapshot.forEach(doc => {
-      const d = { id: doc.id, ...doc.data() };
-      submissions.push(d);
-    });
-    
-    console.log(`🔄 Pending submissions updated in '${collectionName}': ${submissions.length} items`);
-    callback(submissions);
-  }, (error) => {
-    console.error(`❌ Error listening to pending submissions in '${collectionName}':`, error);
+  const channel = supabase.channel('pending_' + tableName);
+  channel.on('postgres_changes', { schema: 'public', table: tableName, event: '*' }, async () => {
+    const data = await getPendingSubmissions(type);
+    callback(data);
   });
-  
-  return unsubscribe;
+  channel.subscribe();
+  return () => supabase.removeChannel(channel);
 };
 
 /**
@@ -436,28 +337,23 @@ export const listenToPendingSubmissions = (callback, type = null) => {
  */
 export const sendChatMessage = async (threadId, message, senderType = 'user') => {
   try {
-    const user = auth.currentUser;
-    
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-    
-    const docRef = await addDoc(collection(db, 'data_tmp'), {
-      type: 'chat',
-      userId: user.uid,
-      formData: {
-        threadId,
-        message,
-        senderType,
-        read: false
-      },
-      status: 'active',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-    
-    console.log(`💬 Chat message sent: ${docRef.id}`);
-    return docRef.id;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+    const { data, error } = await supabase
+      .from('data_tmp')
+      .insert([{ 
+        type: 'chat',
+        user_id: user.id,
+        form_data: { threadId, message, senderType, read: false },
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
+    if (error) throw error;
+    console.log(`💬 Chat message sent: ${data.id}`);
+    return data.id;
   } catch (error) {
     console.error('❌ Error sending chat message:', error);
     throw error;
@@ -471,32 +367,8 @@ export const sendChatMessage = async (threadId, message, senderType = 'user') =>
  * @returns {Function} Unsubscribe function
  */
 export const listenToChatMessages = (threadId, callback) => {
-  const dataRef = collection(db, 'data_tmp');
-  const q = query(
-    dataRef,
-    where('type', '==', 'chat'),
-    where('formData.threadId', '==', threadId),
-    orderBy('createdAt', 'asc')
-  );
-  
-  console.log(`💬 Listening for messages in thread ${threadId}...`);
-  
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const messages = [];
-    snapshot.forEach(doc => {
-      messages.push({
-        id: doc.id,
-        ...doc.data()
-      });
-    });
-    
-    console.log(`🔄 Messages updated: ${messages.length} in thread`);
-    callback(messages);
-  }, (error) => {
-    console.error('❌ Error listening to chat messages:', error);
-  });
-  
-  return unsubscribe;
+  console.warn('⚠️ listenToChatMessages: Supabase Realtime not yet implemented here. Returning no-op unsubscribe.');
+  return () => {};
 };
 
 /**
@@ -519,15 +391,10 @@ export const submitContactMessage = async (contactData) => {
       message: contactData.message
     });
     
-    // Contact messages don't require authentication (public form)
-    // Flatten the structure - don't nest in formData
-    const user = getAuth().currentUser;
-    
-    const docData = {
+    const { data: { user } } = await supabase.auth.getUser();
+    const rowData = {
       type: 'contact',
       status: 'pending',
-      
-      // Flatten all contact fields at root level
       name: contactData.name,
       email: contactData.email,
       phone: contactData.phone,
@@ -536,22 +403,24 @@ export const submitContactMessage = async (contactData) => {
       city: contactData.city,
       reason: contactData.reason,
       message: contactData.message,
-      
-      // Metadata
-      userId: user ? user.uid : null,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      user_id: user ? user.id : null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
-    const collectionRef = collection(db, 'admin_messages');
-    const docRef = await addDoc(collectionRef, docData);
-    
-    console.log('✅ Contact message submitted:', docRef.id);
+    const { data, error } = await supabase
+      .from('admin_messages')
+      .insert([rowData])
+      .select()
+      .single();
+    if (error) throw error;
+
+    console.log('✅ Contact message submitted:', data.id);
 
     return {
       success: true,
       message: 'Message sent successfully! We will get back to you soon.',
-      firestoreDocId: docRef.id,
+      firestoreDocId: data.id,
       status: 'pending'
     };
   } catch (error) {

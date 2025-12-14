@@ -1,17 +1,6 @@
 'use client'
 
-import {
-  getFirestore,
-  collection,
-  getDocs,
-  doc,
-  updateDoc,
-  deleteDoc,
-  onSnapshot,
-  query,
-  where,
-  orderBy,
-} from 'firebase/firestore';
+import { supabase } from '../config/supabase';
 
 /**
  * AdminDashboardService - Centralized Firestore operations for admin collections
@@ -21,7 +10,6 @@ import {
 
 class AdminDashboardService {
   constructor() {
-    this.db = getFirestore();
     this.unsubscribers = {}; // Store listeners to clean up
   }
 
@@ -33,13 +21,10 @@ class AdminDashboardService {
   async getCollectionData(collectionName) {
     try {
       console.log(`📖 Fetching ${collectionName}...`);
-      const ref = collection(this.db, collectionName);
-      const snapshot = await getDocs(ref);
-
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const { data, error } = await supabase
+        .from(collectionName)
+        .select('*');
+      if (error) throw error;
 
       console.log(`✅ Fetched ${data.length} documents from ${collectionName}`);
       return data;
@@ -57,35 +42,19 @@ class AdminDashboardService {
    * @returns {Function} Unsubscriber function to stop listening
    */
   subscribeToCollection(collectionName, callback, onError = null) {
-    try {
-      console.log(`🔔 Setting up real-time listener for ${collectionName}`);
-      const ref = collection(this.db, collectionName);
-
-      const unsubscribe = onSnapshot(
-        ref,
-        (snapshot) => {
-          const data = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          console.log(`📡 Real-time update: ${collectionName} (${data.length} docs)`);
-          callback(data);
-        },
-        (error) => {
-          console.error(`❌ Listener error for ${collectionName}:`, error);
-          console.error('  Error code:', error.code);
-          console.error('  Error message:', error.message);
-          if (onError) onError(error);
-        }
-      );
-
-      // Store unsubscriber for cleanup
-      this.unsubscribers[collectionName] = unsubscribe;
-      return unsubscribe;
-    } catch (error) {
-      console.error(`❌ Error setting up listener for ${collectionName}:`, error);
-      throw error;
-    }
+    console.warn(`⚠️ Realtime subscription not implemented. Using poll as placeholder for ${collectionName}.`);
+    const interval = setInterval(async () => {
+      try {
+        const { data, error } = await supabase.from(collectionName).select('*');
+        if (error) throw error;
+        callback(data || []);
+      } catch (err) {
+        console.error(`❌ Poll error for ${collectionName}:`, err);
+        if (onError) onError(err);
+      }
+    }, 5000);
+    this.unsubscribers[collectionName] = () => clearInterval(interval);
+    return this.unsubscribers[collectionName];
   }
 
   /**
@@ -110,16 +79,17 @@ class AdminDashboardService {
   async updateDocument(collectionName, docId, updates) {
     try {
       console.log(`✏️ Updating ${collectionName}/${docId}`, updates);
-      const docRef = doc(this.db, collectionName, docId);
-      
-      // Add updatedAt timestamp
       const dataToUpdate = {
         ...updates,
-        updatedAt: new Date().toISOString(),
-        updatedBy: 'admin' // Can be enhanced to include actual admin ID
+        updated_at: new Date().toISOString(),
+        updated_by: 'admin'
       };
 
-      await updateDoc(docRef, dataToUpdate);
+      const { error } = await supabase
+        .from(collectionName)
+        .update(dataToUpdate)
+        .eq('id', docId);
+      if (error) throw error;
       console.log(`✅ Document updated: ${collectionName}/${docId}`);
       return { success: true, message: 'Document updated successfully' };
     } catch (error) {
@@ -164,8 +134,11 @@ class AdminDashboardService {
   async deleteDocument(collectionName, docId) {
     try {
       console.log(`🗑️ Deleting ${collectionName}/${docId}`);
-      const docRef = doc(this.db, collectionName, docId);
-      await deleteDoc(docRef);
+      const { error } = await supabase
+        .from(collectionName)
+        .delete()
+        .eq('id', docId);
+      if (error) throw error;
       console.log(`✅ Document deleted: ${collectionName}/${docId}`);
       return { success: true, message: 'Document deleted successfully' };
     } catch (error) {
@@ -184,14 +157,12 @@ class AdminDashboardService {
   async searchDocuments(collectionName, field, value) {
     try {
       console.log(`🔍 Searching ${collectionName} where ${field} = ${value}`);
-      const ref = collection(this.db, collectionName);
-      const q = query(ref, where(field, '==', value));
-      const snapshot = await getDocs(q);
-
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const { data, error } = await supabase
+        .from(collectionName)
+        .select('*')
+        .eq(field, value);
+      if (error) throw error;
+      return (data || []).map(row => ({ id: row.id, ...row }));
     } catch (error) {
       console.error(`❌ Error searching ${collectionName}:`, error);
       throw error;

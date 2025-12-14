@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { 
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useUserAuth } from '../context/UserAuthContext';
 
+
 function UserDashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
@@ -30,6 +31,20 @@ function UserDashboardLayout({ children }) {
     { icon: User, label: 'My Profile', path: '/dashboard/profile' },
     { icon: MessageSquare, label: 'Contact Support', path: '/dashboard/support' },
   ];
+
+  // Redirect legacy routes to new dashboard paths
+  useEffect(() => {
+    if (!pathname) return;
+    if (pathname.startsWith('/user-dashboard')) {
+      const replaced = pathname
+        .replace('/user-dashboard/loans/my-applications', '/dashboard/applications')
+        .replace('/user-dashboard/insurance/my-applications', '/dashboard/applications')
+        .replace('/user-dashboard', '/dashboard');
+      if (replaced !== pathname) {
+        router.replace(replaced);
+      }
+    }
+  }, [pathname, router]);
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -53,7 +68,7 @@ function UserDashboardLayout({ children }) {
         <nav className="flex-1 px-4 py-6 space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive = pathname === item.path;
             
             return (
               <Link
@@ -109,7 +124,7 @@ function UserDashboardLayout({ children }) {
             <nav className="px-4 py-6 space-y-2">
               {menuItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = location.pathname === item.path;
+                const isActive = pathname === item.path;
                 
                 return (
                   <Link

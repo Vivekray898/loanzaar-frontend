@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, ChevronDown, AlertCircle } from 'lucide-react';
 import { listenToPendingSubmissions } from '../services/firestoreService';
-import { fetchWithFirebaseToken } from '../utils/firebaseTokenHelper';
+import { authenticatedFetch as fetchWithFirebaseToken } from '../utils/supabaseTokenHelper';
 
 function LoanApplicationsTab() {
   const [activeTab, setActiveTab] = useState('firestore-pending'); // Changed default to show Firestore pending

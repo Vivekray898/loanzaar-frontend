@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Send, X, AlertCircle, Check, Clock, RefreshCw, Trash2, Loader } from 'lucide-react';
-import { fetchWithFirebaseToken } from '../utils/firebaseTokenHelper';
+import { authenticatedFetch as fetchWithFirebaseToken } from '../utils/supabaseTokenHelper';
+import { getFirestore, collection, query, orderBy, onSnapshot, doc, where } from '../config/firebase';
+import { db } from '../config/firebase';
 
 function SupportCenter() {
   const [threads, setThreads] = useState([]);
@@ -12,120 +14,120 @@ function SupportCenter() {
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteOption, setDeleteOption] = useState('admin'); // 'admin', 'user', 'both'
-  const refreshIntervalRef = useRef(null);
 
+  // Unsubscribe functions for cleanup
+  const [unsubscribeThreads, setUnsubscribeThreads] = useState(null);
+  const [unsubscribeMessages, setUnsubscribeMessages] = useState(null);
+
+  // Real-time Threads Listener
   useEffect(() => {
-    fetchThreads();
-    fetchUnreadCount();
-    
-    // Auto-refresh every 12 seconds
-    refreshIntervalRef.current = setInterval(() => {
-      if (selectedThread) {
-        fetchThreadMessages(selectedThread._id);
-      }
-      fetchUnreadCount();
-    }, 12000);
-    
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-    };
-  }, [page, statusFilter, selectedThread]);
-
-  const fetchThreads = async () => {
     setLoading(true);
-    setError('');
+    console.log('📡 Setting up real-time threads listener...');
 
     try {
-  let url = `/support/threads?page=${page}&limit=10`;
-      if (statusFilter) url += `&status=${statusFilter}`;
+      const threadsRef = collection(db, 'support_chats');
+      let q = query(threadsRef, orderBy('lastMessageAt', 'desc'));
 
-      console.log('📡 Fetching threads from:', url);
-      const response = await fetchWithFirebaseToken(url);
-
-      const data = await response.json();
-      console.log('📊 Threads response:', data);
-      
-      if (data.success) {
-        console.log('✅ Threads fetched:', data.data?.length || 0);
-        console.log('📋 Thread structure sample:', data.data?.[0]);
-        setThreads(data.data || []);
-        setTotalPages(data.pagination?.pages || 1);
-      } else {
-        setError(data.message || 'Failed to fetch threads');
-        console.error('❌ Error:', data.message);
+      // Apply client-side filtering for status if needed, or use Firestore query
+      // Note: Firestore requires composite indexes for multiple fields (status + lastMessageAt)
+      // For simplicity, we'll filter client-side if the dataset is small, or we can add 'where' clause
+      if (statusFilter) {
+        q = query(threadsRef, where('status', '==', statusFilter), orderBy('lastMessageAt', 'desc'));
       }
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const threadList = [];
+        let unread = 0;
+
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          threadList.push({
+            _id: doc.id,
+            ...data,
+            lastMessageAt: data.lastMessageAt?.toDate?.() || new Date(data.lastMessageAt)
+          });
+
+          // Calculate unread count (logic might need adjustment based on your data model)
+          if (data.status === 'New') {
+            unread++;
+          }
+        });
+
+        setThreads(threadList);
+        setUnreadCount(unread);
+        setLoading(false);
+        console.log('✅ Threads updated:', threadList.length);
+      }, (err) => {
+        console.error('❌ Error in threads listener:', err);
+        setError('Failed to load threads via real-time connection');
+        setLoading(false);
+      });
+
+      setUnsubscribeThreads(() => unsubscribe);
+      return () => unsubscribe();
     } catch (err) {
-      console.error('❌ Error fetching threads:', err);
-      setError('Failed to fetch support threads');
-    } finally {
+      console.error('❌ Error setting up threads listener:', err);
+      setError('Failed to initialize real-time connection');
       setLoading(false);
     }
-  };
+  }, [statusFilter]);
 
-  const fetchUnreadCount = async () => {
-    try {
-  const response = await fetchWithFirebaseToken('/support/unread-count');
-      const data = await response.json();
-      if (data.success) {
-        setUnreadCount(data.data.totalUnread);
-      }
-    } catch (err) {
-      console.error('Error fetching unread count:', err);
+  // Real-time Messages Listener
+  useEffect(() => {
+    if (!selectedThread?._id) {
+      setMessages([]);
+      if (unsubscribeMessages) unsubscribeMessages();
+      return;
     }
-  };
 
-  const fetchThreadMessages = async (threadId) => {
+    console.log('📡 Setting up real-time message listener for:', selectedThread._id);
+
     try {
-  const response = await fetchWithFirebaseToken(`/support/thread/${threadId}`);
+      const messagesRef = collection(db, 'support_chats', selectedThread._id, 'messages');
+      const q = query(messagesRef, orderBy('timestamp', 'asc'));
 
-      const data = await response.json();
-      if (data.success) {
-        console.log('✅ Messages fetched:', data.data.messages);
-        console.log('📊 Message structure sample:', data.data.messages?.[0]);
-        
-        // Process messages to ensure proper date field
-        const processedMessages = (data.data.messages || []).map((msg) => ({
-          ...msg,
-          // Use timestamp if available (Firestore), otherwise createdAt (MongoDB)
-          displayDate: msg.timestamp || msg.createdAt,
-          _id: msg._id || Math.random().toString(36).substr(2, 9)
-        }));
-        
-        setMessages(processedMessages);
-        console.log('✅ Processed messages:', processedMessages);
-        setError('');
-      } else {
-        setError(data.message || 'Failed to fetch messages');
-        console.error('❌ Error fetching messages:', data.message);
-      }
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const messageList = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          messageList.push({
+            _id: doc.id,
+            ...data,
+            displayDate: data.timestamp?.toDate?.() || new Date(data.timestamp || data.createdAt)
+          });
+        });
+
+        setMessages(messageList);
+        console.log('✅ Messages updated:', messageList.length);
+      }, (err) => {
+        console.error('❌ Error in messages listener:', err);
+        setError('Failed to load messages');
+      });
+
+      setUnsubscribeMessages(() => unsubscribe);
+      return () => unsubscribe();
     } catch (err) {
-      console.error('❌ Error fetching thread messages:', err);
-      setError('Failed to fetch messages');
+      console.error('❌ Error setting up message listener:', err);
+      setError('Failed to load messages');
     }
-  };
+  }, [selectedThread?._id]);
 
-  const handleSelectThread = async (thread) => {
+  const handleSelectThread = (thread) => {
     setSelectedThread(thread);
-    setMessages([]);
     setError('');
-    await fetchThreadMessages(thread._id);
+    // Messages listener will automatically trigger due to dependency on selectedThread._id
   };
 
   const handleSendReply = async () => {
     if (!replyText.trim()) return;
 
     try {
-  const response = await fetchWithFirebaseToken('/support/reply', {
+      // We still use the API for sending replies to handle email notifications etc.
+      const response = await fetchWithFirebaseToken('/support/reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -139,16 +141,7 @@ function SupportCenter() {
         console.log('✅ Reply sent successfully');
         setReplyText('');
         setError('');
-
-        // Refresh messages to show new reply
-        await fetchThreadMessages(selectedThread._id);
-        
-        // Update thread status
-        setSelectedThread({ ...selectedThread, status: 'Replied' });
-        
-        // Refresh threads list to update preview and status
-        fetchThreads();
-        fetchUnreadCount();
+        // No need to manually fetch messages/threads, onSnapshot will update UI
       } else {
         setError(data.message || 'Failed to send reply');
       }
@@ -161,7 +154,7 @@ function SupportCenter() {
   const handleCloseThread = async () => {
     try {
       console.log(`🔒 Attempting to close thread: ${selectedThread._id}`);
-      
+
       const response = await fetchWithFirebaseToken(
         `/support/thread/${selectedThread._id}/close`,
         {
@@ -174,12 +167,11 @@ function SupportCenter() {
       );
 
       const data = await response.json();
-      console.log('📊 Close response:', data);
-      
+
       if (data.success) {
         console.log('✅ Thread closed successfully');
-        setSelectedThread({ ...selectedThread, status: 'Closed' });
-        fetchThreads();
+        // Optimistic update or wait for listener
+        // Listener will update status automatically
       } else {
         console.error('❌ Failed to close:', data.message);
         setError(data.message || 'Failed to close thread');
@@ -191,15 +183,14 @@ function SupportCenter() {
   };
 
   const handleDeleteTicket = () => {
-    // Show delete options dialog
     setShowDeleteDialog(true);
-    setDeleteOption('admin'); // Default selection
+    setDeleteOption('admin');
   };
 
   const confirmDelete = async () => {
     setDeleting(true);
     setShowDeleteDialog(false);
-    
+
     try {
       // If "both" is selected, we'll send two requests
       if (deleteOption === 'both') {
@@ -227,9 +218,9 @@ function SupportCenter() {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-            deletedBy: 'user'
-          })
-        });
+              deletedBy: 'user'
+            })
+          });
 
         const userData = await userResponse.json();
         if (!userData.success) {
@@ -256,9 +247,8 @@ function SupportCenter() {
 
       console.log('✅ Ticket deleted successfully');
       setSelectedThread(null);
-      setMessages([]);
-      await fetchThreads();
       setError('');
+      // Listener will remove the thread from the list automatically
     } catch (err) {
       console.error('Error deleting ticket:', err);
       setError(err.message || 'Failed to delete ticket');
@@ -295,22 +285,19 @@ function SupportCenter() {
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    
+
     try {
-      // Handle Firestore Timestamp objects (has toDate method)
       let date = dateString;
       if (dateString && typeof dateString === 'object' && dateString.toDate) {
         date = dateString.toDate();
       } else {
         date = new Date(dateString);
       }
-      
-      // Check if date is valid
+
       if (isNaN(date.getTime())) {
-        console.warn('Invalid date:', dateString);
         return 'Invalid Date';
       }
-      
+
       return date.toLocaleString('en-IN', {
         month: 'short',
         day: 'numeric',
@@ -343,7 +330,7 @@ function SupportCenter() {
         <div className="p-4 border-b border-slate-200">
           <select
             value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+            onChange={(e) => setStatusFilter(e.target.value)}
             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-rose-500"
           >
             <option value="">All Status</option>
@@ -364,11 +351,10 @@ function SupportCenter() {
               <div
                 key={thread._id}
                 onClick={() => handleSelectThread(thread)}
-                className={`p-4 border-b border-slate-200 cursor-pointer transition-colors ${
-                  selectedThread?._id === thread._id
+                className={`p-4 border-b border-slate-200 cursor-pointer transition-colors ${selectedThread?._id === thread._id
                     ? 'bg-rose-50 border-l-4 border-l-rose-600'
                     : 'hover:bg-slate-50'
-                }`}
+                  }`}
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex-1">
@@ -386,49 +372,21 @@ function SupportCenter() {
             ))
           )}
         </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="p-4 border-t border-slate-200 flex gap-2">
-            <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page === 1}
-              className="flex-1 px-2 py-1 bg-slate-200 text-sm rounded disabled:opacity-50"
-            >
-              Prev
-            </button>
-            <button
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
-              className="flex-1 px-2 py-1 bg-rose-600 text-white text-sm rounded disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Message View */}
       <div className="lg:col-span-2 bg-white rounded-xl shadow-lg overflow-hidden flex flex-col">
         {selectedThread ? (
           <>
-            {/* Header with Refresh Button */}
+            {/* Header */}
             <div className="p-6 bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200">
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">{selectedThread.subject}</h3>
                   <p className="text-sm text-slate-600">From: {selectedThread.userName} ({selectedThread.userEmail})</p>
-                  <p className="text-xs text-slate-500 mt-1">Message Count: {selectedThread.messageCount}</p>
+                  <p className="text-xs text-slate-500 mt-1">Message Count: {messages.length}</p>
                 </div>
                 <div className="flex gap-2 items-start">
-                  <button
-                    onClick={() => fetchThreadMessages(selectedThread._id)}
-                    disabled={refreshing}
-                    className="p-2 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
-                    title="Refresh messages"
-                  >
-                    <RefreshCw size={18} className={`text-slate-600 ${refreshing ? 'animate-spin' : ''}`} />
-                  </button>
                   <div className="flex gap-2">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${getStatusBadge(selectedThread.status)}`}>
                       {getStatusIcon(selectedThread.status)}
@@ -481,16 +439,15 @@ function SupportCenter() {
                 messages.map((msg) => (
                   <div key={msg._id} className={`flex ${msg.senderType === 'admin' ? 'justify-end' : 'justify-start'}`}>
                     <div
-                      className={`max-w-xs px-4 py-3 rounded-lg ${
-                        msg.senderType === 'admin'
+                      className={`max-w-xs px-4 py-3 rounded-lg ${msg.senderType === 'admin'
                           ? 'bg-rose-600 text-white rounded-br-none'
                           : 'bg-slate-100 text-slate-900 rounded-bl-none'
-                      }`}
+                        }`}
                     >
                       <p className="text-xs font-semibold mb-1 opacity-75">{msg.senderName || (msg.senderType === 'admin' ? 'Admin' : 'User')}</p>
                       <p className="text-sm">{msg.message || msg.text || '(No message content)'}</p>
                       <p className="text-xs mt-1 opacity-70">
-                        {formatDate(msg.displayDate || msg.timestamp || msg.createdAt)}
+                        {formatDate(msg.displayDate)}
                       </p>
                     </div>
                   </div>
@@ -524,7 +481,7 @@ function SupportCenter() {
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
+            <div className="text-center">
               <MessageSquare size={48} className="mx-auto text-slate-400 mb-4" />
               <p className="text-slate-600 font-semibold">Select a thread to view messages</p>
               <p className="text-slate-500 text-sm mt-1">Click on a support thread from the list</p>
@@ -538,7 +495,7 @@ function SupportCenter() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
             <h2 className="text-lg font-bold text-slate-900 mb-4">Delete Support Ticket</h2>
-            
+
             <p className="text-sm text-slate-600 mb-6">
               Choose how you want to delete this ticket:
             </p>
@@ -628,4 +585,3 @@ function SupportCenter() {
 }
 
 export default SupportCenter;
-

@@ -1,8 +1,9 @@
 // Firebase Cloud Messaging Service
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { app, FCM_VAPID_KEY } from '../config/firebase';
-import { doc, setDoc, updateDoc, collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { app, FCM_VAPID_KEY, doc, setDoc, updateDoc, collection, getDocs, query, where } from '../config/firebase';
+// Temporary stubs for messaging; replace with Web Push or Realtime
+const getMessaging = () => ({ });
+const getToken = async () => '';
+const onMessage = (messaging, handler) => { /* no-op */ };
 
 let messaging = null;
 

@@ -32,7 +32,7 @@ import {
   Legend, 
   ResponsiveContainer 
 } from 'recharts';
-import { fetchWithFirebaseToken } from '../utils/firebaseTokenHelper';
+import { authenticatedFetch as fetchWithFirebaseToken } from '../utils/supabaseTokenHelper';
 import LoanApplicationsTab from '../components/LoanApplicationsTab';
 import InsuranceApplicationsTab from '../components/InsuranceApplicationsTab';
 import SupportCenter from '../components/SupportCenter';

@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Send, MessageSquare, AlertCircle, Plus, RefreshCw } from 'lucide-react';
-import { getFirestore, collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
-import { onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, onAuthStateChanged } from '../config/firebase';
 import { auth } from '../config/firebase';
 
 function UserSupportChat() {

@@ -1,14 +1,14 @@
 import { useEffect, useRef } from 'react';
-import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+import { supabase } from '../config/supabase';
 import { useRouter } from 'next/navigation';
 
 /**
- * useAutoLogout Hook - Token-Based Session Management
+ * useAutoLogout Hook - Token-Based Session Management with Supabase
  * 
  * Simplified auto-logout system that:
  * 1. Triggers only once when a user logs in
- * 2. Creates a 30-minute Firebase token session (no activity tracking)
- * 3. After 30 minutes, automatically logs out the user
+ * 2. Creates a session based on Supabase token expiration (typically 60 minutes)
+ * 3. After timeout, automatically logs out the user
  * 4. On guest visits (no user), does nothing - no logs, no timers
  * 5. Minimal console logging (setup and logout only)
  * 6. Uses one setTimeout per user session
@@ -23,10 +23,8 @@ export default function useAutoLogout(options = {}) {
     onLogout = null
   } = options;
 
-  const auth = getAuth();
   const router = useRouter();
   const logoutTimerRef = useRef(null);
-  const unsubscribeRef = useRef(null);
   const isLoggingOutRef = useRef(false);
   const currentUserRef = useRef(null);
 
@@ -40,9 +38,9 @@ export default function useAutoLogout(options = {}) {
     }
 
     // Set up auth state listener (runs once)
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       // Guest user - do nothing
-      if (!user) {
+      if (!session?.user) {
         currentUserRef.current = null;
         if (logoutTimerRef.current) {
           clearTimeout(logoutTimerRef.current);
@@ -52,16 +50,16 @@ export default function useAutoLogout(options = {}) {
       }
 
       // User just logged in
-      if (!currentUserRef.current || currentUserRef.current.uid !== user.uid) {
-        currentUserRef.current = user;
+      if (!currentUserRef.current || currentUserRef.current !== session.user.id) {
+        currentUserRef.current = session.user.id;
         
         // Clear old timer if exists
         if (logoutTimerRef.current) {
           clearTimeout(logoutTimerRef.current);
         }
 
-        // Start new 30-minute session
-        console.log(`✅ Session started for ${user.email}`);
+        // Start new session (via Supabase)
+        console.log(`✅ Session started for ${session.user.email} (Supabase)`);
         console.log(`⏱️ Auto logout scheduled in ${timeoutMinutes} min`);
 
         logoutTimerRef.current = setTimeout(async () => {
@@ -70,7 +68,7 @@ export default function useAutoLogout(options = {}) {
           isLoggingOutRef.current = true;
 
           try {
-            console.log('🧹 Session expired — user logged out');
+            console.log('🧹 Session expired — logging out user (Supabase)');
 
             // Clear auth data
             const keysToRemove = ['userToken', 'userData', 'lastLogin', 'sessionId'];
@@ -79,8 +77,8 @@ export default function useAutoLogout(options = {}) {
               sessionStorage.removeItem(key);
             });
 
-            // Sign out from Firebase
-            await signOut(auth);
+            // Sign out from Supabase
+            await supabase.auth.signOut();
 
             // Call optional callback
             if (onLogout) {
@@ -99,18 +97,14 @@ export default function useAutoLogout(options = {}) {
       }
     });
 
-    unsubscribeRef.current = unsubscribe;
-
     // Cleanup on unmount
     return () => {
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-      }
+      subscription.unsubscribe();
       if (logoutTimerRef.current) {
         clearTimeout(logoutTimerRef.current);
       }
     };
-  }, [auth, router, timeoutMinutes, TIMEOUT_MS, onLogout]);
+  }, [router, timeoutMinutes, TIMEOUT_MS, onLogout]);
 
   return null;
 }
