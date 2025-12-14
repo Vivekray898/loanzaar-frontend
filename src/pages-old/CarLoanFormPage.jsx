@@ -17,10 +17,7 @@ const CarLoanFormPage = () => {
   const [emi, setEmi] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [totalInterest, setTotalInterest] = useState(0);
-  const [activeFaq, setActiveFaq] = useState(null);
-
-  const [showModal, setShowModal] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [activeFaq, setActiveFaq] = useState(null);  const [submitted, setSubmitted] = useState(false);
   const recaptchaRef = useRef(null);
   const [captchaToken, setCaptchaToken] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -118,9 +115,7 @@ const CarLoanFormPage = () => {
       const result = await submitLoanApplication(submissionData);
 
       if (result.success) {
-        setSubmitted(true);
-        setShowModal(false);
-        // Reset form
+        setSubmitted(true);        // Reset form
         setFormData({
           fullName: '',
           email: '',
@@ -202,15 +197,6 @@ const CarLoanFormPage = () => {
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setFieldErrors({});
-    setCaptchaToken(null);
-    if (recaptchaRef.current) {
-      recaptchaRef.current.reset();
-    }
   };
 
   const tabs = [
@@ -331,9 +317,7 @@ const CarLoanFormPage = () => {
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
               Drive Your Dream Car with a <span className="text-red-500">Fast Car Loan!</span>
             </h1>
-            <p className="text-lg text-gray-600 max-w-lg">Get a convenient Car Loan to purchase your dream vehicle. Our quick application process and flexible options are designed to get you on the road faster.</p>
-            <button onClick={() => setShowModal(true)} className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-lg font-semibold shadow-lg transition">Apply Now</button>
-          </div>
+            <p className="text-lg text-gray-600 max-w-lg">Get a convenient Car Loan to purchase your dream vehicle. Our quick application process and flexible options are designed to get you on the road faster.</p>          </div>
           <div className="relative">
             <img src="https://cdn.jsdelivr.net/gh/creativoxa/loanzaar/b2c/banners/car-loan-b.avif" alt="car-loan-b.avif with car and financial charts" className="w-full h-auto" onError={(e) => e.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="%23f3f4f6"/><text x="200" y="200" text-anchor="middle" font-size="20" fill="%236b7280">Car Loan</text></svg>'} />
           </div>
@@ -648,173 +632,6 @@ const CarLoanFormPage = () => {
       </div>
 
       {/* Modal Form */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">Car Loan Contact Form</h2>
-                <button
-                  onClick={closeModal}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6">
-              <div className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.fullName}
-                      onChange={(e) => {
-                        setFormData({ ...formData, fullName: e.target.value });
-                        validateField('fullName', e.target.value);
-                      }}
-                      className={`w-full p-3 border rounded-lg ${
-                        fieldErrors.fullName ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter your full name"
-                    />
-                    {fieldErrors.fullName && (
-                      <p className="text-red-500 text-sm mt-1">{fieldErrors.fullName}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => {
-                        setFormData({ ...formData, email: e.target.value });
-                        validateField('email', e.target.value);
-                      }}
-                      className={`w-full p-3 border rounded-lg ${
-                        fieldErrors.email ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter your email"
-                    />
-                    {fieldErrors.email && (
-                      <p className="text-red-500 text-sm mt-1">{fieldErrors.email}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone / WhatsApp *
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => {
-                        setFormData({ ...formData, phone: e.target.value });
-                        validateField('phone', e.target.value);
-                      }}
-                      className={`w-full p-3 border rounded-lg ${
-                        fieldErrors.phone ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter 10-digit phone number"
-                    />
-                    {fieldErrors.phone && (
-                      <p className="text-red-500 text-sm mt-1">{fieldErrors.phone}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Loan Type
-                    </label>
-                    <select
-                      value={formData.loanType}
-                      onChange={(e) => setFormData({ ...formData, loanType: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg"
-                    >
-                      <option value="New Car">New Car</option>
-                      <option value="Used Car">Used Car</option>
-                      <option value="Refinance">Refinance</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Car Make & Model
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.carMakeModel}
-                      onChange={(e) => setFormData({ ...formData, carMakeModel: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg"
-                      placeholder="e.g., Honda City, Toyota Fortuner (optional)"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Expected Loan Amount
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.expectedLoanAmount}
-                      onChange={(e) => setFormData({ ...formData, expectedLoanAmount: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg"
-                      placeholder="Enter amount (optional)"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Message / Queries
-                  </label>
-                  <textarea
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="w-full p-3 border border-gray-300 rounded-lg"
-                    rows="4"
-                    placeholder="Any specific questions or requirements (optional)"
-                  />
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <input
-                    type="checkbox"
-                    id="consent"
-                    checked={formData.consent}
-                    onChange={(e) => setFormData({ ...formData, consent: e.target.checked })}
-                    className="mt-1"
-                  />
-                  <label htmlFor="consent" className="text-sm text-gray-600">
-                    I agree to be contacted
-                  </label>
-                </div>
-
-                <div className="border-t pt-4">
-                  <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" // Test key
-                    onChange={handleCaptchaChange}
-                  />
-                </div>
-
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={!formData.consent || !captchaToken}
-                    className="px-8 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-                  >
-                    Request Info
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Success Message */}
       {submitted && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

@@ -29,7 +29,7 @@ export const UserAuthProvider = ({ children }) => {
 
         // Store token
         localStorage.setItem('userToken', session.access_token);
-        localStorage.setItem('firebaseUID', session.user.id);
+        localStorage.setItem('supabaseUID', session.user.id);
 
         // Try to get extended user data from localStorage
         const storedUserData = localStorage.getItem('userData');
@@ -62,12 +62,12 @@ export const UserAuthProvider = ({ children }) => {
         if (!storedUserData) {
           localStorage.setItem('userData', JSON.stringify(userObj));
         }
-      } else {
+        } else {
         console.log('❌ No authenticated user');
         setUser(null);
         localStorage.removeItem('userToken');
         localStorage.removeItem('userData');
-        localStorage.removeItem('firebaseUID');
+        localStorage.removeItem('supabaseUID');
       }
       setLoading(false);
     });
@@ -92,8 +92,8 @@ export const UserAuthProvider = ({ children }) => {
       // Clear local storage
       localStorage.removeItem('userToken');
       localStorage.removeItem('userData');
-      localStorage.removeItem('firebaseUID');
-      localStorage.removeItem('firebaseEmail');
+      localStorage.removeItem('supabaseUID');
+      localStorage.removeItem('supabaseEmail');
       
       // Sign out from Supabase
       await supabase.auth.signOut();
@@ -102,7 +102,7 @@ export const UserAuthProvider = ({ children }) => {
       setUser(null);
       
       // Redirect to login
-      router.push('/auth/signin');
+      router.push('/signin');
     } catch (error) {
       console.error('Error signing out:', error);
     }

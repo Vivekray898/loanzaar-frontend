@@ -48,7 +48,7 @@ function UserSupportChat() {
         const updatedUserData = { 
           ...existingUserData, 
           ...userInfo, 
-          firebaseUID: uid,
+          supabaseUID: uid,
           _id: uid 
         };
         localStorage.setItem('userData', JSON.stringify(updatedUserData));

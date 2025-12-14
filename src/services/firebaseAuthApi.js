@@ -2,8 +2,8 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://loanzaar-react-base.onrender.com/api';
 
 /**
- * Create or update user profile in MongoDB after Firebase authentication
- * @param {Object} profileData - User profile data including firebaseUID
+ * Create or update user profile in MongoDB after Supabase authentication
+ * @param {Object} profileData - User profile data including supabaseUID
  * @returns {Promise<Object>}
  */
 export const createOrUpdateUserProfile = async (profileData) => {
@@ -30,13 +30,13 @@ export const createOrUpdateUserProfile = async (profileData) => {
 };
 
 /**
- * Get user profile by Firebase UID
- * @param {string} firebaseUID 
+ * Get user profile by Supabase UID
+ * @param {string} supabaseUID 
  * @returns {Promise<Object>}
  */
-export const getUserProfileByUID = async (firebaseUID) => {
+export const getUserProfileByUID = async (supabaseUID) => {
   try {
-    const response = await fetch(`${API_URL}/auth/firebase/profile/${firebaseUID}`, {
+    const response = await fetch(`${API_URL}/auth/firebase/profile/${supabaseUID}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
@@ -86,13 +86,13 @@ export const verifyTokenAndGetProfile = async (idToken) => {
 
 /**
  * Delete user profile
- * @param {string} firebaseUID 
- * @param {string} idToken - Firebase ID token for authentication
+ * @param {string} supabaseUID 
+ * @param {string} idToken - Auth token for authentication
  * @returns {Promise<Object>}
  */
-export const deleteUserProfile = async (firebaseUID, idToken) => {
+export const deleteUserProfile = async (supabaseUID, idToken) => {
   try {
-    const response = await fetch(`${API_URL}/auth/firebase/profile/${firebaseUID}`, {
+    const response = await fetch(`${API_URL}/auth/firebase/profile/${supabaseUID}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

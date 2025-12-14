@@ -117,9 +117,16 @@ function SignUpPage() {
     setIsLoading(true);
 
     try {
-      // Step 1: Create Firebase user with email and password
-      console.log('📧 Creating Firebase user...');
-      const firebaseResult = await signUpWithEmailPassword(formData.email, formData.password);
+      // Step 1: Create Supabase user with email, password, and profile metadata
+      console.log('📧 Creating Supabase user with profile data...');
+      const firebaseResult = await signUpWithEmailPassword(formData.email, formData.password, {
+        name: formData.name,
+        phone: formData.phone,
+        age: formData.age,
+        gender: formData.gender,
+        income: formData.income,
+        occupation: formData.occupation
+      });
       
       if (firebaseResult.success) {
         setFirebaseUser(firebaseResult.user);
@@ -148,7 +155,7 @@ function SignUpPage() {
       console.log('💾 Creating user profile in MongoDB...');
       
       const profileData = {
-        firebaseUID: firebaseUser.uid,
+        supabaseUID: firebaseUser.uid,
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
@@ -165,9 +172,8 @@ function SignUpPage() {
         setMessage({ type: 'success', text: 'Profile completed successfully! Redirecting to sign in...' });
         
         // Store tokens
-        localStorage.setItem('firebaseToken', response.data.token);
         localStorage.setItem('userId', response.data.userId);
-        localStorage.setItem('firebaseUID', response.data.firebaseUID);
+        localStorage.setItem('supabaseUID', response.data.supabaseUID);
         
         // Redirect to signin after 2 seconds
         setTimeout(() => {

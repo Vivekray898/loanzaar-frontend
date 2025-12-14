@@ -14,10 +14,7 @@ const UsedCarLoanFormPage = () => {
   const [emi, setEmi] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [totalInterest, setTotalInterest] = useState(0);
-  const [activeFaq, setActiveFaq] = useState(null);
-
-  const [showModal, setShowModal] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [activeFaq, setActiveFaq] = useState(null);  const [currentStep, setCurrentStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const recaptchaRef = useRef(null);
   const [captchaToken, setCaptchaToken] = useState(null);
@@ -114,9 +111,7 @@ const UsedCarLoanFormPage = () => {
       const result = await submitLoanApplication(submissionData);
 
       if (result.success) {
-        setSubmitted(true);
-        setShowModal(false);
-        // Reset form
+        setSubmitted(true);        // Reset form
         setFormData({
           fullName: '',
           email: '',
@@ -246,12 +241,6 @@ const UsedCarLoanFormPage = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setCurrentStep(0);
-    setFieldErrors({});
-  };
-
   const tabs = [
     { id: 'overview', label: 'Overview', icon: 'layout-grid' },
     { id: 'features', label: 'Features', icon: 'star' },
@@ -349,9 +338,7 @@ const UsedCarLoanFormPage = () => {
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
               Finance Your New Car Easily with Our <span className="text-red-500">Used Car Loan Options!</span>
             </h1>
-            <p className="text-lg text-gray-600 max-w-lg">Secure a Car Loan Option with Lower Interest Rates in the Market, designed to help you finance your used car purchase affordably.</p>
-            <button onClick={() => setShowModal(true)} className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-lg font-semibold shadow-lg transition">Apply Now</button>
-          </div>
+            <p className="text-lg text-gray-600 max-w-lg">Secure a Car Loan Option with Lower Interest Rates in the Market, designed to help you finance your used car purchase affordably.</p>          </div>
           <div className="relative">
             <img src="https://cdn.jsdelivr.net/gh/creativoxa/loanzaar/b2c/banners/car-loan-b.avif" alt="Used car loan concept with car and financial charts" className="w-full h-auto" onError={(e) => e.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="%23f3f4f6"/><text x="200" y="200" text-anchor="middle" font-size="20" fill="%236b7280">Used Car Loan</text></svg>'} />
           </div>
@@ -682,296 +669,6 @@ const UsedCarLoanFormPage = () => {
       </div>
 
       {/* Application Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">Request Loan Information</h2>
-                <button
-                  onClick={closeModal}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="mt-4">
-                <div className="flex space-x-2">
-                  {[0, 1, 2].map((step) => (
-                    <div
-                      key={step}
-                      className={`flex-1 h-2 rounded ${
-                        step <= currentStep ? 'bg-red-600' : 'bg-gray-200'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <p className="text-sm text-gray-600 mt-2">
-                  Step {currentStep + 1} of 3
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6">
-              {currentStep === 0 && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-800 mb-4">Personal Information</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Full Name *
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.fullName}
-                          onChange={(e) => {
-                            setFormData({ ...formData, fullName: e.target.value });
-                            validateField('fullName', e.target.value);
-                          }}
-                          className={`w-full p-3 border rounded-lg ${
-                            fieldErrors.fullName ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                          placeholder="Enter your full name"
-                        />
-                        {fieldErrors.fullName && (
-                          <p className="text-red-500 text-sm mt-1">{fieldErrors.fullName}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Email Address *
-                        </label>
-                        <input
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) => {
-                            setFormData({ ...formData, email: e.target.value });
-                            validateField('email', e.target.value);
-                          }}
-                          className={`w-full p-3 border rounded-lg ${
-                            fieldErrors.email ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                          placeholder="Enter your email address"
-                        />
-                        {fieldErrors.email && (
-                          <p className="text-red-500 text-sm mt-1">{fieldErrors.email}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Phone Number / WhatsApp *
-                        </label>
-                        <input
-                          type="tel"
-                          value={formData.phone}
-                          onChange={(e) => {
-                            setFormData({ ...formData, phone: e.target.value });
-                            validateField('phone', e.target.value);
-                          }}
-                          className={`w-full p-3 border rounded-lg ${
-                            fieldErrors.phone ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                          placeholder="Enter 10-digit phone number"
-                        />
-                        {fieldErrors.phone && (
-                          <p className="text-red-500 text-sm mt-1">{fieldErrors.phone}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {currentStep === 1 && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-800 mb-4">Loan Details</h3>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Car Type / Model
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.carTypeModel}
-                          onChange={(e) => setFormData({ ...formData, carTypeModel: e.target.value })}
-                          className="w-full p-3 border border-gray-300 rounded-lg"
-                          placeholder="e.g., Honda City, Toyota Fortuner"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Car Age / Year of Manufacture
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.carAge}
-                          onChange={(e) => setFormData({ ...formData, carAge: e.target.value })}
-                          className="w-full p-3 border border-gray-300 rounded-lg"
-                          placeholder="e.g., 2018, 3 years old"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Car Price / Expected Loan Amount *
-                        </label>
-                        <input
-                          type="number"
-                          value={formData.carPrice}
-                          onChange={(e) => {
-                            setFormData({ ...formData, carPrice: e.target.value });
-                            validateField('carPrice', e.target.value);
-                          }}
-                          className={`w-full p-3 border rounded-lg ${
-                            fieldErrors.carPrice ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                          placeholder="Enter car price or loan amount"
-                        />
-                        {fieldErrors.carPrice && (
-                          <p className="text-red-500 text-sm mt-1">{fieldErrors.carPrice}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Down Payment / Own Contribution
-                        </label>
-                        <input
-                          type="number"
-                          value={formData.downPayment}
-                          onChange={(e) => setFormData({ ...formData, downPayment: e.target.value })}
-                          className="w-full p-3 border border-gray-300 rounded-lg"
-                          placeholder="Enter down payment amount"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Preferred Loan Tenure
-                        </label>
-                        <select
-                          value={formData.preferredTenure}
-                          onChange={(e) => setFormData({ ...formData, preferredTenure: e.target.value })}
-                          className="w-full p-3 border border-gray-300 rounded-lg"
-                        >
-                          <option value="">Select preferred tenure</option>
-                          <option value="6">6 months</option>
-                          <option value="12">12 months</option>
-                          <option value="24">24 months</option>
-                          <option value="36">36 months</option>
-                          <option value="48">48 months</option>
-                          <option value="60">60 months</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {currentStep === 2 && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-800 mb-4">Financial & Additional Information</h3>
-                    <div className="space-y-4">
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Monthly Income <span className="text-gray-500">(optional)</span>
-                          </label>
-                          <input
-                            type="number"
-                            value={formData.monthlyIncome}
-                            onChange={(e) => setFormData({ ...formData, monthlyIncome: e.target.value })}
-                            className="w-full p-3 border border-gray-300 rounded-lg"
-                            placeholder="Enter your monthly income"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Existing Loans / EMIs <span className="text-gray-500">(optional)</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.existingLoans}
-                            onChange={(e) => setFormData({ ...formData, existingLoans: e.target.value })}
-                            className="w-full p-3 border border-gray-300 rounded-lg"
-                            placeholder="e.g., Home loan ₹15,000/month"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Message / Queries <span className="text-gray-500">(optional)</span>
-                        </label>
-                        <textarea
-                          value={formData.message}
-                          onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                          className="w-full p-3 border border-gray-300 rounded-lg"
-                          rows="4"
-                          placeholder="Any additional questions or requirements..."
-                        />
-                      </div>
-                      <div className="flex items-start space-x-3">
-                        <input
-                          type="checkbox"
-                          id="consent"
-                          checked={formData.consent}
-                          onChange={(e) => setFormData({ ...formData, consent: e.target.checked })}
-                          className="mt-1"
-                        />
-                        <label htmlFor="consent" className="text-sm text-gray-600">
-                          I agree to be contacted for loan services *
-                        </label>
-                      </div>
-                      {fieldErrors.consent && (
-                        <p className="text-red-500 text-sm">{fieldErrors.consent}</p>
-                      )}
-
-                      <div className="border-t pt-4">
-                        <ReCAPTCHA
-                          ref={recaptchaRef}
-                          sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
-                          onChange={handleCaptchaChange}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-between mt-6">
-                {currentStep > 0 && (
-                  <button
-                    type="button"
-                    onClick={prevStep}
-                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                  >
-                    Previous
-                  </button>
-                )}
-
-                {currentStep < 2 ? (
-                  <button
-                    type="button"
-                    onClick={nextStep}
-                    className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 ml-auto"
-                  >
-                    Next
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={!formData.consent || !captchaToken}
-                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Request Loan Info
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Success Message */}
       {submitted && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

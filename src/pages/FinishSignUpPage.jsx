@@ -59,9 +59,8 @@ const FinishSignUpPageContent = () => {
           setStatus('success');
           setMessage('Sign-in successful! Redirecting...');
           
-          // Store token if needed
-          localStorage.setItem('firebaseToken', result.token);
-          localStorage.setItem('firebaseUID', result.uid);
+          // Store token if needed (Supabase session is handled by SDK)
+          localStorage.setItem('supabaseUID', result.uid);
           
           setTimeout(() => {
             navigate('/dashboard');
@@ -92,7 +91,7 @@ const FinishSignUpPageContent = () => {
 
       // Create profile in MongoDB
       const profileData = {
-        firebaseUID: firebaseUser.uid,
+        supabaseUID: firebaseUser.uid,
         email: firebaseUser.email,
         ...formData
       };
@@ -103,9 +102,8 @@ const FinishSignUpPageContent = () => {
         setStatus('success');
         setMessage('Profile created successfully! Redirecting...');
         
-        // Store tokens
-        localStorage.setItem('firebaseToken', response.data.token);
-        localStorage.setItem('firebaseUID', response.data.firebaseUID);
+        // Store supabase UID locally
+        localStorage.setItem('supabaseUID', response.data.supabaseUID || firebaseUser.uid);
         localStorage.setItem('userId', response.data.userId);
         
         setTimeout(() => {

@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Meta from '../components/Meta';
 import { User, Save } from 'lucide-react';
+import { supabase } from '../config/supabase';
+import { updateUserProfile } from '../services/supabaseAuthService';
 
 function UserProfilePage() {
   const [profile, setProfile] = useState(null);
@@ -15,17 +17,21 @@ function UserProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const token = localStorage.getItem('userToken');
-      const response = await fetch('https://loanzaar-react-base.onrender.com/api/user-dashboard/me', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setProfile(data.data);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Load profile from Supabase user metadata
+        setProfile({
+          email: user.email,
+          fullName: user.user_metadata?.full_name || '',
+          phone: user.user_metadata?.phone || '',
+          age: user.user_metadata?.age || '',
+          state: user.user_metadata?.state || '',
+          city: user.user_metadata?.city || ''
+        });
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('❌ Error fetching profile:', error);
     } finally {
       setLoading(false);
     }
@@ -34,23 +40,15 @@ function UserProfilePage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem('userToken');
-      const response = await fetch('https://loanzaar-react-base.onrender.com/api/user-dashboard/update-profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(profile)
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        alert('Profile updated successfully!');
-        setProfile(data.data);
+      const result = await updateUserProfile(profile);
+      if (result.success) {
+        alert('✅ Profile updated successfully!');
+        // Refresh profile data
+        await fetchProfile();
       }
     } catch (error) {
-      alert('Failed to update profile');
+      console.error('❌ Error updating profile:', error);
+      alert('Failed to update profile: ' + (error.message || error));
     } finally {
       setSaving(false);
     }

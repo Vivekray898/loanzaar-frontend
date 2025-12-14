@@ -9,8 +9,8 @@ const CompleteProfilePage = () => {
   const router = useRouter();
   const [status, setStatus] = useState('form');
   const [message, setMessage] = useState('');
-  const [firebaseUID, setFirebaseUID] = useState('');
-  const [firebaseEmail, setFirebaseEmail] = useState('');
+  const [supabaseUID, setSupabaseUID] = useState('');
+  const [supabaseEmail, setSupabaseEmail] = useState('');
   
   const [formData, setFormData] = useState({
     name: '',
@@ -23,8 +23,8 @@ const CompleteProfilePage = () => {
 
   useEffect(() => {
     // Get Firebase UID and Email from localStorage (set during signin)
-    const uid = localStorage.getItem('firebaseUID');
-    const email = localStorage.getItem('firebaseEmail');
+    const uid = localStorage.getItem('supabaseUID');
+    const email = localStorage.getItem('supabaseEmail');
     
     if (!uid || !email) {
       setStatus('error');
@@ -33,8 +33,8 @@ const CompleteProfilePage = () => {
       return;
     }
     
-    setFirebaseUID(uid);
-    setFirebaseEmail(email);
+    setSupabaseUID(uid);
+    setSupabaseEmail(email);
   }, []);
 
   const handleInputChange = (e) => {
@@ -71,8 +71,8 @@ const CompleteProfilePage = () => {
 
       // Create profile in MongoDB
       const profileData = {
-        firebaseUID: firebaseUID,
-        email: firebaseEmail,
+        supabaseUID: supabaseUID,
+        email: supabaseEmail,
         ...formData
       };
 
@@ -159,7 +159,7 @@ const CompleteProfilePage = () => {
               </label>
               <input 
                 type="email"
-                value={firebaseEmail}
+                value={supabaseEmail}
                 disabled
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
               />

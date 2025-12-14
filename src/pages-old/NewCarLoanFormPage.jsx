@@ -14,10 +14,7 @@ const NewCarLoanFormPage = () => {
   const [emi, setEmi] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [totalInterest, setTotalInterest] = useState(0);
-  const [activeFaq, setActiveFaq] = useState(null);
-
-  const [showModal, setShowModal] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [activeFaq, setActiveFaq] = useState(null);  const [currentStep, setCurrentStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const recaptchaRef = useRef(null);
   const [captchaToken, setCaptchaToken] = useState(null);
@@ -107,9 +104,7 @@ const NewCarLoanFormPage = () => {
       });
 
       if (response.ok) {
-        setSubmitted(true);
-        setShowModal(false);
-        setCurrentStep(0);
+        setSubmitted(true);        setCurrentStep(0);
         setFormData({
           fullName: '',
           phone: '',
@@ -244,12 +239,6 @@ const NewCarLoanFormPage = () => {
     return isValid;
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setCurrentStep(0);
-    setFieldErrors({});
-  };
-
   const tabs = [
     { id: 'overview', label: 'Overview', icon: 'layout-grid' },
     { id: 'features', label: 'Features', icon: 'star' },
@@ -341,9 +330,7 @@ const NewCarLoanFormPage = () => {
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
               Finance Your New Car Easily with Our <span className="text-red-500">Car Loan Options!</span>
             </h1>
-            <p className="text-lg text-gray-600 max-w-lg">Secure a Car Loan Option with Lower Interest Rates in the Market, designed to help you finance your new car purchase affordably.</p>
-            <button onClick={() => setShowModal(true)} className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-lg font-semibold shadow-lg transition">Apply Now</button>
-          </div>
+            <p className="text-lg text-gray-600 max-w-lg">Secure a Car Loan Option with Lower Interest Rates in the Market, designed to help you finance your new car purchase affordably.</p>          </div>
           <div className="relative">
             <img src="/new-car-loan-hero.png" alt="New car loan concept with car and financial charts" className="w-full h-auto" onError={(e) => e.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="%23f3f4f6"/><text x="200" y="200" text-anchor="middle" font-size="20" fill="%236b7280">New Car Loan</text></svg>'} />
           </div>
@@ -673,315 +660,6 @@ const NewCarLoanFormPage = () => {
       </div>
 
       {/* Application Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">Apply for New Car Loan</h2>
-                <button
-                  onClick={closeModal}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="mt-2">
-                <div className="flex space-x-2">
-                  {[0, 1, 2].map((step) => (
-                    <div
-                      key={step}
-                      className={`flex-1 h-2 rounded ${
-                        step <= currentStep ? 'bg-red-600' : 'bg-gray-200'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <p className="text-sm text-gray-600 mt-2">
-                  Step {currentStep + 1} of 3
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6">
-              {currentStep === 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-gray-800">Personal Info</h3>
-                  <div className="grid md:grid-cols-1 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Full Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.fullName}
-                        onChange={(e) => {
-                          setFormData({ ...formData, fullName: e.target.value });
-                          if (fieldErrors.fullName) {
-                            setFieldErrors({ ...fieldErrors, fullName: '' });
-                          }
-                        }}
-                        className={`w-full p-3 border rounded-lg ${
-                          fieldErrors.fullName ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                        placeholder="Enter your full name"
-                      />
-                      {fieldErrors.fullName && (
-                        <p className="text-red-500 text-sm mt-1">{fieldErrors.fullName}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email Address *
-                      </label>
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => {
-                          setFormData({ ...formData, email: e.target.value });
-                          if (fieldErrors.email) {
-                            setFieldErrors({ ...fieldErrors, email: '' });
-                          }
-                        }}
-                        className={`w-full p-3 border rounded-lg ${
-                          fieldErrors.email ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                        placeholder="Enter your email"
-                      />
-                      {fieldErrors.email && (
-                        <p className="text-red-500 text-sm mt-1">{fieldErrors.email}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Phone Number / WhatsApp *
-                      </label>
-                      <input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => {
-                          setFormData({ ...formData, phone: e.target.value });
-                          if (fieldErrors.phone) {
-                            setFieldErrors({ ...fieldErrors, phone: '' });
-                          }
-                        }}
-                        className={`w-full p-3 border rounded-lg ${
-                          fieldErrors.phone ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                        placeholder="Enter 10-digit phone number"
-                      />
-                      {fieldErrors.phone && (
-                        <p className="text-red-500 text-sm mt-1">{fieldErrors.phone}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {currentStep === 1 && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-gray-800">Car & Loan Details</h3>
-                  <div className="grid md:grid-cols-1 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Car Make & Model *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.carMakeModel}
-                        onChange={(e) => {
-                          setFormData({ ...formData, carMakeModel: e.target.value });
-                          if (fieldErrors.carMakeModel) {
-                            setFieldErrors({ ...fieldErrors, carMakeModel: '' });
-                          }
-                        }}
-                        className={`w-full p-3 border rounded-lg ${
-                          fieldErrors.carMakeModel ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                        placeholder="e.g., Honda City, Toyota Fortuner"
-                      />
-                      {fieldErrors.carMakeModel && (
-                        <p className="text-red-500 text-sm mt-1">{fieldErrors.carMakeModel}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Car Variant / Trim
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.carVariant}
-                        onChange={(e) => setFormData({ ...formData, carVariant: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg"
-                        placeholder="e.g., VX, ZX, Alpha"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Car Price / Expected Loan Amount *
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.carPrice}
-                        onChange={(e) => {
-                          setFormData({ ...formData, carPrice: e.target.value });
-                          if (fieldErrors.carPrice) {
-                            setFieldErrors({ ...fieldErrors, carPrice: '' });
-                          }
-                        }}
-                        className={`w-full p-3 border rounded-lg ${
-                          fieldErrors.carPrice ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                        placeholder="Enter car price or expected loan amount"
-                      />
-                      {fieldErrors.carPrice && (
-                        <p className="text-red-500 text-sm mt-1">{fieldErrors.carPrice}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Down Payment / Own Contribution
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.downPayment}
-                        onChange={(e) => setFormData({ ...formData, downPayment: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg"
-                        placeholder="Enter down payment amount"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {currentStep === 2 && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-gray-800">Financial Info & Preferences</h3>
-                  
-                  <div className="grid md:grid-cols-1 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Monthly Income
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.monthlyIncome}
-                        onChange={(e) => setFormData({ ...formData, monthlyIncome: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg"
-                        placeholder="Enter your monthly income"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Existing Loans / EMIs
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.existingLoans}
-                        onChange={(e) => setFormData({ ...formData, existingLoans: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg"
-                        placeholder="e.g., Home loan, Personal loan, etc."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Preferred Loan Tenure *
-                      </label>
-                      <select
-                        value={formData.preferredTenure}
-                        onChange={(e) => {
-                          setFormData({ ...formData, preferredTenure: e.target.value });
-                          if (fieldErrors.preferredTenure) {
-                            setFieldErrors({ ...fieldErrors, preferredTenure: '' });
-                          }
-                        }}
-                        className={`w-full p-3 border rounded-lg ${
-                          fieldErrors.preferredTenure ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                      >
-                        <option value="">Select preferred tenure</option>
-                        <option value="6">6 months</option>
-                        <option value="12">12 months</option>
-                        <option value="24">24 months</option>
-                        <option value="36">36 months</option>
-                        <option value="48">48 months</option>
-                        <option value="60">60 months</option>
-                      </select>
-                      {fieldErrors.preferredTenure && (
-                        <p className="text-red-500 text-sm mt-1">{fieldErrors.preferredTenure}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Interest Rate Preference / Queries
-                      </label>
-                      <textarea
-                        value={formData.interestQueries}
-                        onChange={(e) => setFormData({ ...formData, interestQueries: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg"
-                        placeholder="Any specific interest rate preferences or questions about rates?"
-                        rows="3"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-4">
-                    <div className="flex items-start space-x-3 mb-4">
-                      <input
-                        type="checkbox"
-                        id="consent"
-                        checked={formData.consent}
-                        onChange={(e) => setFormData({ ...formData, consent: e.target.checked })}
-                        className="mt-1"
-                      />
-                      <label htmlFor="consent" className="text-sm text-gray-600">
-                        I agree to be contacted for loan services
-                      </label>
-                    </div>
-
-                    <ReCAPTCHA
-                      ref={recaptchaRef}
-                      sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
-                      onChange={handleCaptchaChange}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-between mt-6">
-                {currentStep > 0 && (
-                  <button
-                    type="button"
-                    onClick={prevStep}
-                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                  >
-                    Previous
-                  </button>
-                )}
-
-                {currentStep < 2 ? (
-                  <button
-                    type="button"
-                    onClick={nextStep}
-                    className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 ml-auto"
-                  >
-                    Next
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={!formData.consent || !captchaToken}
-                    className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Request Loan Info
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Success Modal */}
       {submitted && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

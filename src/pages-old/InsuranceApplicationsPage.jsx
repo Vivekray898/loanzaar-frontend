@@ -13,9 +13,7 @@ function InsuranceApplicationsPage() {
   const [filterStatus, setFilterStatus] = useState('All');
   const [filterType, setFilterType] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedInsurance, setSelectedInsurance] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [selectedInsurance, setSelectedInsurance] = useState(null);  const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const itemsPerPage = 10;
 
@@ -166,7 +164,6 @@ function InsuranceApplicationsPage() {
 
   const handleView = (ins) => {
     setSelectedInsurance(ins);
-    setShowModal(true);
   };
 
   // Filter and search logic
@@ -415,137 +412,6 @@ function InsuranceApplicationsPage() {
           </>
         )}
       </div>
-
-      {/* View Details Modal */}
-      {showModal && selectedInsurance && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-800">Insurance Application Details</h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              {/* Personal Information */}
-              <div>
-                <h4 className="font-semibold text-slate-800 mb-3">Personal Information</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-slate-500">Full Name:</span>
-                    <p className="font-medium text-slate-900">{selectedInsurance.fullName}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">Email:</span>
-                    <p className="font-medium text-slate-900">{selectedInsurance.email}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">Phone:</span>
-                    <p className="font-medium text-slate-900">{selectedInsurance.phone}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">Age:</span>
-                    <p className="font-medium text-slate-900">{selectedInsurance.age || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">City/State:</span>
-                    <p className="font-medium text-slate-900">{selectedInsurance.cityState || 'N/A'}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Insurance Details */}
-              <div>
-                <h4 className="font-semibold text-slate-800 mb-3">Insurance Details</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-slate-500">Insurance Type:</span>
-                    <p className="font-medium text-slate-900">{selectedInsurance.insuranceType}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">Coverage Amount:</span>
-                    <p className="font-medium text-slate-900">{selectedInsurance.coverageAmount || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">Insurance Term:</span>
-                    <p className="font-medium text-slate-900">{selectedInsurance.insuranceTerm || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">Employment Type:</span>
-                    <p className="font-medium text-slate-900">{selectedInsurance.employmentType || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">Monthly Income:</span>
-                    <p className="font-medium text-slate-900">{selectedInsurance.monthlyIncome || 'N/A'}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Information */}
-              {(selectedInsurance.medicalHistory || selectedInsurance.existingPolicies) && (
-                <div>
-                  <h4 className="font-semibold text-slate-800 mb-3">Additional Information</h4>
-                  <div className="space-y-3 text-sm">
-                    {selectedInsurance.medicalHistory && (
-                      <div>
-                        <span className="text-slate-500">Medical History:</span>
-                        <p className="font-medium text-slate-900 bg-slate-50 p-3 rounded-lg mt-1">
-                          {selectedInsurance.medicalHistory}
-                        </p>
-                      </div>
-                    )}
-                    {selectedInsurance.existingPolicies && (
-                      <div>
-                        <span className="text-slate-500">Existing Policies:</span>
-                        <p className="font-medium text-slate-900 bg-slate-50 p-3 rounded-lg mt-1">
-                          {selectedInsurance.existingPolicies}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Remarks */}
-              {selectedInsurance.remarks && (
-                <div>
-                  <h4 className="font-semibold text-slate-800 mb-3">Remarks</h4>
-                  <p className="text-sm text-slate-700 bg-slate-50 p-4 rounded-lg">
-                    {selectedInsurance.remarks}
-                  </p>
-                </div>
-              )}
-
-              {/* Status */}
-              <div>
-                <h4 className="font-semibold text-slate-800 mb-3">Status</h4>
-                <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(selectedInsurance.status)}`}>
-                  {selectedInsurance.status}
-                </span>
-              </div>
-
-              {/* Timestamps */}
-              <div className="text-xs text-slate-500 border-t pt-4">
-                <p>Created: {new Date(selectedInsurance.createdAt).toLocaleString()}</p>
-                <p>Last Updated: {new Date(selectedInsurance.updatedAt).toLocaleString()}</p>
-              </div>
-            </div>
-
-            <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 px-6 py-4">
-              <button
-                onClick={() => setShowModal(false)}
-                className="w-full px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

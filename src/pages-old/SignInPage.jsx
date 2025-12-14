@@ -114,17 +114,16 @@ function SignInPage() {
 
             // Store fresh tokens and user data
             console.log('💾 Storing fresh token and user data...');
-            localStorage.setItem('firebaseToken', supabaseResult.token);
             localStorage.setItem('userToken', supabaseResult.token); // For UserAuthContext
             localStorage.setItem('userId', profile.data.userId);
-            localStorage.setItem('firebaseUID', supabaseResult.uid);
+            localStorage.setItem('supabaseUID', supabaseResult.uid);
             localStorage.setItem('userName', profile.data.name);
             localStorage.setItem('userRole', profile.data.role);
 
             // Store userData object for UserAuthContext
             const userData = {
               userId: profile.data.userId,
-              firebaseUID: supabaseResult.uid,
+              supabaseUID: supabaseResult.uid,
               name: profile.data.name,
               role: profile.data.role,
               email: formData.email
@@ -145,10 +144,9 @@ function SignInPage() {
         } catch (profileError) {
           console.error('Profile fetch error:', profileError);
           // Store token even if profile fetch fails - user may not have completed profile yet
-          localStorage.setItem('firebaseToken', supabaseResult.token);
           localStorage.setItem('userToken', supabaseResult.token); // For UserAuthContext
-          localStorage.setItem('firebaseUID', supabaseResult.uid);
-          localStorage.setItem('firebaseEmail', supabaseResult.email);
+          localStorage.setItem('supabaseUID', supabaseResult.uid);
+          localStorage.setItem('supabaseEmail', supabaseResult.email);
 
           setMessage({
             type: 'warning',

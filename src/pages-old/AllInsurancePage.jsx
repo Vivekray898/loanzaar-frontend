@@ -9,9 +9,7 @@ const AllInsurancePage = () => {
   const [activeTab, setActiveTab] = useState('what-is-insurance');
   const recaptchaRef = useRef(null);
 
-  // Modal states
-  const [showModal, setShowModal] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  // Modal states  const [submitted, setSubmitted] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [formData, setFormData] = useState({
@@ -71,20 +69,6 @@ const AllInsurancePage = () => {
   }, []); // Empty dependency array ensures this runs only once on mount
 
   // Modal functions
-  // Add body scroll lock when modal is shown
-  useEffect(() => {
-    if (showModal) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
-    }
-    
-    // Cleanup function to reset overflow when component unmounts
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
-  }, [showModal]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -123,26 +107,6 @@ const AllInsurancePage = () => {
     } else {
       alert(`Error: ${result.error}`);
     }
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setSubmitted(false);
-    setCaptchaToken(null);
-    setFieldErrors({});
-    if (recaptchaRef.current) {
-      recaptchaRef.current.reset();
-    }
-    setFormData({
-      fullName: '',
-      phone: '',
-      email: '',
-      cityState: '',
-      insuranceType: '',
-      coverageAmount: '',
-      ageDOB: '',
-      consent: false
-    });
   };
 
   const handleCaptchaChange = (token) => {
@@ -285,9 +249,7 @@ const AllInsurancePage = () => {
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight">
               We provide the best value <span className="text-red-500">Insurance</span>
             </h1>
-            <p className="text-lg text-gray-600 max-w-lg">Simple steps you can take to improve your financial well-being for the rest of your life.</p>
-            <button className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-lg font-semibold shadow-lg transition" onClick={() => setShowModal(true)}>Get a Quote</button>
-            <div className="flex space-x-6 mt-8">
+            <p className="text-lg text-gray-600 max-w-lg">Simple steps you can take to improve your financial well-being for the rest of your life.</p>            <div className="flex space-x-6 mt-8">
               <div className="flex items-center space-x-2">
                 <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                 <span className="text-sm text-gray-600">100% Secure</span>
@@ -481,262 +443,8 @@ const AllInsurancePage = () => {
       <section className="py-20 px-6 md:px-16 bg-gradient-to-r from-blue-500 to-purple-600">
         <div className="max-w-4xl mx-auto text-center text-white">
           <h2 className="text-4xl font-bold mb-4">Protect Your Financial Future Today</h2>
-          <p className="text-xl mb-8">Get comprehensive insurance coverage that provides peace of mind and financial security for you and your loved ones.</p>
-          <button className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition text-lg" onClick={() => setShowModal(true)}>Get a Quote Now</button>
-        </div>
-      </section>
-
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            {!submitted ? (
-              <>
-                {/* Elegant Professional Header */}
-                <div className="bg-white border-b-2 border-slate-200 p-4 md:p-8 flex-shrink-0 rounded-t-2xl">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-1">Insurance Quote</h2>
-                      <p className="text-slate-600 text-sm">Secure • Transparent • Fast processing</p>
-                    </div>
-                    <button onClick={closeModal} className="text-slate-400 hover:text-slate-600 p-2 rounded-lg transition">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Form Content */}
-                <form onSubmit={handleSubmit} className="p-4 md:p-8 space-y-5">
-                  {/* Personal Information Section */}
-                  <div className="bg-slate-50 rounded-lg p-4 md:p-5 border border-slate-200">
-                    <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center">
-                      <span className="text-xl mr-2">👤</span>
-                      Personal Information
-                    </h3>
-                    <div className="space-y-4">
-                      {/* Full Name */}
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Full Name *</label>
-                        <input
-                          type="text"
-                          value={formData.fullName}
-                          onChange={(e) => {
-                            setFormData({ ...formData, fullName: e.target.value });
-                            if (fieldErrors.fullName) setFieldErrors({ ...fieldErrors, fullName: '' });
-                          }}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 transition ${
-                            fieldErrors.fullName ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                          }`}
-                          placeholder="Enter your full name"
-                        />
-                        {fieldErrors.fullName && <p className="text-red-600 text-xs mt-1 flex items-center">❌ {fieldErrors.fullName}</p>}
-                      </div>
-
-                      {/* Phone */}
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Phone Number *</label>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          maxLength="10"
-                          value={formData.phone}
-                          onChange={(e) => {
-                            const cleaned = e.target.value.replace(/\D/g, '');
-                            setFormData({ ...formData, phone: cleaned });
-                            if (fieldErrors.phone) setFieldErrors({ ...fieldErrors, phone: '' });
-                          }}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 transition ${
-                            fieldErrors.phone ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                          }`}
-                          placeholder="10-digit number"
-                        />
-                        {fieldErrors.phone && <p className="text-red-600 text-xs mt-1 flex items-center">❌ {fieldErrors.phone}</p>}
-                      </div>
-
-                      {/* Email */}
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address *</label>
-                        <input
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) => {
-                            setFormData({ ...formData, email: e.target.value });
-                            if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: '' });
-                          }}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 transition ${
-                            fieldErrors.email ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                          }`}
-                          placeholder="your@email.com"
-                        />
-                        {fieldErrors.email && <p className="text-red-600 text-xs mt-1 flex items-center">❌ {fieldErrors.email}</p>}
-                      </div>
-
-                      {/* City/State */}
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">City / State *</label>
-                        <input
-                          type="text"
-                          value={formData.cityState}
-                          onChange={(e) => {
-                            setFormData({ ...formData, cityState: e.target.value });
-                            if (fieldErrors.cityState) setFieldErrors({ ...fieldErrors, cityState: '' });
-                          }}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 transition ${
-                            fieldErrors.cityState ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                          }`}
-                          placeholder="Mumbai, Maharashtra"
-                        />
-                        {fieldErrors.cityState && <p className="text-red-600 text-xs mt-1 flex items-center">❌ {fieldErrors.cityState}</p>}
-                      </div>
-
-                      {/* Age/DOB Dropdown */}
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Age / Date of Birth *</label>
-                        <select
-                          value={formData.ageDOB}
-                          onChange={(e) => {
-                            setFormData({ ...formData, ageDOB: e.target.value });
-                            if (fieldErrors.ageDOB) setFieldErrors({ ...fieldErrors, ageDOB: '' });
-                          }}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 transition ${
-                            fieldErrors.ageDOB ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                          }`}
-                        >
-                          <option value="">Select your age</option>
-                          {Array.from({ length: 50 }, (_, i) => 21 + i).map((age) => (
-                            <option key={age} value={age}>{age} years</option>
-                          ))}
-                        </select>
-                        {fieldErrors.ageDOB && <p className="text-red-600 text-xs mt-1 flex items-center">❌ {fieldErrors.ageDOB}</p>}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Insurance Details Section */}
-                  <div className="bg-slate-50 rounded-lg p-4 md:p-5 border border-slate-200">
-                    <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center">
-                      <span className="text-xl mr-2">🛡️</span>
-                      Insurance Details
-                    </h3>
-                    <div className="space-y-4">
-                      {/* Insurance Type */}
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Type of Insurance *</label>
-                        <select
-                          value={formData.insuranceType}
-                          onChange={(e) => {
-                            setFormData({ ...formData, insuranceType: e.target.value });
-                            if (fieldErrors.insuranceType) setFieldErrors({ ...fieldErrors, insuranceType: '' });
-                          }}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 transition ${
-                            fieldErrors.insuranceType ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                          }`}
-                        >
-                          <option value="">Select Insurance Type</option>
-                          <option value="Life Insurance">Life Insurance</option>
-                          <option value="Health Insurance">Health Insurance</option>
-                          <option value="General Insurance">General Insurance</option>
-                        </select>
-                        {fieldErrors.insuranceType && <p className="text-red-600 text-xs mt-1 flex items-center">❌ {fieldErrors.insuranceType}</p>}
-                      </div>
-
-                      {/* Coverage Amount - 6-Tier Dropdown */}
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Coverage Amount *</label>
-                        <select
-                          value={formData.coverageAmount}
-                          onChange={(e) => {
-                            setFormData({ ...formData, coverageAmount: e.target.value });
-                            if (fieldErrors.coverageAmount) setFieldErrors({ ...fieldErrors, coverageAmount: '' });
-                          }}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 transition ${
-                            fieldErrors.coverageAmount ? 'border-red-500 bg-red-50' : 'border-slate-300'
-                          }`}
-                        >
-                          <option value="">Select coverage amount</option>
-                          <option value="5L-10L">₹5,00,000 - ₹10,00,000</option>
-                          <option value="10L-25L">₹10,00,000 - ₹25,00,000</option>
-                          <option value="25L-50L">₹25,00,000 - ₹50,00,000</option>
-                          <option value="50L-1Cr">₹50,00,000 - ₹1,00,00,000</option>
-                          <option value="1Cr-2Cr">₹1,00,00,000 - ₹2,00,00,000</option>
-                          <option value="2Cr+">₹2,00,00,000+</option>
-                        </select>
-                        {fieldErrors.coverageAmount && <p className="text-red-600 text-xs mt-1 flex items-center">❌ {fieldErrors.coverageAmount}</p>}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Terms & Consent Section */}
-                  <div className="bg-slate-50 rounded-lg p-4 md:p-5 border border-slate-200">
-                    <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center">
-                      <span className="text-xl mr-2">✅</span>
-                      Terms & Consent
-                    </h3>
-                    <div className="space-y-4">
-                      <label className="flex items-start cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={formData.consent}
-                          onChange={(e) => setFormData({ ...formData, consent: e.target.checked })}
-                          className="mt-1 h-5 w-5 text-slate-600 focus:ring-slate-500 border-slate-300 rounded cursor-pointer accent-slate-600"
-                        />
-                        <span className="ml-3 text-sm text-slate-700 group-hover:text-slate-900">
-                          I agree to the terms and conditions and consent to being contacted by Loanzaar and its partners regarding insurance products and services.
-                        </span>
-                      </label>
-                      <div className="my-4 p-4 bg-white rounded border border-slate-300">
-                        <ReCAPTCHA
-                          ref={recaptchaRef}
-                          sitekey="6LdUpOsrAAAAAKqnWvFE0MH-mgcHo8BzFohUEB5b"
-                          onChange={handleCaptchaChange}
-                          onExpired={() => setCaptchaToken(null)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Submit Button */}
-                  <button
-                    type="submit"
-                    disabled={!formData.consent || !captchaToken}
-                    className="w-full px-6 py-3 bg-slate-700 hover:bg-slate-800 text-white rounded-lg shadow-md transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Get Quote
-                  </button>
-                </form>
-              </>
-            ) : (
-              /* Success Screen */
-              <div className="min-h-[400px] flex flex-col items-center justify-center p-4 md:p-8 text-center">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4 md:mb-6">
-                  <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">Thank You!</h2>
-                <p className="text-slate-600 text-sm md:text-base mb-2">Your insurance inquiry has been received.</p>
-                <p className="text-slate-600 text-sm md:text-base mb-8">Our insurance specialists will contact you within 1-2 hours with personalized quotes.</p>
-                <div className="bg-slate-100 border border-slate-300 rounded-lg p-4 mb-6 max-w-sm text-sm text-slate-700">
-                  <p className="font-semibold mb-2">What happens next:</p>
-                  <ul className="text-left space-y-1 text-xs md:text-sm">
-                    <li>✓ Application verification</li>
-                    <li>✓ Coverage assessment & quotes</li>
-                    <li>✓ Policy activation</li>
-                  </ul>
-                </div>
-                <button
-                  onClick={closeModal}
-                  className="px-6 md:px-8 py-2 md:py-3 bg-slate-700 hover:bg-slate-800 text-white rounded-lg shadow-md transition font-semibold text-sm md:text-base"
-                >
-                  Close
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+          <p className="text-xl mb-8">Get comprehensive insurance coverage that provides peace of mind and financial security for you and your loved ones.</p>        </div>
+      </section>    </div>
   );
 };
 

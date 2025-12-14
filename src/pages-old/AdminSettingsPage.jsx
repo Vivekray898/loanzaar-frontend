@@ -35,7 +35,7 @@ function AdminSettingsPage() {
     if (admin) {
       setAdminProfile({
         fullName: admin.fullName || '',
-        email: admin.email || firebaseUser?.email || '',
+        email: admin.email || supabaseUser?.email || '',
         phone: admin.phone || ''
       });
       setNotificationSettings({
@@ -44,7 +44,7 @@ function AdminSettingsPage() {
       });
       setLoading(false);
     }
-  }, [admin, firebaseUser]);
+  }, [admin, supabaseUser]);
 
   const showStatus = (setter, success, message) => {
     setter({ show: true, success, message });

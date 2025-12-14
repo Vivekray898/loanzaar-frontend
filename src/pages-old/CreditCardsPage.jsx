@@ -8,7 +8,6 @@ import { submitCreditCardApplication } from '../services/firestoreService';
 const CreditCardsPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [activeFaq, setActiveFaq] = useState(null);
-  const [showModal, setShowModal] = useState(false);
   const recaptchaRef = useRef(null);
   const [captchaToken, setCaptchaToken] = useState(null);
   const [submitted, setSubmitted] = useState(false);
@@ -26,6 +25,7 @@ const CreditCardsPage = () => {
   });
 
   const handleTabClick = (tabId) => {
+    if (typeof window === 'undefined') return;
     const section = document.getElementById(`${tabId}-section`);
     if (section) {
       const headerOffset = 130;
@@ -39,7 +39,9 @@ const CreditCardsPage = () => {
     setActiveTab(tabId);
   };
 
-  useState(() => {
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const handleScroll = () => {
       const sections = ['overview', 'features', 'eligibility', 'documents', 'reviews', 'faqs'];
       const scrollPosition = window.scrollY + 200;
@@ -117,15 +119,6 @@ const CreditCardsPage = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setFieldErrors({});
-    setCaptchaToken(null);
-    if (recaptchaRef.current) {
-      recaptchaRef.current.reset();
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -169,7 +162,6 @@ const CreditCardsPage = () => {
       if (result.success) {
         console.log('✅ Credit card application submitted successfully:', result.data);
         setSubmitted(true);
-        setShowModal(false);
         setFormData({
           fullName: '',
           email: '',
@@ -306,7 +298,7 @@ const CreditCardsPage = () => {
               Explore Top <span className="text-red-500">Credit Card Options</span> with Ruloans!
             </h1>
             <p className="text-lg text-gray-600 max-w-lg">Make every spending worthy by choosing the right credit card through Ruloans. Get exclusive benefits, rewards, and cashback on every purchase.</p>
-            <button onClick={() => setShowModal(true)} className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-lg font-semibold shadow-lg transition">Apply Now</button>
+            <button className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-lg font-semibold shadow-lg transition">Apply Now</button>
           </div>
           <div className="relative">
             <img src="/credit-card-hero.png" alt="Credit card with rewards" className="w-full h-auto" onError={(e) => e.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="%23f3f4f6"/><text x="200" y="200" text-anchor="middle" font-size="20" fill="%236b7280">Credit Cards</text></svg>'} />
@@ -457,7 +449,6 @@ const CreditCardsPage = () => {
           <h2 className="text-3xl font-bold mb-4">Ready to Get Your Perfect Credit Card?</h2>
           <p className="text-xl mb-6">Apply today and start earning rewards on every purchase!</p>
           <button
-            onClick={() => setShowModal(true)}
             className="bg-white text-red-600 px-8 py-3 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors"
           >
             Apply Now
@@ -465,178 +456,7 @@ const CreditCardsPage = () => {
         </div>
       </div>
 
-      {/* Modal Form */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">Apply for Credit Card</h2>
-                <button
-                  onClick={closeModal}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6">
-              <div className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.fullName}
-                      onChange={(e) => {
-                        setFormData({ ...formData, fullName: e.target.value });
-                        validateField('fullName', e.target.value);
-                      }}
-                      className={`w-full p-3 border rounded-lg ${
-                        fieldErrors.fullName ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter your full name"
-                    />
-                    {fieldErrors.fullName && (
-                      <p className="text-red-500 text-sm mt-1">{fieldErrors.fullName}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => {
-                        setFormData({ ...formData, email: e.target.value });
-                        validateField('email', e.target.value);
-                      }}
-                      className={`w-full p-3 border rounded-lg ${
-                        fieldErrors.email ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter your email"
-                    />
-                    {fieldErrors.email && (
-                      <p className="text-red-500 text-sm mt-1">{fieldErrors.email}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => {
-                        setFormData({ ...formData, phone: e.target.value });
-                        validateField('phone', e.target.value);
-                      }}
-                      className={`w-full p-3 border rounded-lg ${
-                        fieldErrors.phone ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter 10-digit phone number"
-                    />
-                    {fieldErrors.phone && (
-                      <p className="text-red-500 text-sm mt-1">{fieldErrors.phone}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Preferred Card Type
-                    </label>
-                    <select
-                      value={formData.cardType}
-                      onChange={(e) => setFormData({ ...formData, cardType: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg"
-                    >
-                      {cardTypes.map((card) => (
-                        <option key={card.name} value={card.name}>{card.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Monthly Income (₹)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.monthlyIncome}
-                      onChange={(e) => setFormData({ ...formData, monthlyIncome: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg"
-                      placeholder="Enter your monthly income"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Employment Type
-                    </label>
-                    <select
-                      value={formData.employmentType}
-                      onChange={(e) => setFormData({ ...formData, employmentType: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg"
-                    >
-                      <option value="Salaried">Salaried</option>
-                      <option value="Self-Employed">Self-Employed</option>
-                      <option value="Business Owner">Business Owner</option>
-                      <option value="Freelancer">Freelancer</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Message / Additional Information
-                  </label>
-                  <textarea
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="w-full p-3 border border-gray-300 rounded-lg"
-                    rows="4"
-                    placeholder="Any specific requirements or questions (optional)"
-                  />
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <input
-                    type="checkbox"
-                    id="consent"
-                    checked={formData.consent}
-                    onChange={(e) => setFormData({ ...formData, consent: e.target.checked })}
-                    className="mt-1"
-                  />
-                  <label htmlFor="consent" className="text-sm text-gray-600">
-                    I agree to be contacted by Ruloans regarding credit card offers and products
-                  </label>
-                </div>
-
-                {/* reCAPTCHA */}
-                <div className="flex justify-center mt-6">
-                  <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey="6LdUpOsrAAAAAKqnWvFE0MH-mgcHo8BzFohUEB5b"
-                    onChange={handleCaptchaChange}
-                    onExpired={() => setCaptchaToken(null)}
-                  />
-                </div>
-
-                <div className="flex justify-end mt-6">
-                  <button
-                    type="submit"
-                    disabled={!formData.consent || isLoading}
-                    className="px-8 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition"
-                  >
-                    {isLoading ? 'Submitting...' : 'Submit Application'}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Modal form removed - functionality disabled */}
 
       {/* Success Message */}
       {submitted && (

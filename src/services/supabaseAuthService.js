@@ -5,15 +5,24 @@ import { supabase } from '../config/supabase';
  * Sign up with Email and Password
  * @param {string} email 
  * @param {string} password 
+ * @param {Object} metadata - Optional user profile data (name, phone, age, gender, income, occupation)
  * @returns {Promise<Object>} User credential
  */
-export const signUpWithEmailPassword = async (email, password) => {
+export const signUpWithEmailPassword = async (email, password, metadata = {}) => {
   try {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: {
+          full_name: metadata.name || '',
+          phone: metadata.phone || '',
+          age: metadata.age || '',
+          gender: metadata.gender || '',
+          income: metadata.income || '',
+          occupation: metadata.occupation || ''
+        }
       }
     });
     
@@ -216,6 +225,39 @@ export const completeSignInWithEmailLink = async (email, emailLink) => {
   };
 };
 
+/**
+ * Update User Profile Metadata
+ * @param {Object} metadata - User profile data to update
+ * @returns {Promise<Object>} Updated user
+ */
+export const updateUserProfile = async (metadata) => {
+  try {
+    const { data, error } = await supabase.auth.updateUser({
+      data: {
+        full_name: metadata.fullName || '',
+        phone: metadata.phone || '',
+        age: metadata.age || '',
+        state: metadata.state || '',
+        city: metadata.city || ''
+      }
+    });
+    
+    if (error) throw error;
+    
+    return {
+      success: true,
+      user: data.user,
+      message: "Profile updated successfully"
+    };
+  } catch (error) {
+    console.error("❌ Update profile error (Supabase):", error);
+    throw {
+      success: false,
+      message: error.message || "Error updating profile"
+    };
+  }
+};
+
 export default {
   signUpWithEmailPassword,
   signInWithEmailPassword,
@@ -227,4 +269,5 @@ export default {
   resendVerificationEmail,
   sendSignInLink,
   completeSignInWithEmailLink,
+  updateUserProfile,
 };

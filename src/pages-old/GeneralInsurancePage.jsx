@@ -10,9 +10,7 @@ const GeneralInsurancePage = () => {
   const [activeFaq, setActiveFaq] = useState(0);
   const recaptchaRef = useRef(null);
 
-  // Modal states
-  const [showModal, setShowModal] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  // Modal states  const [submitted, setSubmitted] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [formData, setFormData] = useState({
@@ -72,20 +70,6 @@ const GeneralInsurancePage = () => {
   }, []); // Empty dependency array ensures this runs only once on mount
 
   // Modal functions
-  // Add body scroll lock when modal is shown
-  useEffect(() => {
-    if (showModal) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
-    }
-    
-    // Cleanup function to reset overflow when component unmounts
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
-  }, [showModal]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -124,26 +108,6 @@ const GeneralInsurancePage = () => {
     } else {
       alert(`Error: ${result.error}`);
     }
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setSubmitted(false);
-    setCaptchaToken(null);
-    setFieldErrors({});
-    if (recaptchaRef.current) {
-      recaptchaRef.current.reset();
-    }
-    setFormData({
-      fullName: '',
-      phone: '',
-      email: '',
-      cityState: '',
-      insuranceType: 'General Insurance',
-      assetType: '',
-      ageDOB: '',
-      consent: false
-    });
   };
 
   const handleCaptchaChange = (token) => {
@@ -332,9 +296,7 @@ const GeneralInsurancePage = () => {
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight">
               We provide the best value <span className="text-red-500">General Insurance</span>
             </h1>
-            <p className="text-lg text-gray-600 max-w-lg">Simple steps you can take to improve your financial well-being for the rest of your life.</p>
-            <button className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-lg font-semibold shadow-lg transition" onClick={() => setShowModal(true)}>Get a Quote</button>
-            <div className="flex space-x-6 mt-8">
+            <p className="text-lg text-gray-600 max-w-lg">Simple steps you can take to improve your financial well-being for the rest of your life.</p>            <div className="flex space-x-6 mt-8">
               <div className="flex items-center space-x-2">
                 <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                 <span className="text-sm text-gray-600">100% Secure</span>
@@ -510,264 +472,10 @@ const GeneralInsurancePage = () => {
       <section className="py-20 px-6 md:px-16 bg-gradient-to-r from-blue-500 to-purple-600">
         <div className="max-w-4xl mx-auto text-center text-white">
           <h2 className="text-4xl font-bold mb-4">Protect Your Assets Today</h2>
-          <p className="text-xl mb-8">Get comprehensive general insurance coverage that provides peace of mind and financial security for your valuable possessions.</p>
-          <button className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition text-lg" onClick={() => setShowModal(true)}>Get a Quote Now</button>
-        </div>
+          <p className="text-xl mb-8">Get comprehensive general insurance coverage that provides peace of mind and financial security for your valuable possessions.</p>        </div>
       </section>
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden">
-            {/* Close Button */}
-            <button 
-              onClick={closeModal} 
-              className="absolute top-4 right-4 p-1 text-slate-400 hover:text-slate-600 z-10 transition"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            {!submitted ? (
-              <>
-                {/* Header */}
-                <div className="p-6 border-b-2 border-slate-200 text-center bg-white">
-                  <h2 className="text-2xl md:text-3xl font-bold text-slate-800">🛡️ General Insurance Quote</h2>
-                  <p className="text-slate-600 text-sm mt-1">Get comprehensive coverage for your assets</p>
-                </div>
-
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="overflow-y-auto flex-grow p-6 space-y-5">
-                  
-                  {/* Section 1: Personal Information */}
-                  <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-5">
-                    <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
-                      👤 Personal Information
-                    </h3>
-                    
-                    <div className="space-y-4">
-                      {/* Full Name */}
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Full Name *</label>
-                        <input
-                          type="text"
-                          value={formData.fullName}
-                          onChange={(e) => {
-                            setFormData({ ...formData, fullName: e.target.value });
-                            if (fieldErrors.fullName) setFieldErrors({ ...fieldErrors, fullName: '' });
-                          }}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 transition ${
-                            fieldErrors.fullName ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
-                          }`}
-                          placeholder="Enter your full name"
-                        />
-                        {fieldErrors.fullName && (
-                          <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                            ❌ {fieldErrors.fullName}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Phone Number */}
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Phone Number *</label>
-                        <input
-                          type="tel"
-                          inputMode="numeric"
-                          maxLength="10"
-                          value={formData.phone}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, '');
-                            setFormData({ ...formData, phone: value });
-                            if (fieldErrors.phone) setFieldErrors({ ...fieldErrors, phone: '' });
-                          }}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 transition ${
-                            fieldErrors.phone ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
-                          }`}
-                          placeholder="10-digit mobile number"
-                        />
-                        {fieldErrors.phone && (
-                          <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                            ❌ {fieldErrors.phone}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Email */}
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address *</label>
-                        <input
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) => {
-                            setFormData({ ...formData, email: e.target.value });
-                            if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: '' });
-                          }}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 transition ${
-                            fieldErrors.email ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
-                          }`}
-                          placeholder="your@email.com"
-                        />
-                        {fieldErrors.email && (
-                          <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                            ❌ {fieldErrors.email}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* City / State */}
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">City / State *</label>
-                        <input
-                          type="text"
-                          value={formData.cityState}
-                          onChange={(e) => {
-                            setFormData({ ...formData, cityState: e.target.value });
-                            if (fieldErrors.cityState) setFieldErrors({ ...fieldErrors, cityState: '' });
-                          }}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 transition ${
-                            fieldErrors.cityState ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
-                          }`}
-                          placeholder="e.g., Mumbai, Maharashtra"
-                        />
-                        {fieldErrors.cityState && (
-                          <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                            ❌ {fieldErrors.cityState}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Age / DOB */}
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Age (Years) *</label>
-                        <select
-                          value={formData.ageDOB}
-                          onChange={(e) => {
-                            setFormData({ ...formData, ageDOB: e.target.value });
-                            if (fieldErrors.ageDOB) setFieldErrors({ ...fieldErrors, ageDOB: '' });
-                          }}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 transition ${
-                            fieldErrors.ageDOB ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
-                          }`}
-                        >
-                          <option value="">Select your age</option>
-                          {Array.from({length: 50}, (_, i) => 21 + i).map(age => (
-                            <option key={age} value={age}>{age} years</option>
-                          ))}
-                        </select>
-                        {fieldErrors.ageDOB && (
-                          <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                            ❌ {fieldErrors.ageDOB}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Section 2: Asset Details */}
-                  <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-5">
-                    <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
-                      🏠 Asset Details
-                    </h3>
-
-                    <div className="space-y-4">
-                      {/* Insurance Type (Read-only) */}
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Insurance Type</label>
-                        <input
-                          type="text"
-                          value="General Insurance"
-                          readOnly
-                          className="w-full px-4 py-3 border-2 border-slate-300 rounded-lg bg-slate-100 text-slate-600"
-                        />
-                      </div>
-
-                      {/* Asset Type */}
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Asset Type *</label>
-                        <input
-                          type="text"
-                          value={formData.assetType}
-                          onChange={(e) => {
-                            setFormData({ ...formData, assetType: e.target.value });
-                            if (fieldErrors.assetType) setFieldErrors({ ...fieldErrors, assetType: '' });
-                          }}
-                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-400 transition ${
-                            fieldErrors.assetType ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
-                          }`}
-                          placeholder="e.g., Home, Vehicle, Business, etc."
-                        />
-                        {fieldErrors.assetType && (
-                          <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                            ❌ {fieldErrors.assetType}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Section 3: Terms & Consent */}
-                  <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-5">
-                    <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
-                      ✅ Terms & Consent
-                    </h3>
-
-                    <div className="space-y-4">
-                      {/* Consent Checkbox */}
-                      <label className="flex items-start gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.consent}
-                          onChange={(e) => setFormData({ ...formData, consent: e.target.checked })}
-                          className="mt-1 w-5 h-5 text-slate-600 border-2 border-slate-300 rounded focus:ring-2 focus:ring-slate-400"
-                        />
-                        <span className="text-sm text-slate-700 leading-relaxed">
-                          I authorize Loanzaar to contact me via call, SMS, or WhatsApp regarding my insurance inquiry. I agree to the terms and conditions.
-                        </span>
-                      </label>
-
-                      {/* reCAPTCHA */}
-                      <div className="flex justify-center pt-3">
-                        <ReCAPTCHA
-                          ref={recaptchaRef}
-                          sitekey="6LdUpOsrAAAAAKqnWvFE0MH-mgcHo8BzFohUEB5b"
-                          onChange={handleCaptchaChange}
-                          onExpired={() => setCaptchaToken(null)}
-                        />
-                      </div>
-
-                      {/* Submit Button */}
-                      <button
-                        type="submit"
-                        className="w-full bg-slate-700 hover:bg-slate-800 text-white py-3 px-4 rounded-lg font-bold transition-colors duration-200 mt-4"
-                      >
-                        Get Quote Now
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </>
-            ) : (
-              /* Success Screen */
-              <div className="flex flex-col items-center justify-center p-8 text-center">
-                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                  <span className="text-4xl">✅</span>
-                </div>
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">Quote Request Submitted!</h2>
-                <p className="text-slate-600 mb-6">Our insurance expert will contact you shortly with customized quotes tailored to your needs.</p>
-                <button
-                  onClick={closeModal}
-                  className="px-6 py-3 bg-slate-700 hover:bg-slate-800 text-white rounded-lg font-semibold transition-colors duration-200"
-                >
-                  Done
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
     </div>
   );
 };
