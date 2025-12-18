@@ -326,7 +326,7 @@ const LoanAgainstPropertyPage = () => {
         </div>
       </nav>
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-50 to-blue-100 py-20 px-6 md:px-16 flex items-center">
+      <section className="bg-gradient-to-br from-surface-bg to-slate-50 py-20 px-6 md:px-16 flex items-center">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
@@ -524,7 +524,7 @@ const LoanAgainstPropertyPage = () => {
         </div>
       </section>
       {/* CTA Section */}
-      <section className="py-20 px-6 md:px-16 bg-gradient-to-r from-blue-600 to-blue-800">
+      <section className="py-20 px-6 md:px-16 bg-gradient-to-r from-primary-500 to-secondary-500">
         <div className="max-w-4xl mx-auto text-center text-white">
           <h2 className="text-4xl font-bold mb-6">Ready to unlock your property's potential?</h2>
           <p className="text-xl mb-8">Apply for Your Loan Against Property Today!</p>        </div>

@@ -336,7 +336,7 @@ const PersonalLoanFormPage = () => {
       </nav>
 
       {/* Hero Section (Overview) */}
-      <section id="overview-section" className="relative bg-gradient-to-br from-blue-50 to-blue-100 py-16 md:py-28 px-6 md:px-16 min-h-[500px] flex items-center">
+      <section id="overview-section" className="relative bg-gradient-to-br from-surface-bg to-slate-50 py-16 md:py-28 px-6 md:px-16 min-h-[500px] flex items-center">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <span className="inline-block bg-blue-100 text-blue-600 px-4 py-1 rounded-full text-sm font-semibold uppercase tracking-wide">Quick & Easy Finance</span>
@@ -429,7 +429,7 @@ const PersonalLoanFormPage = () => {
 
       {/* Eligibility CTA Section */}
       <section className="py-12 px-6 md:px-16">
-        <div className="max-w-7xl mx-auto bg-gradient-to-r from-blue-500 to-blue-600 rounded-3xl p-12 text-white text-center shadow-xl">
+        <div className="max-w-7xl mx-auto bg-gradient-to-r from-primary-500 to-secondary-500 rounded-3xl p-12 text-white text-center shadow-xl">
           <svg className="w-16 h-16 text-white mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           <h2 className="text-3xl font-bold mb-4">Personal Loan Eligibility and Documents</h2>
           <p className="text-lg mb-8">Read on to know the criteria required to apply for our Personal Loan.</p>

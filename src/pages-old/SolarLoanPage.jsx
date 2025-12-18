@@ -399,7 +399,7 @@ const SolarLoanPage = () => {
       </nav>
 
       {/* Hero Section (Overview) */}
-      <section id="overview-section" className="relative bg-gradient-to-br from-green-50 to-green-100 py-16 md:py-28 px-6 md:px-16 min-h-[500px] flex items-center">
+      <section id="overview-section" className="relative bg-gradient-to-br from-surface-bg to-slate-50 py-16 md:py-28 px-6 md:px-16 min-h-[500px] flex items-center">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <span className="inline-block bg-green-100 text-green-600 px-4 py-1 rounded-full text-sm font-semibold uppercase tracking-wide">Go Green Financing</span>
@@ -509,7 +509,7 @@ const SolarLoanPage = () => {
 
       {/* Eligibility CTA Section */}
       <section className="py-12 px-6 md:px-16">
-        <div className="max-w-7xl mx-auto bg-gradient-to-r from-green-500 to-green-600 rounded-3xl p-12 text-white text-center shadow-xl">
+        <div className="max-w-7xl mx-auto bg-gradient-to-r from-accent-success to-primary-500 rounded-3xl p-12 text-white text-center shadow-xl">
           <svg className="w-16 h-16 text-white mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           <h2 className="text-3xl font-bold mb-4">Solar Panel Loan Eligibility and Documents</h2>
           <p className="text-lg mb-8">Read on to know the criteria and documents required for your Solar Panel Loan.</p>
@@ -693,7 +693,7 @@ const SolarLoanPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6 md:px-16 bg-gradient-to-r from-green-500 to-green-600">
+      <section className="py-20 px-6 md:px-16 bg-gradient-to-r from-accent-success to-primary-500">
         <div className="max-w-4xl mx-auto text-center text-white">
           <h2 className="text-4xl font-bold mb-4">Invest in a greener future and reduce your energy bills!</h2>
           <p className="text-xl mb-8">Turn your rooftop into a source of clean, renewable energy with our affordable solar financing solutions.</p>

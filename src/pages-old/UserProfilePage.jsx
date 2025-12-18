@@ -132,7 +132,7 @@ function UserProfilePage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full bg-gradient-to-r from-sky-500 to-indigo-600 text-white py-4 rounded-lg font-semibold hover:shadow-xl transition-all flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 text-white py-4 rounded-lg font-semibold hover:shadow-xl transition-all flex items-center justify-center gap-2"
         >
           {saving ? 'Saving...' : (
             <>

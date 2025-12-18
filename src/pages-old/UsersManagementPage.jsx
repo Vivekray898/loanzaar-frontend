@@ -184,7 +184,7 @@ function UsersManagementPage() {
 
           {/* Stats */}
           <div className="flex items-center justify-center md:justify-end">
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white px-6 py-4 rounded-xl">
+            <div className="bg-gradient-to-br from-primary-500 to-primary-600 text-white px-6 py-4 rounded-xl">
               <div className="flex items-center gap-3">
                 <Users className="w-8 h-8" />
                 <div>

@@ -334,7 +334,7 @@ const MachineryLoanPage = () => {
       </nav>
 
       {/* Hero Section (Overview) */}
-      <section id="overview-section" className="relative bg-gradient-to-br from-orange-50 to-orange-100 py-16 md:py-28 px-6 md:px-16 min-h-[500px] flex items-center">
+      <section id="overview-section" className="relative bg-gradient-to-br from-surface-bg to-slate-50 py-16 md:py-28 px-6 md:px-16 min-h-[500px] flex items-center">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <span className="inline-block bg-orange-100 text-orange-600 px-4 py-1 rounded-full text-sm font-semibold uppercase tracking-wide">Business Equipment Finance</span>
@@ -418,7 +418,7 @@ const MachineryLoanPage = () => {
 
       {/* Eligibility CTA Section */}
       <section className="py-12 px-6 md:px-16">
-        <div className="max-w-7xl mx-auto bg-gradient-to-r from-orange-500 to-orange-600 rounded-3xl p-12 text-white text-center shadow-xl">
+        <div className="max-w-7xl mx-auto bg-gradient-to-r from-accent-gold to-primary-500 rounded-3xl p-12 text-white text-center shadow-xl">
           <svg className="w-16 h-16 text-white mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           <h2 className="text-3xl font-bold mb-4">Machinery Loan Eligibility and Documents</h2>
           <p className="text-lg mb-8">Read on to know the criteria and documents required to apply for our Machinery Loan.</p>
@@ -578,7 +578,7 @@ const MachineryLoanPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6 md:px-16 bg-gradient-to-r from-orange-500 to-orange-600">
+      <section className="py-20 px-6 md:px-16 bg-gradient-to-r from-accent-gold to-primary-500">
         <div className="max-w-4xl mx-auto text-center text-white">
           <h2 className="text-4xl font-bold mb-4">Ready to upgrade your business?</h2>
           <p className="text-xl mb-8">Transform your operations with the right machinery and equipment financing.</p>        </div>

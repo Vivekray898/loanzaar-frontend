@@ -58,29 +58,29 @@ function UserDashboardPage() {
       icon: FileText,
       label: 'Total Applications',
       value: stats?.totalApplications || 0,
-      color: 'from-blue-500 to-blue-600',
-      bgColor: 'bg-blue-50'
+      color: 'from-primary-500 to-primary-600',
+      bgColor: 'bg-primary-50'
     },
     {
       icon: Clock,
       label: 'Pending Applications',
       value: stats?.pendingApplications || 0,
-      color: 'from-amber-500 to-amber-600',
-      bgColor: 'bg-amber-50'
+      color: 'from-accent-gold to-yellow-500',
+      bgColor: 'bg-yellow-50'
     },
     {
       icon: CheckCircle,
       label: 'Approved Loans',
       value: stats?.approvedLoans || 0,
-      color: 'from-green-500 to-green-600',
+      color: 'from-accent-success to-green-600',
       bgColor: 'bg-green-50'
     },
     {
       icon: MessageSquare,
       label: 'Support Messages',
       value: stats?.totalMessages || 0,
-      color: 'from-purple-500 to-purple-600',
-      bgColor: 'bg-purple-50'
+      color: 'from-secondary-500 to-secondary-600',
+      bgColor: 'bg-secondary-50'
     }
   ];
 
@@ -190,7 +190,7 @@ function UserDashboardPage() {
               {/* Apply for New Loan */}
               <Link
                 href="/dashboard/apply-loan"
-                className="group bg-gradient-to-br from-sky-500 to-indigo-600 rounded-2xl shadow-lg p-8 hover:shadow-xl transition-all duration-300 text-white"
+                className="group bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl shadow-lg p-8 hover:shadow-xl transition-all duration-300 text-white"
               >
                 <div className="flex items-center gap-4">
                   <div className="bg-white/20 p-4 rounded-xl group-hover:scale-110 transition-transform">
@@ -206,7 +206,7 @@ function UserDashboardPage() {
               {/* Loan Progress */}
               <div className="bg-white rounded-2xl shadow-lg p-8">
                 <div className="flex items-center gap-4">
-                  <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 rounded-xl">
+                  <div className="bg-gradient-to-br from-accent-success to-green-600 p-4 rounded-xl">
                     <TrendingUp className="w-8 h-8 text-white" />
                   </div>
                   <div>
@@ -226,7 +226,7 @@ function UserDashboardPage() {
                   </div>
                   <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-green-500 to-emerald-600 h-full rounded-full transition-all duration-500"
+                      className="bg-gradient-to-r from-accent-success to-green-600 h-full rounded-full transition-all duration-500"
                       style={{
                         width: `${stats?.totalApplications > 0 
                           ? (stats.approvedLoans / stats.totalApplications) * 100 
@@ -291,7 +291,7 @@ function UserDashboardPage() {
                   <p className="text-slate-600">No applications yet</p>
                   <Link
                     href="/dashboard/apply-loan"
-                    className="inline-block mt-4 px-6 py-2 bg-gradient-to-r from-sky-500 to-indigo-600 text-white rounded-lg font-semibold hover:shadow-lg transition"
+                    className="inline-block mt-4 px-6 py-2 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-lg font-semibold hover:shadow-lg transition"
                   >
                     Apply for Your First Loan or Insurance
                   </Link>

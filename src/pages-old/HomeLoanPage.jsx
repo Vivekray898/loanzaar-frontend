@@ -421,7 +421,7 @@ const HomeLoanPage = () => {
       </nav>
 
       {/* Hero Section (Overview) */}
-      <section id="overview-section" className="relative bg-gradient-to-br from-blue-50 to-blue-100 py-16 md:py-28 px-6 md:px-16 min-h-[500px] flex items-center">
+      <section id="overview-section" className="relative bg-gradient-to-br from-surface-bg to-slate-50 py-16 md:py-28 px-6 md:px-16 min-h-[500px] flex items-center">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <span className="inline-block bg-blue-100 text-blue-600 px-4 py-1 rounded-full text-sm font-semibold uppercase tracking-wide">Homeownership Made Easy</span>

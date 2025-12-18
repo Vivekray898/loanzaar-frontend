@@ -332,7 +332,7 @@ const UsedCarLoanFormPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-50 to-blue-100 py-20 px-6 md:px-16 flex items-center">
+      <section className="bg-gradient-to-br from-surface-bg to-slate-50 py-20 px-6 md:px-16 flex items-center">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
@@ -656,7 +656,7 @@ const UsedCarLoanFormPage = () => {
         </section>
 
         {/* CTA Section */}
-        <div className="text-center bg-gradient-to-r from-red-600 to-red-800 text-white p-8 rounded-lg">
+        <div className="text-center bg-gradient-to-r from-primary-500 to-secondary-500 text-white p-8 rounded-lg">
           <h2 className="text-3xl font-bold mb-4">Ready to Finance Your Used Car?</h2>
           <p className="text-xl mb-6">Apply for your used car loan today and get approved within minutes!</p>
           <button
