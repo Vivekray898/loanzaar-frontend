@@ -1,4 +1,4 @@
-import UserApplicationsPage from '@/pages-old/UserApplicationsPage'
+import UserApplicationsPage from '@/pages/UserApplicationsPage'
 
 export const metadata = {
   title: 'My Applications | Loanzaar',

@@ -1,4 +1,4 @@
-import SolarLoanPage from '@/pages-old/SolarLoanPage'
+import SolarLoanPage from '@/pages/SolarLoanPage'
 
 export const metadata = {
   title: 'Solar Loan | Loanzaar',

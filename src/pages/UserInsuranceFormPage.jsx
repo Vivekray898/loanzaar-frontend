@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState } from 'react';
 import Meta from '../components/Meta';
 import { useRouter } from 'next/navigation';
@@ -277,7 +279,7 @@ function UserInsuranceFormPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-gradient-to-r from-rose-500 to-pink-600 text-white py-4 rounded-lg font-semibold hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 text-white py-4 rounded-lg font-semibold hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {loading ? (
             <>
@@ -297,3 +299,4 @@ function UserInsuranceFormPage() {
 }
 
 export default UserInsuranceFormPage;
+

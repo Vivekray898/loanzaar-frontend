@@ -1,4 +1,4 @@
-import FinishSignUpPage from '@/pages-old/FinishSignUpPage'
+import FinishSignUpPage from '@/pages/FinishSignUpPage'
 
 export const metadata = {
   title: 'Finish Sign Up | Loanzaar',

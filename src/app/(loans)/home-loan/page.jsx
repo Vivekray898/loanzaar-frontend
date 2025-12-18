@@ -1,4 +1,4 @@
-import HomeLoanPage from '@/pages-old/HomeLoanPage'
+import HomeLoanPage from '@/pages/HomeLoanPage'
 
 export const metadata = {
   title: 'Home Loan | Loanzaar',

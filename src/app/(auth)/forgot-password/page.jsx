@@ -1,4 +1,4 @@
-import ForgotPasswordPage from '@/pages-old/ForgotPasswordPage'
+import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
 
 export const metadata = {
   title: 'Forgot Password | Loanzaar',

@@ -1,4 +1,4 @@
-import GoldLoanFormPage from '@/pages-old/GoldLoanFormPage'
+import GoldLoanFormPage from '@/pages/GoldLoanFormPage'
 
 export const metadata = {
   title: 'Gold Loan | Loanzaar',

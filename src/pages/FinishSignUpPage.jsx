@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useEffect, useState, Suspense } from 'react';
 import Meta from '../components/Meta';
 import { useRouter } from 'next/navigation';
@@ -59,7 +61,7 @@ const FinishSignUpPageContent = () => {
           setStatus('success');
           setMessage('Sign-in successful! Redirecting...');
           
-          // Store token if needed (Supabase session is handled by SDK)
+          // Store token if needed (keep Supabase-managed session via `userToken` elsewhere)
           localStorage.setItem('supabaseUID', result.uid);
           
           setTimeout(() => {
@@ -298,3 +300,4 @@ export default function FinishSignUpPage() {
     </Suspense>
   );
 }
+

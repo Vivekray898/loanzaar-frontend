@@ -1,4 +1,4 @@
-import LoanAgainstPropertyPage from '@/pages-old/LoanAgainstPropertyPage'
+import LoanAgainstPropertyPage from '@/pages/LoanAgainstPropertyPage'
 
 export const metadata = {
   title: 'Loan Against Property | Loanzaar',

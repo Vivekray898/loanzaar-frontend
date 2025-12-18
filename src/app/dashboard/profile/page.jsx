@@ -1,4 +1,4 @@
-import UserProfilePage from '@/pages-old/UserProfilePage'
+import UserProfilePage from '@/pages/UserProfilePage'
 
 export const metadata = {
   title: 'My Profile | Loanzaar',

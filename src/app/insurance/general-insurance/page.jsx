@@ -1,4 +1,4 @@
-import GeneralInsurancePage from '@/pages-old/GeneralInsurancePage'
+import GeneralInsurancePage from '@/pages/GeneralInsurancePage'
 
 export const metadata = {
   title: 'General Insurance | Loanzaar',

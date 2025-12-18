@@ -1,4 +1,4 @@
-import MachineryLoanPage from '@/pages-old/MachineryLoanPage'
+import MachineryLoanPage from '@/pages/MachineryLoanPage'
 
 export const metadata = {
   title: 'Machinery Loan | Loanzaar',

@@ -1,4 +1,4 @@
-import UserDashboardPage from '@/pages-old/UserDashboardPage'
+import UserDashboardPage from '@/pages/UserDashboardPage'
 
 export const metadata = {
   title: 'Dashboard | Loanzaar',

@@ -1,4 +1,4 @@
-import BusinessLoanFormPage from '@/pages-old/BusinessLoanFormPage'
+import BusinessLoanFormPage from '@/pages/BusinessLoanFormPage'
 
 export const metadata = {
   title: 'Business Loan | Loanzaar',

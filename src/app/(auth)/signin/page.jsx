@@ -1,4 +1,4 @@
-import SignInPage from '@/pages-old/SignInPage'
+import SignInPage from '@/pages/SignInPage'
 
 export const metadata = {
   title: 'Sign In | Loanzaar',

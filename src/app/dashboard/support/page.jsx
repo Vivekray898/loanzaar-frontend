@@ -1,4 +1,4 @@
-import UserSupportPage from '@/pages-old/UserSupportPage'
+import UserSupportPage from '@/pages/UserSupportPage'
 
 export const metadata = {
   title: 'Support | Loanzaar',

@@ -1,4 +1,4 @@
-import CibilScoreCheckerPage from '@/pages-old/CibilScoreCheckerPage'
+import CibilScoreCheckerPage from '@/pages/CibilScoreCheckerPage'
 
 export const metadata = {
   title: 'CIBIL Score Checker | Loanzaar',

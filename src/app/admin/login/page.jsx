@@ -1,4 +1,4 @@
-import AdminLoginPage from '@/pages-old/AdminLoginPage'
+import AdminLoginPage from '@/pages/AdminLoginPage'
 
 export const metadata = {
   title: 'Admin Login | Loanzaar',

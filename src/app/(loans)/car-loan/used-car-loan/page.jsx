@@ -1,4 +1,4 @@
-import UsedCarLoanFormPage from '@/pages-old/UsedCarLoanFormPage'
+import UsedCarLoanFormPage from '@/pages/UsedCarLoanFormPage'
 
 export const metadata = {
   title: 'Used Car Loan | Loanzaar',

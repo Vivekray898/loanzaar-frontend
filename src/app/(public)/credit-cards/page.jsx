@@ -1,4 +1,4 @@
-import CreditCardsPage from '@/pages-old/CreditCardsPage'
+import CreditCardsPage from '@/pages/CreditCardsPage'
 
 export const metadata = {
   title: 'Credit Cards | Loanzaar',

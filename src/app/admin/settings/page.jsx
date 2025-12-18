@@ -1,4 +1,4 @@
-import AdminSettingsPage from '@/pages-old/AdminSettingsPage'
+import AdminSettingsPage from '@/pages/AdminSettingsPage'
 
 export const metadata = {
   title: 'Admin Settings | Loanzaar',

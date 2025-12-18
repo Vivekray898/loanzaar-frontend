@@ -190,7 +190,7 @@ function SignInPage() {
           <div className="flex-1">
             <div className="text-center">
               <img
-                src="https://placehold.co/180x50/ef4444/white?text=RU+LOANS"
+                src="/images/loanzaar--logo.avif"
                 alt="RU LOANS Logo"
                 className="w-auto h-10 sm:h-12 mx-auto"
               />

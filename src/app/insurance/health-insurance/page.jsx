@@ -1,4 +1,4 @@
-import HealthInsurancePage from '@/pages-old/HealthInsurancePage'
+import HealthInsurancePage from '@/pages/HealthInsurancePage'
 
 export const metadata = {
   title: 'Health Insurance | Loanzaar',

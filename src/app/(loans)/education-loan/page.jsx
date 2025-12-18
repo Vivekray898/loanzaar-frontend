@@ -1,4 +1,4 @@
-import EducationLoanPage from '@/pages-old/EducationLoanPage'
+import EducationLoanPage from '@/pages/EducationLoanPage'
 
 export const metadata = {
   title: 'Education Loan | Loanzaar',

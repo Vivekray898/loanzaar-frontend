@@ -1,4 +1,4 @@
-import UserInsuranceFormPage from '@/pages-old/UserInsuranceFormPage'
+import UserInsuranceFormPage from '@/pages/UserInsuranceFormPage'
 
 export const metadata = {
   title: 'Insurance | Loanzaar',

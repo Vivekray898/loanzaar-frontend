@@ -1,4 +1,4 @@
-import ContactUsPage from '@/pages-old/ContactUsPage'
+import ContactUsPage from '@/pages/ContactUsPage'
 
 export const metadata = {
   title: 'Contact Us | Loanzaar',
