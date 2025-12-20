@@ -8,12 +8,12 @@ import { createClient } from '@supabase/supabase-js';
  * This prevents accidental exposure in version control while keeping the configuration flexible.
  * 
  * Environment variables used (with NEXT_PUBLIC_ prefix for client-side access):
- * - NEXT_PUBLIC_SUPABASE_URL: Supabase Project URL
- * - NEXT_PUBLIC_SUPABASE_ANON_KEY: Supabase Anonymous/Public API Key
+ * - SUPABASE_URL: Supabase Project URL
+ * - SUPABASE_ANON_KEY: Supabase Anonymous/Public API Key
  */
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
 /**
  * Validate Supabase Configuration
@@ -22,8 +22,8 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const validateSupabaseConfig = () => {
   const missingFields = [];
   
-  if (!supabaseUrl) missingFields.push('NEXT_PUBLIC_SUPABASE_URL');
-  if (!supabaseAnonKey) missingFields.push('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  if (!supabaseUrl) missingFields.push('SUPABASE_URL');
+  if (!supabaseAnonKey) missingFields.push('SUPABASE_ANON_KEY');
 
   if (missingFields.length > 0) {
     console.warn(
