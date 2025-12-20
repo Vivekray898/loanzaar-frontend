@@ -5,8 +5,8 @@ import dynamic from 'next/dynamic'
 import './index.css'
 import { usePathname } from 'next/navigation'
 import ScrollToTop from './components/ScrollToTop'
-// Initialize Firebase on app load
-import './config/firebase'
+// Initialize Supabase on app load
+import './config/supabase'
 // Client-only page components loaded on demand
 const HomePage = dynamic(() => import('./pages/Homepage'), { ssr: false })
 const ContactUsPage = dynamic(() => import('./pages/ContactUsPage'), { ssr: false })

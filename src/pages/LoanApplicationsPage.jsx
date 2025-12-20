@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Meta from '../components/Meta';
 import { Search, Filter, Eye, Edit2, Trash2, Download, RefreshCw, FileText, CreditCard } from 'lucide-react';
 import { getPendingSubmissions } from '../services/firestoreService';
-import { doc, updateDoc, getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { supabase } from '../config/supabase';
 import { authenticatedFetch as fetchWithFirebaseToken } from '../utils/supabaseTokenHelper';
 
 function LoanApplicationsPage() {
@@ -47,41 +47,30 @@ function LoanApplicationsPage() {
 
   const fetchLoans = async () => {
     try {
-      const db = getFirestore();
-      const collectionRef = collection(db, 'admin_loans');
-      // Removed orderBy to avoid composite index requirement - will sort client-side instead
-      const querySnapshot = await getDocs(collectionRef);
-      
-      const docs = [];
-      querySnapshot.forEach(doc => {
-        docs.push({ id: doc.id, ...doc.data() });
-      });
+      // Fetch from Supabase table 'admin_loans'
+      const { data: rows, error } = await supabase
+        .from('admin_loans')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (docs && docs.length) {
-        // Sort by createdAt descending (newest first)
-        docs.sort((a, b) => {
-          const timeA = a.createdAt?.toMillis?.() || a.createdAt || 0;
-          const timeB = b.createdAt?.toMillis?.() || b.createdAt || 0;
-          return timeB - timeA;
-        });
+      if (error) throw error;
 
-        // Map Firestore docs to loan shape expected by the UI
-        const mapped = docs.map(d => ({
-          _id: d.id,  // Keep Firestore ID
-          firestoreId: d.id,  // Also store as firestoreId for reference
-          fullName: d.formData?.fullName || d.fullName || d.name || '',
-          email: d.formData?.email || d.email || '',
-          phone: d.formData?.phone || d.phone || '',
-          loanType: d.formData?.loanType || d.loanType || 'Personal',
-          loanAmount: d.formData?.loanAmount || d.loanAmount || 0,
-          status: d.status || 'Pending',
-          createdAt: d.createdAt?.toDate?.() || d.createdAt,  // Convert Firestore Timestamp to Date
-          source: 'firestore'  // Mark as Firestore document
-        }));
-        setLoans(mapped);
-        console.log(`✅ Loaded ${mapped.length} loans from Firestore admin_loans collection`);
-        return;
-      }
+      const mapped = (rows || []).map(r => ({
+        _id: r.id,
+        firestoreId: r.id,
+        fullName: r.form_data?.fullName || r.full_name || r.name || '',
+        email: r.form_data?.email || r.email || '',
+        phone: r.form_data?.phone || r.phone || '',
+        loanType: r.form_data?.loanType || r.loan_type || 'Personal',
+        loanAmount: r.form_data?.loanAmount || r.loan_amount || 0,
+        status: r.status || 'Pending',
+        createdAt: r.created_at || r.createdAt,
+        source: 'supabase'
+      }));
+
+      setLoans(mapped);
+      console.log(`✅ Loaded ${mapped.length} loans from Supabase admin_loans table`);
+      return;
     } catch (err) {
       console.warn('Failed to fetch loans from Firestore:', err);
     }
@@ -110,40 +99,30 @@ function LoanApplicationsPage() {
 
   const fetchCreditCards = async () => {
     try {
-      const db = getFirestore();
-      const collectionRef = collection(db, 'other_data');
-      const querySnapshot = await getDocs(collectionRef);
-      
-      const docs = [];
-      querySnapshot.forEach(doc => {
-        docs.push({ id: doc.id, ...doc.data() });
-      });
+      // Fetch from Supabase table 'other_data'
+      const { data: rows, error } = await supabase
+        .from('other_data')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (docs && docs.length) {
-        // Sort by createdAt descending (newest first)
-        docs.sort((a, b) => {
-          const timeA = a.createdAt?.toMillis?.() || a.createdAt || 0;
-          const timeB = b.createdAt?.toMillis?.() || b.createdAt || 0;
-          return timeB - timeA;
-        });
+      if (error) throw error;
 
-        // Map Firestore docs to credit card shape expected by the UI
-        const mapped = docs.map(d => ({
-          _id: d.id,
-          firestoreId: d.id,
-          fullName: d.formData?.fullName || d.fullName || d.name || '',
-          email: d.formData?.email || d.email || '',
-          phone: d.formData?.phone || d.phone || '',
-          cardType: d.formData?.cardType || 'Credit Card',
-          annualIncome: d.formData?.annualIncome || 0,
-          status: d.status || 'Pending',
-          createdAt: d.createdAt?.toDate?.() || d.createdAt,  // Convert Firestore Timestamp to Date
-          source: 'firestore'
-        }));
-        setCreditCards(mapped);
-        console.log(`✅ Loaded ${mapped.length} credit card applications from Firestore other_data collection`);
-        return;
-      }
+      const mapped = (rows || []).map(r => ({
+        _id: r.id,
+        firestoreId: r.id,
+        fullName: r.form_data?.fullName || r.full_name || r.name || '',
+        email: r.form_data?.email || r.email || '',
+        phone: r.form_data?.phone || r.phone || '',
+        cardType: r.form_data?.cardType || 'Credit Card',
+        annualIncome: r.form_data?.annualIncome || r.annual_income || 0,
+        status: r.status || 'Pending',
+        createdAt: r.created_at || r.createdAt,
+        source: 'supabase'
+      }));
+
+      setCreditCards(mapped);
+      console.log(`✅ Loaded ${mapped.length} credit card applications from Supabase other_data table`);
+      return;
     } catch (err) {
       console.warn('Failed to fetch credit cards from Firestore:', err);
     }

@@ -1,29 +1,12 @@
-// Firebase Cloud Messaging Service
-import { app, FCM_VAPID_KEY, doc, setDoc, updateDoc, collection, getDocs, query, where } from '../config/firebase';
-// Temporary stubs for messaging; replace with Web Push or Realtime
-const getMessaging = () => ({ });
-const getToken = async () => '';
-const onMessage = (messaging, handler) => { /* no-op */ };
+// Messaging module stub
+// NOTE: Firebase-specific messaging has been disabled during Supabase migration.
+// Decide between keeping FCM (requires server-side FCM) or migrating to Web Push (VAPID).
+// This file provides no-op implementations so the app remains functional until messaging is migrated.
+const getMessaging = () => ({})
+const getToken = async () => null
+const onMessage = (messaging, handler) => { /* no-op */ }
 
-let messaging = null;
-
-// Initialize messaging (only in browser with service worker support)
-try {
-  if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-    messaging = getMessaging(app);
-    
-    // Register Firebase Messaging Service Worker
-    navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-      scope: '/'
-    }).then((registration) => {
-      console.log('✅ Firebase Messaging Service Worker registered:', registration);
-    }).catch((error) => {
-      console.warn('⚠️ Service Worker registration failed:', error);
-    });
-  }
-} catch (error) {
-  console.warn('Firebase Messaging not supported:', error);
-}
+let messaging = null
 
 /**
  * Request notification permission and get FCM token
@@ -50,10 +33,8 @@ export const requestNotificationPermission = async (userId) => {
     if (permission === 'granted') {
       console.log('✅ Notification permission granted');
       
-      // Get FCM registration token
-      const token = await getToken(messaging, {
-        vapidKey: FCM_VAPID_KEY
-      });
+      // Get FCM registration token (disabled during migration)
+      const token = await getToken(messaging);
 
       if (token) {
         console.log('🔑 FCM Token obtained:', token.substring(0, 20) + '...');
@@ -61,19 +42,8 @@ export const requestNotificationPermission = async (userId) => {
         // Save token to localStorage
         localStorage.setItem('fcmToken', token);
         
-        // Save token to Firestore (in user document)
-        if (userId) {
-          try {
-            await updateDoc(doc(db, 'users', userId), {
-              fcmToken: token,
-              fcmTokenUpdatedAt: new Date(),
-              isNotificationsEnabled: true
-            });
-            console.log('💾 FCM token saved to Firestore for user:', userId);
-          } catch (firestoreError) {
-            console.warn('⚠️ Could not save token to Firestore (user may not exist yet):', firestoreError.message);
-          }
-        }
+        // Persisting tokens to database is currently disabled.
+        // Implement token persistence via backend API or Supabase storage when migrating messaging.
         
         return token;
       }
@@ -268,22 +238,12 @@ export const refreshFCMToken = async (userId) => {
       return null;
     }
 
-    const newToken = await getToken(messaging, {
-      vapidKey: FCM_VAPID_KEY,
-      serviceWorkerRegistration: await navigator.serviceWorker.ready
-    });
+    const newToken = await getToken(messaging);
 
     if (newToken) {
       localStorage.setItem('fcmToken', newToken);
       
-      if (userId) {
-        await updateDoc(doc(db, 'users', userId), {
-          fcmToken: newToken,
-          fcmTokenUpdatedAt: new Date()
-        }).catch(() => {
-          // User doc may not exist yet, silently fail
-        });
-      }
+      // Persistence disabled during migration — implement via backend or Supabase when ready.
       
       console.log('✅ FCM token refreshed:', newToken.substring(0, 20) + '...');
       return newToken;

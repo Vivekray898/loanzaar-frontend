@@ -448,7 +448,7 @@ const ContactUsPage = () => {
               <div className="mt-6 flex justify-center">
                 <ReCAPTCHA
                   ref={recaptchaRef}
-                  sitekey="6LdUpOsrAAAAAKqnWvFE0MH-mgcHo8BzFohUEB5b"
+                  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6LdUpOsrAAAAAKqnWvFE0MH-mgcHo8BzFohUEB5b'}
                   onChange={handleCaptchaChange}
                   onExpired={() => setCaptchaToken(null)}
                 />

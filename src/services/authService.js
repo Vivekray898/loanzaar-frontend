@@ -2,23 +2,17 @@
 // Handles all authentication operations - replaces JWT
 
 import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-} from '../config/firebase';
-import app from '../config/firebase';
+  supabase,
+  getSession,
+  getCurrentUser as getCurrentUserFromSupabase,
+  signIn as supabaseSignIn,
+  signUp as supabaseSignUp,
+  signOut as supabaseSignOut,
+  resetPassword as supabaseResetPassword,
+  onAuthStateChange,
+} from '../config/supabase';
 
-const auth = getAuth(app);
-
-// Temporary stubs for unimplemented Firebase helpers
-const updateProfile = async () => {};
-const sendPasswordResetEmail = async () => {};
-const sendEmailVerification = async () => {};
-const signInWithEmailLink = async () => {};
-const sendSignInLinkToEmail = async () => {};
-const isSignInWithEmailLink = () => false;
+// Helper wrappers where necessary
 
 /**
  * Sign up with email and password
@@ -30,31 +24,19 @@ const isSignInWithEmailLink = () => false;
 export const signUp = async (email, password, displayName = '') => {
   try {
     console.log('📝 Creating new user account...');
-    
-    // Create user account
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    
-    // Update display name if provided
-    if (displayName) {
-      await updateProfile(user, { displayName });
-    }
-    
-    // Send email verification
-    await sendEmailVerification(user);
-    
-    console.log('✅ User account created:', user.uid);
-    console.log('📧 Verification email sent to:', email);
-    
+    const { user, session, error } = await supabaseSignUp(email, password, { displayName });
+    if (error) throw error;
+
+    console.log('✅ User account created:', user?.id);
     return {
       success: true,
       user: {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        emailVerified: user.emailVerified
+        uid: user?.id,
+        email: user?.email,
+        displayName: user?.user_metadata?.displayName || displayName || '',
       },
-      message: 'Account created successfully. Please check your email for verification.'
+      message: 'Account created successfully. Please check your email for verification.',
+      token: session?.access_token || null,
     };
   } catch (error) {
     console.error('❌ Sign up error:', error.message);
@@ -89,24 +71,22 @@ export const signUp = async (email, password, displayName = '') => {
 export const signIn = async (email, password) => {
   try {
     console.log('🔐 Signing in...');
-    
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    
-    // Get Firebase ID token
-    const idToken = await user.getIdToken();
-    
-    console.log('✅ Sign in successful:', user.email);
-    
+    const { user, session, error } = await supabaseSignIn(email, password);
+    if (error) throw error;
+
+    const token = session?.access_token || null;
+
+    console.log('✅ Sign in successful:', user?.email);
+
     return {
       success: true,
       user: {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        emailVerified: user.emailVerified
+        uid: user?.id,
+        email: user?.email,
+        displayName: user?.user_metadata?.displayName || null,
+        emailVerified: user?.email_confirmed || false,
       },
-      token: idToken
+      token,
     };
   } catch (error) {
     console.error('❌ Sign in error:', error.message);
@@ -138,7 +118,7 @@ export const signIn = async (email, password) => {
  */
 export const logOut = async () => {
   try {
-    await signOut(auth);
+    await supabaseSignOut();
     console.log('👋 User signed out');
     
     // Clear local storage
@@ -161,9 +141,9 @@ export const logOut = async () => {
 export const resetPassword = async (email) => {
   try {
     console.log('📧 Sending password reset email...');
-    
-    await sendPasswordResetEmail(auth, email);
-    
+    const { error } = await supabaseResetPassword(email);
+    if (error) throw error;
+
     console.log('✅ Password reset email sent');
     return {
       success: true,
@@ -195,26 +175,14 @@ export const resetPassword = async (email) => {
  */
 export const resendVerificationEmail = async () => {
   try {
-    const user = auth.currentUser;
-    
-    if (!user) {
-      throw new Error('No user signed in');
+    // Supabase handles email verification during sign-up via email links.
+    const { user, error } = await getCurrentUserFromSupabase();
+    if (error) throw error;
+    if (!user) throw new Error('No user signed in');
+    if (user.email_confirmed) {
+      return { success: true, message: 'Email is already verified' };
     }
-    
-    if (user.emailVerified) {
-      return {
-        success: true,
-        message: 'Email is already verified'
-      };
-    }
-    
-    await sendEmailVerification(user);
-    
-    console.log('✅ Verification email sent');
-    return {
-      success: true,
-      message: 'Verification email sent. Please check your inbox.'
-    };
+    return { success: false, message: 'Please check your inbox for the verification email' };
   } catch (error) {
     console.error('❌ Resend verification error:', error);
     throw error;
@@ -228,21 +196,13 @@ export const resendVerificationEmail = async () => {
  */
 export const sendSignInLink = async (email) => {
   try {
-    const actionCodeSettings = {
-      url: `${window.location.origin}/complete-signin`,
-      handleCodeInApp: true
-    };
-    
-    await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-    
-    // Save email to localStorage for completion
+    // Use Supabase magic link for passwordless sign-in
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: `${window.location.origin}/complete-signin` } });
+    if (error) throw error;
+
     window.localStorage.setItem('emailForSignIn', email);
-    
-    console.log('✅ Sign-in link sent to:', email);
-    return {
-      success: true,
-      message: 'Sign-in link sent to your email. Please check your inbox.'
-    };
+    console.log('✅ Sign-in link (magic link) sent to:', email);
+    return { success: true, message: 'Sign-in link sent to your email. Please check your inbox.' };
   } catch (error) {
     console.error('❌ Send sign-in link error:', error);
     throw error;
@@ -255,33 +215,24 @@ export const sendSignInLink = async (email) => {
  */
 export const completeSignInWithEmailLink = async () => {
   try {
-    if (!isSignInWithEmailLink(auth, window.location.href)) {
-      throw new Error('Invalid sign-in link');
-    }
-    
-    let email = window.localStorage.getItem('emailForSignIn');
-    
-    if (!email) {
-      email = window.prompt('Please provide your email for confirmation');
-    }
-    
-    const userCredential = await signInWithEmailLink(auth, email, window.location.href);
-    
+    // After redirect from Supabase magic link, session should be available
+    const { session, error } = await getSession();
+    if (error) throw error;
+    if (!session?.user) throw new Error('No active session found after magic link sign-in');
+
     window.localStorage.removeItem('emailForSignIn');
-    
-    const user = userCredential.user;
-    const idToken = await user.getIdToken();
-    
+
+    const user = session.user;
     console.log('✅ Email link sign-in successful');
     return {
       success: true,
       user: {
-        uid: user.uid,
+        uid: user.id,
         email: user.email,
-        displayName: user.displayName,
-        emailVerified: user.emailVerified
+        displayName: user.user_metadata?.displayName || null,
+        emailVerified: user.email_confirmed || false,
       },
-      token: idToken
+      token: session.access_token,
     };
   } catch (error) {
     console.error('❌ Email link sign-in error:', error);
@@ -294,14 +245,10 @@ export const completeSignInWithEmailLink = async () => {
  * @returns {Promise<string>} ID token
  */
 export const getCurrentUserToken = async () => {
-  const user = auth.currentUser;
-  
-  if (!user) {
-    throw new Error('No user signed in');
-  }
-  
-  const token = await user.getIdToken(true); // Force refresh
-  return token;
+  const { session, error } = await getSession();
+  if (error) throw error;
+  if (!session) throw new Error('No active session');
+  return session.access_token;
 };
 
 /**
@@ -309,20 +256,19 @@ export const getCurrentUserToken = async () => {
  * @returns {Object|null} User info or null
  */
 export const getCurrentUser = () => {
-  const user = auth.currentUser;
-  
-  if (!user) {
-    return null;
-  }
-  
-  return {
-    uid: user.uid,
-    email: user.email,
-    displayName: user.displayName,
-    emailVerified: user.emailVerified,
-    photoURL: user.photoURL,
-    phoneNumber: user.phoneNumber
-  };
+  return (async () => {
+    const { user, error } = await getCurrentUserFromSupabase();
+    if (error) throw error;
+    if (!user) return null;
+    return {
+      uid: user.id,
+      email: user.email,
+      displayName: user.user_metadata?.displayName || null,
+      emailVerified: user.email_confirmed || false,
+      photoURL: user.user_metadata?.avatar_url || null,
+      phoneNumber: user.user_metadata?.phone || null,
+    };
+  })();
 };
 
 /**
@@ -331,14 +277,14 @@ export const getCurrentUser = () => {
  * @returns {Function} Unsubscribe function
  */
 export const onAuthChange = (callback) => {
-  return onAuthStateChanged(auth, (user) => {
+  return onAuthStateChange((user) => {
     if (user) {
       callback({
-        uid: user.uid,
+        uid: user.id,
         email: user.email,
-        displayName: user.displayName,
-        emailVerified: user.emailVerified,
-        photoURL: user.photoURL
+        displayName: user.user_metadata?.displayName || null,
+        emailVerified: user.email_confirmed || false,
+        photoURL: user.user_metadata?.avatar_url || null,
       });
     } else {
       callback(null);
@@ -351,7 +297,14 @@ export const onAuthChange = (callback) => {
  * @returns {boolean} True if user is signed in
  */
 export const isAuthenticated = () => {
-  return auth.currentUser !== null;
+  try {
+    if (typeof window === 'undefined') return false;
+    // Supabase persists session in localStorage under 'supabase.auth.token'
+    const token = window.localStorage.getItem('supabase.auth.token');
+    return !!token;
+  } catch (e) {
+    return false;
+  }
 };
 
 export default {

@@ -10,7 +10,6 @@
 import { 
   submitLoanApplication as fireLoanSubmit,
   submitInsuranceApplication as fireInsuranceSubmit,
-  submitContactMessage as fireContactSubmit
 } from '../services/firestoreService';
 
 // Base API URL - Change this in production
@@ -77,21 +76,25 @@ export const submitLoanApplication = async (loanData) => {
  */
 export const submitContactForm = async (contactData) => {
   try {
-    console.log('📤 Submitting contact message to Firestore admin_messages...');
-    
-    // Submit to Firestore using the proper wrapper function
-    const result = await fireContactSubmit(contactData);
-    
-    console.log('✅ Contact message submitted to Firestore:', result.docId);
-    
-    return {
-      success: true,
-      data: {
-        message: result.message,
-        firestoreDocId: result.docId,
-        status: 'pending'
-      }
-    };
+    console.log('📤 Submitting contact message to server /api/contact');
+
+    const response = await fetch('/api/contact', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(contactData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.error || 'Contact submission failed');
+    }
+
+    console.log('✅ Contact form submitted via server API:', data);
+
+    return { success: true, data };
   } catch (error) {
     console.error('Contact form submission error:', error);
     return { success: false, error: error.message };

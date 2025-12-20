@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Meta from '../components/Meta';
 import { Search, Shield, Eye, Trash2, RefreshCw } from 'lucide-react';
 import { getPendingSubmissions } from '../services/firestoreService';
-import { doc, updateDoc, getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { supabase } from '../config/supabase';
 
 function InsuranceApplicationsPage() {
   const [insurance, setInsurance] = useState([]);
@@ -24,44 +24,30 @@ function InsuranceApplicationsPage() {
   const fetchInsurance = async () => {
     try {
       setLoading(true);
-      
-      // Try to load from Firestore admin_insurance collection (all statuses, not just pending)
-      const db = getFirestore();
-      const collectionRef = collection(db, 'admin_insurance');
-      // Removed orderBy to avoid composite index requirement - will sort client-side instead
-      const querySnapshot = await getDocs(collectionRef);
-      
-      const docs = [];
-      querySnapshot.forEach(doc => {
-        docs.push({ id: doc.id, ...doc.data() });
-      });
+      // Fetch from Supabase table 'admin_insurance'
+      const { data: rows, error } = await supabase
+        .from('admin_insurance')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (docs && docs.length) {
-        // Sort by createdAt descending (newest first)
-        docs.sort((a, b) => {
-          const timeA = a.createdAt?.toMillis?.() || a.createdAt || 0;
-          const timeB = b.createdAt?.toMillis?.() || b.createdAt || 0;
-          return timeB - timeA;
-        });
+      if (error) throw error;
 
-        // Map Firestore docs to insurance shape expected by the UI
-        const mapped = docs.map(d => ({
-          _id: d.id,  // Keep Firestore ID
-          firestoreId: d.id,  // Also store as firestoreId for reference
-          fullName: d.formData?.fullName || d.fullName || d.name || '',
-          email: d.formData?.email || d.email || '',
-          phone: d.formData?.phone || d.phone || '',
-          insuranceType: d.formData?.insuranceType || d.insuranceType || 'All Insurance',
-          coverageAmount: d.formData?.coverageAmount || d.coverageAmount || 0,
-          status: d.status || 'Pending',
-          createdAt: d.createdAt,
-          source: 'firestore'  // Mark as Firestore document
-        }));
-        setInsurance(mapped);
-        setLoading(false);
-        console.log(`✅ Loaded ${mapped.length} insurance from Firestore admin_insurance collection`);
-        return;
-      }
+      const mapped = (rows || []).map(r => ({
+        _id: r.id,
+        firestoreId: r.id,
+        fullName: r.form_data?.fullName || r.full_name || r.name || '',
+        email: r.form_data?.email || r.email || '',
+        phone: r.form_data?.phone || r.phone || '',
+        insuranceType: r.form_data?.insuranceType || r.insurance_type || 'All Insurance',
+        coverageAmount: r.form_data?.coverageAmount || r.coverage_amount || 0,
+        status: r.status || 'Pending',
+        createdAt: r.created_at || r.createdAt,
+        source: 'supabase'
+      }));
+      setInsurance(mapped);
+      setLoading(false);
+      console.log(`✅ Loaded ${mapped.length} insurance from Supabase admin_insurance table`);
+      return;
     } catch (err) {
       console.warn('Failed to fetch from Firestore, falling back to backend API:', err);
     }

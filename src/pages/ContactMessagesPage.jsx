@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Meta from '../components/Meta';
 import { getPendingSubmissions } from '../services/firestoreService';
 import { Search, MessageSquare, Eye, Trash2, RefreshCw } from 'lucide-react';
-import { getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { supabase } from '../config/supabase';
 import { authenticatedFetch as fetchWithFirebaseToken } from '../utils/supabaseTokenHelper';
 
 function ContactMessagesPage() {
@@ -20,32 +20,26 @@ function ContactMessagesPage() {
   const itemsPerPage = 10;
 
   useEffect(() => {
-    // Try to load all contact messages from Firestore
+    // Try to load all contact messages from Supabase
     const load = async () => {
       try {
-        const db = getFirestore();
-        const collectionRef = collection(db, 'admin_messages');
-        const querySnapshot = await getDocs(query(
-          collectionRef,
-          orderBy('createdAt', 'desc')
-        ));
-        
-        const docs = [];
-        querySnapshot.forEach(doc => {
-          docs.push({ id: doc.id, ...doc.data() });
-        });
+        const { data: rows, error } = await supabase
+          .from('admin_messages')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-        if (docs && docs.length) {
-          // Map Firestore docs to message shape expected by the UI
-          const mapped = docs.map(d => ({
-            _id: d.id,
-            name: d.formData?.fullName || d.name || '',
-            email: d.formData?.email || d.email || '',
-            phone: d.formData?.phone || d.formData?.phone || '',
-            message: d.formData?.message || d.message || '',
-            status: d.status || 'New',
-            createdAt: d.createdAt,
-            source: 'firestore'
+        if (error) throw error;
+
+        if (rows && rows.length) {
+          const mapped = rows.map(r => ({
+            _id: r.id,
+            name: r.form_data?.fullName || r.name || '',
+            email: r.form_data?.email || r.email || '',
+            phone: r.form_data?.phone || r.phone || '',
+            message: r.form_data?.message || r.message || '',
+            status: r.status || 'New',
+            createdAt: r.created_at || r.createdAt,
+            source: 'supabase'
           }));
           setMessages(mapped);
           setLoading(false);
@@ -53,6 +47,7 @@ function ContactMessagesPage() {
         }
       } catch (err) {
         // fallback to existing backend API
+        console.warn('Failed to fetch admin_messages from Supabase, falling back to backend:', err);
       }
 
       fetchMessages();
