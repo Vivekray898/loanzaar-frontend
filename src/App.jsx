@@ -55,7 +55,7 @@ const AdminSettingsPage = dynamic(() => import('./pages/AdminSettingsPage'), { s
 const AdminForgotPasswordPage = dynamic(() => import('./pages/AdminForgotPasswordPage'), { ssr: false })
 import NavBar from './components/NavBar'
 import Footer from './components/Footer'
-import UserDashboardLayout from './components/UserDashboardLayout'
+import BasicLayout from './components/BasicLayout'
 import BottomNav from './components/BottomNav'
 
 // Auth providers and session manager
@@ -128,65 +128,65 @@ function App() {
 
                         if (pathname === '/dashboard' || pathname === '/user-dashboard') {
                           return (
-                            <UserDashboardLayout>
+                            <BasicLayout>
                               <UserDashboardPage />
-                            </UserDashboardLayout>
+                            </BasicLayout>
                           )
                         }
     if (pathname === '/personal-loan') return <PersonalLoanFormPage />
     if (pathname === '/home-loan') return <HomeLoanPage />
                         if (pathname === '/dashboard/apply-loan') {
                           return (
-                            <UserDashboardLayout>
+                            <BasicLayout>
                               <UserLoanFormPage />
-                            </UserDashboardLayout>
+                            </BasicLayout>
                           )
                         }
     if (pathname === '/business-loan') return <BusinessLoanFormPage />
     if (pathname === '/car-loan') return <CarLoanFormPage />
                         if (pathname === '/dashboard/applications') {
                           return (
-                            <UserDashboardLayout>
+                            <BasicLayout>
                               <UserApplicationsPage />
-                            </UserDashboardLayout>
+                            </BasicLayout>
                           )
                         }
     if (pathname === '/car-loan/new') return <NewCarLoanFormPage />
     if (pathname === '/car-loan/used') return <UsedCarLoanFormPage />
                         if (pathname === '/dashboard/profile') {
                           return (
-                            <UserDashboardLayout>
+                            <BasicLayout>
                               <UserProfilePage />
-                            </UserDashboardLayout>
+                            </BasicLayout>
                           )
                         }
     if (pathname === '/car-loan/refinance') return <CarRefinanceFormPage />
     if (pathname === '/loan-against-property') return <LoanAgainstPropertyPage />
                         if (pathname === '/dashboard/insurance') {
                           return (
-                            <UserDashboardLayout>
+                            <BasicLayout>
                               <UserInsuranceFormPage />
-                            </UserDashboardLayout>
+                            </BasicLayout>
                           )
                         }
     if (pathname === '/machinery-loan') return <MachineryLoanPage />
     if (pathname === '/education-loan') return <EducationLoanPage />
                         if (pathname === '/dashboard/support') {
                           return (
-                            <UserDashboardLayout>
+                            <BasicLayout>
                               <UserSupportPage />
-                            </UserDashboardLayout>
+                            </BasicLayout>
                           )
                         }
                         // Additional dashboard sections
                         if (pathname === '/dashboard/my-loans' || pathname === '/dashboard/my-insurance' || pathname === '/dashboard/apply-insurance' || pathname === '/dashboard/my-cards' || pathname === '/dashboard/security' || pathname === '/dashboard/settings' || pathname === '/dashboard/help') {
                           // Render placeholder pages inside dashboard layout
                           return (
-                            <UserDashboardLayout>
+                            <BasicLayout>
                               <div className="max-w-6xl mx-auto p-6">
                                 <h1 className="text-2xl font-semibold">Coming Soon</h1>
                               </div>
-                            </UserDashboardLayout>
+                            </BasicLayout>
                           )
                         }
     if (pathname === '/gold-loan') return <GoldLoanFormPage />

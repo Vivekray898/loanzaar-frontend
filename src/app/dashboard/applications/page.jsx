@@ -1,4 +1,4 @@
-import UserApplicationsPage from '@/pages/UserApplicationsPage'
+import { redirect } from 'next/navigation'
 
 export const metadata = {
   title: 'My Applications | Loanzaar',
@@ -6,5 +6,5 @@ export const metadata = {
 }
 
 export default function Applications() {
-  return <UserApplicationsPage />
+  redirect('/account')
 }

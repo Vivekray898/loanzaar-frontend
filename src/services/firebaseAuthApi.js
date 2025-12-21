@@ -1,28 +1,42 @@
-// Firebase Auth API Service - Handles MongoDB profile creation/retrieval
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://loanzaar-react-base.onrender.com/api';
+// Profile API using Supabase `profiles` table
+import { supabase } from '../config/supabase';
 
 /**
- * Create or update user profile in MongoDB after Supabase authentication
- * @param {Object} profileData - User profile data including supabaseUID
- * @returns {Promise<Object>}
+ * Create or update user profile in Supabase `profiles` table.
+ * Accepts multiple UID field names (supabaseUID, uid, id, userId).
+ * @param {Object} profileData - { supabaseUID|uid|id|userId, name, email, phone, ... }
+ * @returns {Promise<Object>} - { success: true, data }
  */
 export const createOrUpdateUserProfile = async (profileData) => {
   try {
-    const response = await fetch(`${API_URL}/auth/firebase/profile`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(profileData)
-    });
+    const supabaseUID = profileData.supabaseUID || profileData.uid || profileData.id || profileData.userId;
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to create/update profile');
+    if (!supabaseUID || !profileData.name || !profileData.email || !profileData.phone) {
+      throw new Error('Please provide supabaseUID (or id), name, email, and phone');
     }
 
-    return data;
+    const payload = {
+      user_id: supabaseUID,
+      full_name: profileData.name,
+      email: profileData.email,
+      phone: profileData.phone,
+      address: profileData.address || null,
+      photo_url: profileData.photoUrl || profileData.photo_url || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Use upsert to insert or update the profile by user_id
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert(payload, { onConflict: 'user_id' })
+      .select();
+
+    if (error) {
+      console.error('Supabase upsert error (profiles):', error);
+      throw error;
+    }
+
+    return { success: true, data: data?.[0] || null };
   } catch (error) {
     console.error('Error creating/updating profile:', error);
     throw error;
@@ -36,20 +50,19 @@ export const createOrUpdateUserProfile = async (profileData) => {
  */
 export const getUserProfileByUID = async (supabaseUID) => {
   try {
-    const response = await fetch(`${API_URL}/auth/firebase/profile/${supabaseUID}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    if (!supabaseUID) throw new Error('supabaseUID is required');
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', supabaseUID)
+      .limit(1);
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to get profile');
+    if (error) {
+      console.error('Supabase select error (profiles):', error);
+      throw error;
     }
 
-    return data;
+    return { success: true, data: data?.[0] || null };
   } catch (error) {
     console.error('Error getting profile:', error);
     throw error;
@@ -62,26 +75,9 @@ export const getUserProfileByUID = async (supabaseUID) => {
  * @returns {Promise<Object>}
  */
 export const verifyTokenAndGetProfile = async (idToken) => {
-  try {
-    const response = await fetch(`${API_URL}/auth/firebase/verify`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ idToken })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to verify token');
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error verifying token:', error);
-    throw error;
-  }
+  // Supabase manages sessions/tokens on the client; this stub remains for compatibility.
+  // If server-side verification is needed, implement an API route that verifies the token with Supabase.
+  throw new Error('verifyTokenAndGetProfile is not implemented for Supabase; use Supabase client auth methods');
 };
 
 /**
@@ -90,23 +86,20 @@ export const verifyTokenAndGetProfile = async (idToken) => {
  * @param {string} idToken - Auth token for authentication
  * @returns {Promise<Object>}
  */
-export const deleteUserProfile = async (supabaseUID, idToken) => {
+export const deleteUserProfile = async (supabaseUID) => {
   try {
-    const response = await fetch(`${API_URL}/auth/firebase/profile/${supabaseUID}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}`
-      }
-    });
+    if (!supabaseUID) throw new Error('supabaseUID is required');
+    const { data, error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('user_id', supabaseUID);
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to delete profile');
+    if (error) {
+      console.error('Supabase delete error (profiles):', error);
+      throw error;
     }
 
-    return data;
+    return { success: true, data };
   } catch (error) {
     console.error('Error deleting profile:', error);
     throw error;

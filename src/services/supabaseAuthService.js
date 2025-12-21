@@ -25,9 +25,12 @@ export const signUpWithEmailPassword = async (email, password, metadata = {}) =>
         }
       }
     });
-    
-    if (error) throw error;
-    
+    if (error) {
+      console.error('Supabase signUp returned error object:', error);
+      const detail = error?.message || JSON.stringify(error);
+      throw new Error(detail);
+    }
+
     return {
       success: true,
       user: data.user,
@@ -35,11 +38,16 @@ export const signUpWithEmailPassword = async (email, password, metadata = {}) =>
       message: "Account created successfully! Please check your email to verify your account."
     };
   } catch (error) {
-    console.error("❌ Signup error (Supabase):", error);
-    throw {
-      success: false,
-      message: error.message || "Error creating account"
-    };
+    // Provide richer debug info in server console and normalize thrown error
+    console.error("❌ Signup error (Supabase):", {
+      name: error?.name,
+      message: error?.message,
+      status: error?.status,
+      details: error?.details || error?.hint || undefined,
+      cause: error
+    });
+    const message = error?.message || (typeof error === 'string' ? error : 'Error creating account');
+    throw new Error(message);
   }
 };
 

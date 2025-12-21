@@ -88,6 +88,7 @@ function SignUpPage({ onShowSignin, isModal = false }) {
   };
 
   const handleCaptchaChange = (token) => {
+    console.debug('ReCAPTCHA token received:', token);
     setCaptchaToken(token);
   };
 
@@ -105,16 +106,19 @@ function SignUpPage({ onShowSignin, isModal = false }) {
 
     setIsLoading(true);
     try {
+      console.debug('Submitting signup', { email: formData.email, captchaToken });
       const firebaseResult = await signUpWithEmailPassword(formData.email, formData.password, {
         name: formData.name, phone: formData.phone
       });
-      
+      console.debug('Supabase signup result:', firebaseResult);
+
       if (firebaseResult.success) {
         setFirebaseUser(firebaseResult.user);
         setCurrentStep(2);
         window.scrollTo(0, 0);
       }
     } catch (error) {
+      console.error('Signup caught error (client):', error);
       setMessage({ type: 'error', text: error.message || 'Failed to create account.' });
     } finally {
       setIsLoading(false);

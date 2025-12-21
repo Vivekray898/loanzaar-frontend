@@ -1,7 +1,7 @@
 'use client'
 
-import UserDashboardLayout from '@/components/UserDashboardLayout'
+import BasicLayout from '@/components/BasicLayout'
 
 export default function DashboardLayout({ children }) {
-  return <UserDashboardLayout>{children}</UserDashboardLayout>
+  return <BasicLayout>{children}</BasicLayout>
 }

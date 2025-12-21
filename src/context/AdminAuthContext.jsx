@@ -32,7 +32,24 @@ export const AdminAuthProvider = ({ children }) => {
       
       if (session?.user) {
         const user = session.user;
-        // User is signed in - fetch or create admin data from Supabase
+
+        // Determine if this user should be treated as an admin before querying `admin_users`.
+        // Prefer an explicit `role` in user metadata, otherwise allow a configured admin email list.
+        const adminEmailsEnv = process.env.NEXT_PUBLIC_ADMIN_EMAILS || '';
+        const adminEmails = adminEmailsEnv.split(',').map(e => e.trim()).filter(Boolean);
+        const isAdminCandidate = (user.user_metadata && user.user_metadata.role === 'admin') || adminEmails.includes(user.email);
+
+        if (!isAdminCandidate) {
+          // Not an admin - do not query admin_users table. Keep basic supabaseUser state.
+          setAdmin(null);
+          setSupabaseUser(user);
+          setLoading(false);
+          setAuthInitialized(true);
+          console.log('ℹ️ Signed-in user is not an admin; skipping admin_users lookup');
+          return;
+        }
+
+        // User is signed in and is an admin candidate - fetch or create admin data from Supabase
         try {
           let { data: adminDoc, error: fetchError } = await supabase
             .from('admin_users')

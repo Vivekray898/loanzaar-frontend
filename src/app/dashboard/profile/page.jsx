@@ -1,4 +1,4 @@
-import UserProfilePage from '@/pages/UserProfilePage'
+import { redirect } from 'next/navigation'
 
 export const metadata = {
   title: 'My Profile | Loanzaar',
@@ -6,5 +6,6 @@ export const metadata = {
 }
 
 export default function Profile() {
-  return <UserProfilePage />
+  // The legacy `UserProfilePage` was removed — redirect to the public profile route
+  redirect('/profile')
 }

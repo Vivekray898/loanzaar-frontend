@@ -1,4 +1,4 @@
-import UserDashboardPage from '@/pages/UserDashboardPage'
+import { redirect } from 'next/navigation'
 
 export const metadata = {
   title: 'Dashboard | Loanzaar',
@@ -6,5 +6,6 @@ export const metadata = {
 }
 
 export default function Dashboard() {
-  return <UserDashboardPage />
+  // Redirect to account page since UserDashboardPage was removed
+  redirect('/account')
 }
