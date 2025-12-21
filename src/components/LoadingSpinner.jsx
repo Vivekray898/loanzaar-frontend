@@ -1,13 +1,20 @@
+import PageSkeleton from './PageSkeleton';
+import { CardSkeleton } from './Skeleton';
+
 export default function LoadingSpinner() {
   return (
-    <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        {/* Animated spinner */}
-        <div className="relative w-12 h-12">
-          <div className="absolute inset-0 bg-linear-to-r from-blue-500 to-purple-500 rounded-full animate-spin" />
-          <div className="absolute inset-1 bg-white rounded-full" />
+    <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl">
+        {/* Desktop: show full page skeleton; Mobile: compact card skeleton */}
+        <div className="hidden md:block rounded-lg overflow-hidden shadow-lg">
+          <PageSkeleton />
         </div>
-        <p className="text-sm text-slate-600 font-medium">Loading...</p>
+
+        <div className="block md:hidden">
+          <CardSkeleton />
+        </div>
+
+        <p className="sr-only">Loading...</p>
       </div>
     </div>
   );

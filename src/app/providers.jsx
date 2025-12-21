@@ -8,6 +8,7 @@ import '../App.css'
 import '../config/supabase'
 
 import NavBar from '@/components/NavBar'
+import BottomNav from '@/components/BottomNav'
 import Footer from '@/components/Footer'
 import ScrollToTop from '@/components/ScrollToTop'
 import SessionManager from '@/components/SessionManager'
@@ -29,12 +30,13 @@ export default function Providers({ children }) {
     <>
       <ScrollToTop />
       <NavBar />
-      <div className="font-sans text-slate-800 antialiased">
+      <div className="font-sans text-slate-800 antialiased pb-20 md:pb-0">
         <main>
           {children}
         </main>
         <Footer />
       </div>
+      {!isAdminRoute && <BottomNav />}
       <StickyCalculator />
     </>
   )

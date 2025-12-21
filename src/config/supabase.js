@@ -12,8 +12,9 @@ import { createClient } from '@supabase/supabase-js';
  * - SUPABASE_ANON_KEY: Supabase Anonymous/Public API Key
  */
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+// Prefer NEXT_PUBLIC_* for client-side visibility, fall back to non-public names for server usage
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
 /**
  * Validate Supabase Configuration
@@ -22,8 +23,8 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const validateSupabaseConfig = () => {
   const missingFields = [];
   
-  if (!supabaseUrl) missingFields.push('SUPABASE_URL');
-  if (!supabaseAnonKey) missingFields.push('SUPABASE_ANON_KEY');
+  if (!supabaseUrl) missingFields.push('NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL');
+  if (!supabaseAnonKey) missingFields.push('NEXT_PUBLIC_SUPABASE_ANON_KEY or SUPABASE_ANON_KEY');
 
   if (missingFields.length > 0) {
     console.warn(

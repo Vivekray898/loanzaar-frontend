@@ -56,6 +56,7 @@ const AdminForgotPasswordPage = dynamic(() => import('./pages/AdminForgotPasswor
 import NavBar from './components/NavBar'
 import Footer from './components/Footer'
 import UserDashboardLayout from './components/UserDashboardLayout'
+import BottomNav from './components/BottomNav'
 
 // Auth providers and session manager
 import { AdminAuthProvider } from './context/AdminAuthContext'
@@ -150,8 +151,8 @@ function App() {
                             </UserDashboardLayout>
                           )
                         }
-    if (pathname === '/car-loan/new-car-loan') return <NewCarLoanFormPage />
-    if (pathname === '/car-loan/used-car-loan') return <UsedCarLoanFormPage />
+    if (pathname === '/car-loan/new') return <NewCarLoanFormPage />
+    if (pathname === '/car-loan/used') return <UsedCarLoanFormPage />
                         if (pathname === '/dashboard/profile') {
                           return (
                             <UserDashboardLayout>
@@ -159,7 +160,7 @@ function App() {
                             </UserDashboardLayout>
                           )
                         }
-    if (pathname === '/car-loan/car-refinance') return <CarRefinanceFormPage />
+    if (pathname === '/car-loan/refinance') return <CarRefinanceFormPage />
     if (pathname === '/loan-against-property') return <LoanAgainstPropertyPage />
                         if (pathname === '/dashboard/insurance') {
                           return (
@@ -220,12 +221,13 @@ function App() {
       <ScrollToTop />
       <ConditionalAuthProvider>
         <NavBar />
-        <div className="font-sans text-slate-800 antialiased">
+        <div className="font-sans text-slate-800 antialiased pb-20 md:pb-0">
           <main>
             {renderRoute()}
           </main>
           <Footer />
         </div>
+        <BottomNav />
       </ConditionalAuthProvider>
     </>
   );

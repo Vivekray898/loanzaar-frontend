@@ -5,14 +5,28 @@ import Meta from '../components/Meta';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-const ReCAPTCHA = dynamic(() => import('react-google-recaptcha'), { ssr: false });
 import { signInWithEmailPassword } from '../services/supabaseAuthService';
-import { getUserProfileByUID, createOrUpdateUserProfile } from '../services/firebaseAuthApi';
+import { getUserProfileByUID } from '../services/firebaseAuthApi';
 
-// SignInPage Component
-function SignInPage() {
+// Dynamic import ReCAPTCHA
+const ReCAPTCHA = dynamic(() => import('react-google-recaptcha'), { ssr: false });
+
+// --- Icon Components ---
+const MailIcon = () => (
+  <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+  </svg>
+);
+
+const LockIcon = () => (
+  <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+  </svg>
+);
+
+// --- SignInPage Component ---
+function SignInPage({ onShowSignup, onShowForgot, isModal = false }) {
   const router = useRouter();
-  const navigate = (path) => router.push(path);
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [fieldErrors, setFieldErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -26,18 +40,11 @@ function SignInPage() {
     switch (fieldName) {
       case 'email':
         if (!value.trim()) return 'Email is required';
-
-        // Check if it's a valid email
         const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
-
-        if (!isValidEmail) {
-          return 'Please enter a valid email address';
-        }
-        return '';
+        return !isValidEmail ? 'Please enter a valid email address' : '';
       case 'password':
         if (!value) return 'Password is required';
-        if (value.length < 6) return 'Password must be at least 6 characters';
-        return '';
+        return value.length < 6 ? 'Password must be at least 6 characters' : '';
       default:
         return '';
     }
@@ -45,15 +52,10 @@ function SignInPage() {
 
   const validateForm = () => {
     const errors = {};
-    const fields = ['email', 'password'];
-
-    fields.forEach(field => {
+    ['email', 'password'].forEach(field => {
       const error = validateField(field, formData[field]);
-      if (error) {
-        errors[field] = error;
-      }
+      if (error) errors[field] = error;
     });
-
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -61,66 +63,41 @@ function SignInPage() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error for this field when user starts typing
-    if (fieldErrors[name]) {
-      setFieldErrors(prev => ({ ...prev, [name]: '' }));
-    }
+    if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  const handleCaptchaChange = (token) => {
-    setCaptchaToken(token);
-    console.log('✅ reCAPTCHA token received:', token);
-  };
+  const handleCaptchaChange = (token) => setCaptchaToken(token);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage(null);
 
-    // Validate all fields
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
-    // CAPTCHA validation
     if (!captchaToken) {
-      setMessage({ type: 'error', text: 'Please complete the reCAPTCHA verification by checking the "I\'m not a robot" box' });
+      setMessage({ type: 'error', text: 'Please verify you are human' });
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Step 1: Clear any old tokens first
-      console.log('🧹 Clearing old tokens...');
       localStorage.removeItem('firebaseToken');
       localStorage.removeItem('userToken');
 
-      // Step 2: Sign in with Supabase
-      console.log('🔐 Signing in via Supabase...');
       const supabaseResult = await signInWithEmailPassword(formData.email, formData.password);
 
       if (supabaseResult.success) {
-        console.log('✅ Supabase sign-in successful, UID:', supabaseResult.uid);
-        console.log('🔑 Fresh token received, length:', supabaseResult.token.length);
-        setMessage({ type: 'success', text: 'Sign in successful! Fetching your profile...' });
-
-        // Step 3: Get or create user profile in MongoDB
         try {
-          console.log('👤 Fetching user profile from MongoDB...');
           const profile = await getUserProfileByUID(supabaseResult.uid);
 
           if (profile.success) {
-            console.log('✅ Profile found:', profile.data.userId);
-
-            // Store fresh tokens and user data
-            console.log('💾 Storing fresh token and user data...');
-            localStorage.setItem('userToken', supabaseResult.token); // For UserAuthContext
+            localStorage.setItem('userToken', supabaseResult.token);
             localStorage.setItem('userId', profile.data.userId);
             localStorage.setItem('supabaseUID', supabaseResult.uid);
             localStorage.setItem('userName', profile.data.name);
             localStorage.setItem('userRole', profile.data.role);
 
-            // Store userData object for UserAuthContext
             const userData = {
               userId: profile.data.userId,
               supabaseUID: supabaseResult.uid,
@@ -130,174 +107,170 @@ function SignInPage() {
             };
             localStorage.setItem('userData', JSON.stringify(userData));
 
-            console.log('✅ Token and user data stored successfully');
-
-            // Role-based redirection
             if (profile.data.role === 'admin') {
-              console.log('✅ Admin user, redirecting to admin dashboard');
               router.push('/admin/dashboard');
             } else {
-              console.log('✅ Regular user, redirecting to user dashboard');
               router.push('/dashboard');
             }
           }
         } catch (profileError) {
-          console.error('Profile fetch error:', profileError);
-          // Store token even if profile fetch fails - user may not have completed profile yet
-          localStorage.setItem('userToken', supabaseResult.token); // For UserAuthContext
+          localStorage.setItem('userToken', supabaseResult.token);
           localStorage.setItem('supabaseUID', supabaseResult.uid);
           localStorage.setItem('supabaseEmail', supabaseResult.email);
-
-          setMessage({
-            type: 'warning',
-            text: 'Profile not found. Please complete your profile setup. Redirecting to profile page...'
-          });
-
-          // Redirect to dashboard profile page (where they can complete their profile)
-          console.log('🔄 Redirecting to profile page');
+          setMessage({ type: 'warning', text: 'Profile incomplete. Redirecting...' });
           router.push('/dashboard/profile');
         }
       }
     } catch (error) {
-      console.error('❌ Supabase sign-in error:', error);
-      setMessage({ type: 'error', text: error.message || 'Failed to sign in. Please check your credentials.' });
+      setMessage({ type: 'error', text: error.message || 'Authentication failed' });
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Helper styles
+  const inputContainerClass = "relative rounded-lg shadow-sm";
+  const iconWrapperClass = "absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none";
+  const inputClass = (hasError) => `block w-full pl-11 pr-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-offset-0 transition-all duration-200 text-base ${hasError ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 bg-red-50/50' : 'border-slate-200 text-slate-900 placeholder-slate-400 focus:ring-blue-500 bg-white'}`;
+  const labelClass = "block text-sm font-semibold text-slate-700 mb-1.5 ml-1";
+  const errorClass = "mt-1.5 ml-1 text-xs text-red-600 font-medium";
+
   return (
-    <div className="bg-slate-50 font-sans">
-      <Meta title="Login | Loanzaar" description="Access your Loanzaar account securely to manage loans and updates." />
-      <div className="flex justify-center min-h-screen">
-        {/* Background Image/Branding Section */}
-        <div
-          className="hidden bg-cover lg:block lg:w-2/3"
-          style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?q=80&w=2070&auto=format&fit=crop)' }}
-        >
-          <div className="flex items-center h-full px-20 bg-gray-900 bg-opacity-40">
-            <div>
-              <h2 className="text-4xl font-bold text-white">Welcome Back</h2>
-              <p className="max-w-xl mt-3 text-gray-200">
-                Your trusted partner in financial solutions. Access your account to manage loans, track applications, and explore personalized financial options.
-              </p>
-            </div>
-          </div>
+    <div className={`bg-slate-50 font-sans selection:bg-blue-100 selection:text-blue-900 flex flex-col justify-center ${isModal ? 'min-h-0 py-3 sm:px-4' : 'min-h-screen py-12 sm:px-6 lg:px-8'}`}>
+      <Meta title="Secure Login | Loanzaar" description="Securely access your Loanzaar financial dashboard." />
+      
+      {/* Background Pattern */}
+      <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#0f172a 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+
+      <div className="relative z-10 sm:mx-auto sm:w-full sm:max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+            <Link href="/" className="inline-block">
+                <img
+                    src="/images/loanzaar--logo.avif"
+                    alt="Loanzaar"
+                    className="h-12 w-auto mx-auto mb-6 object-contain"
+                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/150x50/f1f5f9/0f172a?text=Loanzaar'; }}
+                />
+            </Link>
+          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Welcome back</h2>
+          <p className="mt-2 text-sm text-slate-600">
+             Securely access your financial dashboard
+          </p>
         </div>
 
-        {/* Sign In Form Section */}
-        <div className="flex items-center w-full max-w-md px-6 mx-auto lg:w-1/3">
-          <div className="flex-1">
-            <div className="text-center">
-              <img
-                src="/images/loanzaar--logo.avif"
-                alt="RU LOANS Logo"
-                className="w-auto h-10 sm:h-12 mx-auto"
-              />
-              <p className="mt-3 text-gray-500">Sign in to access your account</p>
+        {/* Card */}
+        <div className={`bg-white ${isModal ? 'py-4 px-4' : 'py-8 px-6'} shadow-xl shadow-slate-200/50 rounded-2xl sm:px-10 border border-slate-100`}>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            
+            {/* Email Field */}
+            <div>
+              <label htmlFor="email" className={labelClass}>Email Address</label>
+              <div className={inputContainerClass}>
+                <div className={iconWrapperClass}><MailIcon /></div>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className={inputClass(fieldErrors.email)}
+                  placeholder="name@example.com"
+                />
+              </div>
+              {fieldErrors.email && <p className={errorClass}>● {fieldErrors.email}</p>}
             </div>
 
-            <div className="mt-8">
-              <form onSubmit={handleSubmit}>
-                {/* Email Field */}
-                <div>
-                  <label htmlFor="email" className="block mb-2 text-sm font-semibold text-slate-700">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    id="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="you@example.com"
-                    className={`block w-full px-4 py-2.5 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-300 transition ${fieldErrors.email ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
-                      }`}
-                  />
-                  {fieldErrors.email && (
-                    <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                      ❌ {fieldErrors.email}
-                    </p>
-                  )}
-                </div>
-
-                {/* Password Field */}
-                <div className="mt-6">
-                  <div className="flex justify-between mb-2">
-                    <label htmlFor="password" className="text-sm font-semibold text-slate-700">Password *</label>
-                    <Link href="/forgot-password" className="text-sm text-rose-500 focus:outline-none focus:underline hover:underline font-medium">
-                      Forgot password?
-                    </Link>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      id="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      placeholder="Enter your password"
-                      className={`block w-full px-4 py-2.5 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-300 transition pr-10 ${fieldErrors.password ? 'border-red-500 bg-red-50' : 'border-slate-300 bg-white'
-                        }`}
-                    />
-                    <button
+            {/* Password Field */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="password" className="block text-sm font-semibold text-slate-700 ml-1">Password</label>
+                {onShowForgot ? (
+                  <button type="button" onClick={onShowForgot} className="text-sm font-semibold text-blue-600 hover:text-blue-500 transition-colors">Forgot password?</button>
+                ) : (
+                  <Link href="/forgot-password" className="text-sm font-semibold text-blue-600 hover:text-blue-500 transition-colors">Forgot password?</Link>
+                )}
+              </div>
+              <div className={inputContainerClass}>
+                <div className={iconWrapperClass}><LockIcon /></div>
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className={inputClass(fieldErrors.password)}
+                  placeholder="Enter your password"
+                />
+                  <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-slate-500 hover:text-slate-700 transition"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
-                      {showPassword ? (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-4.803m5.596-3.856a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                  {fieldErrors.password && (
-                    <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                      ❌ {fieldErrors.password}
-                    </p>
+                  {showPassword ? (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-4.803m5.596-3.856a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  ) : (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                   )}
+                </button>
+              </div>
+              {fieldErrors.password && <p className={errorClass}>● {fieldErrors.password}</p>}
+            </div>
+
+            {/* Status Message */}
+            {message && (
+                <div className={`p-4 rounded-xl text-sm flex items-start gap-3 ${message.type === 'error' ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`}>
+                    {message.type === 'error' ? (
+                       <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    ) : (
+                       <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    )}
+                    <span>{message.text}</span>
                 </div>
+            )}
 
-                {/* Message display */}
-                {message && (
-                  <div className={`mt-4 text-sm font-medium text-center p-3 rounded-lg border ${message.type === 'error' ? 'text-red-800 bg-red-100 border-red-300' : 'text-green-800 bg-green-100 border-green-300'}`}>
-                    {message.text}
-                  </div>
-                )}
-
-                <div className="my-6">
+            <div className="space-y-4">
+               {/* ReCAPTCHA */}
+               <div className="flex justify-center transform scale-95 sm:scale-100">
+                <div className="w-full max-w-[320px] mx-auto">
                   <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey="6LdUpOsrAAAAAKqnWvFE0MH-mgcHo8BzFohUEB5b"
-                    onChange={handleCaptchaChange}
-                    onExpired={() => setCaptchaToken(null)}
+                      ref={recaptchaRef}
+                      sitekey="6LdUpOsrAAAAAKqnWvFE0MH-mgcHo8BzFohUEB5b"
+                      onChange={handleCaptchaChange}
+                      onExpired={() => setCaptchaToken(null)}
                   />
                 </div>
+               </div>
 
-                <div className="mt-6">
-                  <button
-                    type="submit"
-                    disabled={isLoading || Object.keys(fieldErrors).length > 0}
-                    className="w-full px-4 py-2.5 tracking-wide text-white transition-all duration-300 transform bg-rose-500 rounded-lg hover:bg-rose-600 focus:outline-none focus:bg-rose-600 focus:ring focus:ring-rose-300 focus:ring-opacity-50 disabled:opacity-60 disabled:cursor-not-allowed shadow-md hover:shadow-lg active:scale-95 font-semibold"
-                  >
-                    {isLoading ? 'Signing in...' : 'Sign in'}
-                  </button>
-                </div>
-              </form>
-
-              <p className="mt-6 text-sm text-center text-gray-400">
-                Don't have an account yet?{' '}
-                <Link href="/signup" className="text-rose-500 focus:outline-none focus:underline hover:underline">
-                  Sign up
-                </Link>.
-              </p>
+               {/* Submit Button */}
+               <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg shadow-blue-600/20 text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200"
+               >
+                {isLoading ? (
+                    <span className="flex items-center gap-2">
+                        <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Verifying...
+                    </span>
+                ) : 'Sign In Securely'}
+               </button>
             </div>
+          </form>
+
+          {/* Footer */}
+          <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+             <p className="text-sm text-slate-500">
+                New to Loanzaar?{' '}
+                {onShowSignup ? (
+                  <button type="button" onClick={onShowSignup} className="font-semibold text-blue-600 hover:text-blue-500 transition-colors">Create an account</button>
+                ) : (
+                  <Link href="/signup" className="font-semibold text-blue-600 hover:text-blue-500 transition-colors">Create an account</Link>
+                )}
+             </p>
           </div>
         </div>
       </div>
@@ -305,15 +278,4 @@ function SignInPage() {
   );
 }
 
-
-export default function App() {
-  return (
-    <div>
-      <main>
-        <SignInPage />
-      </main>
-    </div>
-  );
-}
-
-
+export default SignInPage;

@@ -1,2 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;500&display=swap');
 @import "tailwindcss";
+
+/* Disable native browser pull-to-refresh on mobile so custom PTR works */
+html, body, #__next {
+	overscroll-behavior-y: none;
+}
+
+/* Helper class for containers where touch panning is expected */
+.pull-to-refresh-container {
+	touch-action: pan-y;
+}
