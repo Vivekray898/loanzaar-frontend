@@ -3,6 +3,9 @@ import '../App.css'
 
 import Providers from './providers'
 
+// Initialize Supabase config on app load
+import '../config/supabase'
+
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: {
