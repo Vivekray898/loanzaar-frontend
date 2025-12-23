@@ -19,13 +19,15 @@ export default function BottomNav({ items } = {}) {
     path === "/" ? pathname === "/" : pathname.startsWith(path)
 
   return (
-    <nav
-      aria-label="Mobile navigation"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50"
-    >
-      {/* Glass Container */}
-      <div className="bg-white/80 backdrop-blur-2xl border-t border-slate-200/60 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] pb-[env(safe-area-inset-bottom)]">
-        <div className="flex items-center justify-around h-[68px] px-1">
+    <nav className="fixed bottom-0 left-0 right-0 z-50">
+      {/* 
+        iOS Style Background: 
+        - High transparency (white/85) 
+        - Heavy blur (backdrop-blur-xl)
+        - Hairline top border (border-gray-200)
+      */}
+      <div className="bg-white/85 backdrop-blur-xl border-t border-gray-200 shadow-sm pb-[env(safe-area-inset-bottom)] transition-all duration-300">
+        <div className="flex items-start justify-around pt-2 h-[84px] md:h-[60px]">
           {navItems.map((item) => {
             const active = isActive(item.path)
             const Icon = item.icon
@@ -34,52 +36,35 @@ export default function BottomNav({ items } = {}) {
               <Link
                 key={item.key}
                 href={item.path}
-                className="relative flex-1 h-full flex flex-col items-center justify-center group focus:outline-none"
+                className="group flex-1 flex flex-col items-center justify-start focus:outline-none active:opacity-70 transition-opacity duration-150"
               >
-                {/* Active Glow */}
-                {active && (
-                  <span className="absolute top-2 h-8 w-10 rounded-full bg-blue-500/10 blur-md" />
-                )}
-
-                {/* Icon Pill */}
-                <div
-                  className={`
-                    relative flex items-center justify-center
-                    px-4 py-1.5 mb-1 rounded-2xl
-                    transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-                    group-active:scale-90
-                    ${
-                      active
-                        ? "bg-blue-100 text-blue-600 shadow-sm translate-y-[-1px]"
-                        : "text-slate-400 group-hover:text-slate-600"
-                    }
-                  `}
-                >
+                <div className="relative flex flex-col items-center gap-[3px]">
+                  {/* Icon */}
                   <Icon
                     className={`
-                      w-[22px] h-[22px] transition-all duration-300
+                      w-[26px] h-[26px] transition-all duration-300
                       ${
                         active
-                          ? "stroke-[2.5px] fill-blue-600/20"
-                          : "stroke-2"
+                          ? "text-blue-500 stroke-[2.5px] scale-100" // Active: Blue & Bold
+                          : "text-gray-400 stroke-[1.5px] group-hover:text-gray-500" // Inactive: Gray & Thin
                       }
                     `}
                   />
-                </div>
 
-                {/* Label */}
-                <span
-                  className={`
-                    text-[10px] tracking-wide transition-all duration-200
-                    ${
-                      active
-                        ? "text-blue-600 font-semibold"
-                        : "text-slate-500 font-medium"
-                    }
-                  `}
-                >
-                  {item.label}
-                </span>
+                  {/* Label */}
+                  <span
+                    className={`
+                      text-[10px] font-medium tracking-tight leading-none
+                      ${
+                        active
+                          ? "text-blue-500"
+                          : "text-gray-400 group-hover:text-gray-500"
+                      }
+                    `}
+                  >
+                    {item.label}
+                  </span>
+                </div>
               </Link>
             )
           })}

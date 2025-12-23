@@ -127,7 +127,7 @@ export default function ProductsPage() {
   const { title: sheetTitle, options: currentOptions } = getSheetContent()
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-24 relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50 font-sans pb-4 relative overflow-hidden">
       
       {/* 1. App Header */}
       <div className="bg-white px-6 pt-12 pb-6 rounded-b-[2.5rem] shadow-sm border-b border-slate-100 relative z-10">

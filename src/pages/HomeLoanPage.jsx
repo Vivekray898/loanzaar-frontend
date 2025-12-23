@@ -68,7 +68,7 @@ const HomeLoanPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-24 text-slate-900">
+    <div className="min-h-screen bg-slate-50 font-sans pb-4 text-slate-900">
       <Meta title="Home Loan | Loanzaar" description="Lowest interest rates on home loans." />
       
       {/* 1. Mobile Header (Sticky) */}

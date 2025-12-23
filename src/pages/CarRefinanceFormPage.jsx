@@ -66,7 +66,7 @@ const CarRefinanceFormPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-24 text-slate-900">
+    <div className="min-h-screen bg-slate-50 font-sans pb-4 text-slate-900">
       <Meta title="Car Refinance | Loanzaar" description="Lower your car EMI today." />
       
       {/* 1. Mobile Header (Sticky) */}

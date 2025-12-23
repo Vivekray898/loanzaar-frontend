@@ -68,7 +68,7 @@ const LoanAgainstPropertyPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-24 text-slate-900">
+    <div className="min-h-screen bg-slate-50 font-sans pb-4 text-slate-900">
       <Meta title="Loan Against Property | Loanzaar" description="Unlock your property's value." />
       
       {/* 1. Mobile Header (Sticky) */}

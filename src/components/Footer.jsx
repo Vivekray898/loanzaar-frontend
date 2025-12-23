@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { 
   Facebook, Twitter, Linkedin, Instagram, 
-  Mail, Phone, MapPin, ChevronDown, Send
+  Mail, Phone, MapPin, ChevronDown, Send, ShieldCheck
 } from 'lucide-react';
 
 export default function Footer() {
@@ -26,7 +26,6 @@ export default function Footer() {
 
   const handleNewsletterSubmit = (e) => {
     e.preventDefault();
-    // API call logic here
     setNewsletterEmail('');
     alert('Thank you for subscribing!');
   };
@@ -44,13 +43,11 @@ export default function Footer() {
           <h4 className="text-sm font-bold uppercase tracking-wider text-slate-200 group-hover:text-white transition-colors">
             {title}
           </h4>
-          {/* Chevron hidden on Desktop */}
           <ChevronDown 
             className={`w-5 h-5 text-slate-500 transition-transform duration-300 md:hidden ${isOpen ? 'rotate-180 text-blue-500' : ''}`} 
           />
         </button>
         
-        {/* Content: Collapsible on mobile, visible on desktop */}
         <div className={`
           overflow-hidden transition-all duration-300 ease-in-out
           ${isOpen ? 'max-h-96 opacity-100 pb-6' : 'max-h-0 opacity-0 md:max-h-full md:opacity-100 md:pb-0'}
@@ -62,15 +59,14 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-slate-950 text-slate-300 font-sans text-sm pb-24 md:pb-0">
+    <footer className="bg-slate-950 text-slate-300 font-sans text-sm pb-4 md:pb-0">
       
-      {/* 1. Top Bar: Trust & App (Always Visible) */}
+      {/* 1. Top Bar: Trust Indicators Only */}
       <div className="bg-slate-900 border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-5 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             
-            {/* Trust Indicators */}
-            <div className="flex flex-wrap justify-center gap-4 text-xs font-medium text-slate-400">
+            <div className="flex flex-wrap justify-center md:justify-start gap-4 text-xs font-medium text-slate-400">
               <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-full border border-slate-800">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
                 RBI Approved
@@ -80,20 +76,14 @@ export default function Footer() {
                 256-bit Secure
               </div>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-full border border-slate-800">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8_rgba(245,158,11,0.5)]"></div>
                 100% Digital
               </div>
             </div>
 
-            {/* App Store Buttons */}
-            <div className="flex items-center gap-3">
-              <span className="hidden md:block text-xs font-bold uppercase tracking-wider text-slate-500">Download App</span>
-              <a href="#" className="opacity-80 hover:opacity-100 hover:scale-105 transition-all">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Play Store" className="h-8" />
-              </a>
-              <a href="#" className="opacity-80 hover:opacity-100 hover:scale-105 transition-all">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/6/67/App_Store_%28iOS%29.svg" alt="App Store" className="h-8" />
-              </a>
+            <div className="flex items-center gap-2 text-slate-500 text-[10px] uppercase tracking-[0.2em] font-bold">
+              <ShieldCheck className="w-4 h-4 text-blue-500" />
+              Trusted by 1M+ Users
             </div>
 
           </div>
@@ -104,7 +94,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-5 py-8 lg:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 md:gap-10">
 
-          {/* Brand & Newsletter (Always Visible / Top on Desktop) */}
+          {/* Brand & Newsletter */}
           <div className="mb-8 md:mb-0 space-y-6">
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -116,7 +106,6 @@ export default function Footer() {
               </p>
             </div>
 
-            {/* Newsletter Form */}
             <form onSubmit={handleNewsletterSubmit} className="relative">
               <input
                 type="email"
@@ -135,7 +124,6 @@ export default function Footer() {
               </button>
             </form>
 
-            {/* Social Icons */}
             <div className="flex gap-4">
               {[Facebook, Twitter, Linkedin, Instagram].map((Icon, i) => (
                 <a key={i} href="#" className="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all">
@@ -145,8 +133,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Accordion Columns on Mobile / Grid on Desktop */}
-          
+          {/* Accordion Columns */}
           <FooterAccordion title="Products" id="products">
             <ul className="space-y-3">
               {['Personal Loan', 'Home Loan', 'Business Loan', 'Credit Cards', 'Loan Against Property', 'Mutual Funds', 'Fixed Deposits'].map((item) => (

@@ -5,9 +5,8 @@ import StructuredData from '../components/StructuredData';
 import { generateWebPageSchema } from '../utils/schema';
 import {
   Banknote, CreditCard, Briefcase, Home, Building, RefreshCw, Zap, Wallet,
-  Gauge, FileText, Smartphone, Lightbulb, Receipt, TrendingUp, Landmark,
-  Shield, HeartPulse, Car, Umbrella, Percent, Clock, ChevronRight, CheckCircle, Award,
-  Sparkles, TrendingDown
+  Smartphone, Lightbulb, TrendingUp, Landmark, HeartPulse, Car, 
+  Umbrella, ChevronRight, Shield, CheckCircle, Clock, Percent
 } from 'lucide-react';
 
 // --- DATA ---
@@ -15,13 +14,6 @@ const heroSlides = [
   { id: 1, title: "Personal Loan", link: "/personal-loan", image: "/images/banners/webPLMPGenericBanner.png" },
   { id: 2, title: "Credit Score", link: "/check-cibil-score", image: "/images/banners/webBureauAcquisitionBanner.png" },
   { id: 3, title: "Credit Cards", link: "/credit-cards", image: "/images/banners/mwebCCMPGenericBanner.png" }
-];
-
-const quickActions = [
-  { title: 'Credit Score', icon: Gauge, color: 'text-rose-600', bg: 'bg-rose-50', link: '/check-cibil-score' },
-  { title: 'Pay Loan', icon: RefreshCw, color: 'text-emerald-600', bg: 'bg-emerald-50', link: '/loan-repay' },
-  { title: 'CC Bill', icon: Receipt, color: 'text-violet-600', bg: 'bg-violet-50', link: '/cc-bill' },
-  { title: 'Transactions', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50', link: '/transactions' }
 ];
 
 const loansAndCards = [
@@ -41,6 +33,20 @@ const insuranceItems = [
     { title: 'Term Life', icon: Umbrella, iconColor: 'text-blue-500' },
     { title: 'Invest', icon: Landmark, iconColor: 'text-emerald-600' },
 ];
+
+const features = [
+  { title: '100% Paperless', icon: checkIcon(), desc: 'Complete digital process' },
+  { title: 'Instant Approval', icon: clockIcon(), desc: 'Disbursal in minutes' },
+  { title: 'Best Rates', icon: percentIcon(), desc: 'Starting at 10.49%' },
+  { title: 'Secure', icon: shieldIcon(), desc: '256-bit Encryption' },
+];
+
+// --- ICONS HELPERS ---
+function checkIcon() { return <CheckCircle className="w-5 h-5 text-green-600" />; }
+function clockIcon() { return <Clock className="w-5 h-5 text-blue-600" />; }
+function percentIcon() { return <Percent className="w-5 h-5 text-orange-600" />; }
+function shieldIcon() { return <Shield className="w-5 h-5 text-indigo-600" />; }
+
 
 // --- COMPONENTS ---
 
@@ -96,67 +102,14 @@ const HomePage = () => {
   return (
     <>
       <StructuredData schema={schema} />
-      <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-24 overflow-x-hidden">
+      <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-4 overflow-x-hidden">
         
-        {/* 1. App Header */}
-        <div className="bg-white px-5 pt-12 pb-4 rounded-b-3xl shadow-sm border-b border-slate-100 sticky top-0 z-30">
-          <div className="flex justify-between items-center mb-4">
-             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center">
-                   <span className="text-lg">👤</span>
-                </div>
-                <div>
-                   <p className="text-xs text-slate-500">Welcome back,</p>
-                   <p className="text-sm font-bold text-slate-900">Guest User</p>
-                </div>
-             </div>
-             <div className="flex gap-3">
-                <div className="p-2 rounded-full bg-slate-50 border border-slate-100 text-slate-600 relative">
-                   <Sparkles className="w-5 h-5" />
-                   <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-                </div>
-             </div>
-          </div>
-
-          {/* Quick Stats / Credit Score Widget */}
-          <div className="bg-slate-900 rounded-2xl p-4 text-white shadow-lg shadow-slate-200 relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4 blur-2xl"></div>
-             <div className="flex justify-between items-start relative z-10">
-                <div>
-                   <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Credit Score</p>
-                   <h2 className="text-3xl font-bold tracking-tight">768 <span className="text-sm font-normal text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded ml-1">Excellent</span></h2>
-                </div>
-                <div className="bg-white/10 p-2 rounded-lg backdrop-blur-md">
-                   <Gauge className="w-6 h-6 text-blue-300" />
-                </div>
-             </div>
-             <div className="mt-4 pt-3 border-t border-white/10 flex justify-between items-center relative z-10">
-                <p className="text-[10px] text-slate-400">Last updated: Today</p>
-                <button className="text-[10px] font-bold bg-white text-slate-900 px-3 py-1 rounded-full">Check Now</button>
-             </div>
-          </div>
-        </div>
-
-        {/* 2. Quick Actions (Horizontal Scroll) */}
-        <div className="mt-6 pl-5">
-           <div className="flex gap-4 overflow-x-auto pb-4 pr-5 scrollbar-hide">
-              {quickActions.map((action, i) => (
-                 <a key={i} href={action.link} className="flex flex-col items-center gap-2 min-w-[72px]">
-                    <div className={`w-14 h-14 rounded-2xl ${action.bg} ${action.color} flex items-center justify-center shadow-sm border border-white`}>
-                       <action.icon className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px] font-medium text-slate-600">{action.title}</span>
-                 </a>
-              ))}
-           </div>
-        </div>
-
-        {/* 3. Offers Banner */}
-        <div className="px-5 mt-2">
+        {/* 1. Offers Banner (First visible element) */}
+        <div className="px-2 mt-2 pt-2">
            <HeroCarousel />
         </div>
 
-        {/* 4. Products Grid (The "App Drawer" look) */}
+        {/* 2. Products Grid (The "App Drawer" look) */}
         <div className="px-5 mt-8">
            <SectionTitle title="Loans & Cards" />
            <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
@@ -168,7 +121,7 @@ const HomePage = () => {
            </div>
         </div>
 
-        {/* 5. Bills & Recharge (Compact List) */}
+        {/* 3. Bills & Recharge (Compact List) */}
         <div className="px-5 mt-8">
            <SectionTitle title="Bills & Recharge" action={{label: 'View All', link: '#'}} />
            <div className="grid grid-cols-4 gap-3">
@@ -186,7 +139,7 @@ const HomePage = () => {
            </div>
         </div>
 
-        {/* 6. Insurance Row */}
+        {/* 4. Insurance Row */}
         <div className="px-5 mt-8 mb-4">
            <SectionTitle title="Insurance" />
            <div className="grid grid-cols-4 gap-2">
@@ -197,6 +150,52 @@ const HomePage = () => {
                  </div>
               ))}
            </div>
+        </div>
+
+        {/* 5. SEO Content Section */}
+        <div className="mt-12 bg-white rounded-t-3xl shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] px-6 py-8">
+            <div className="mb-8">
+                <h2 className="text-lg font-bold text-slate-900 mb-2">Why Choose Loanzaar?</h2>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                    {features.map((feat, idx) => (
+                        <div key={idx} className="flex flex-col gap-1 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                            <div className="flex items-center gap-2 mb-1">
+                                {feat.icon}
+                                <span className="font-semibold text-xs text-slate-800">{feat.title}</span>
+                            </div>
+                            <p className="text-[10px] text-slate-500 leading-tight">{feat.desc}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="space-y-6">
+                <div>
+                    <h3 className="text-sm font-bold text-slate-800 mb-2">Personal Loans Made Easy</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                        Looking for an instant personal loan? Loanzaar connects you with India's top banks and NBFCs. 
+                        Get loans up to ₹50 Lakhs with minimal documentation, flexible tenures, and competitive interest rates starting at 10.49% p.a.
+                    </p>
+                </div>
+                
+                <div>
+                    <h3 className="text-sm font-bold text-slate-800 mb-2">Credit Cards for Every Need</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                        Compare and apply for the best credit cards in India. Whether you want cashback, travel rewards, or lifetime free cards, 
+                        find the perfect match for your spending habits and maximize your savings.
+                    </p>
+                </div>
+
+                <div>
+                    <h3 className="text-sm font-bold text-slate-800 mb-2">Check Free Credit Score</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                        Your CIBIL score is the key to financial approvals. Check your credit score for free on Loanzaar, 
+                        get detailed insights into your credit health, and learn how to improve it to unlock better loan offers.
+                    </p>
+                </div>
+            </div>
+
+
         </div>
 
       </div>

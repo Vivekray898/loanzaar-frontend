@@ -55,7 +55,7 @@ const LifeInsurancePage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-24 text-slate-900">
+    <div className="min-h-screen bg-slate-50 font-sans pb-4 text-slate-900">
       <Meta title="Life Insurance | Loanzaar" description="Secure your family's future." />
       
       {/* 1. Mobile Header (Sticky) */}

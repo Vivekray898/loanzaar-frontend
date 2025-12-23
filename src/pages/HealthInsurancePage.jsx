@@ -69,7 +69,7 @@ const HealthInsurancePage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-24 text-slate-900">
+    <div className="min-h-screen bg-slate-50 font-sans pb-4 text-slate-900">
       <Meta title="Health Insurance | Loanzaar" description="Protect your health & finances." />
       
       {/* 1. Mobile Header (Sticky) */}

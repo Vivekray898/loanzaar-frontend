@@ -84,7 +84,7 @@ const NewCarLoanFormPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-24 text-slate-900">
+    <div className="min-h-screen bg-slate-50 font-sans pb-4 text-slate-900">
       <Meta title="New Car Loan | Loanzaar" description="Drive your dream car today." />
       
       {/* 1. Mobile Header (Sticky) */}
