@@ -1,10 +1,10 @@
-import SolarLoanPage from '@/pages/SolarLoanPage'
+import SolarLoanClient from './SolarLoanClient'
 
 export const metadata = {
   title: 'Solar Loan | Loanzaar',
   description: 'Apply for a solar loan online'
 }
 
-export default function SolarLoan() {
-  return <SolarLoanPage />
+export default function SolarLoanPage() {
+  return <SolarLoanClient />
 }

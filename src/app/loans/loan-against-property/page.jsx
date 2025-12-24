@@ -1,10 +1,10 @@
-import LoanAgainstPropertyPage from '@/pages/LoanAgainstPropertyPage'
+import LoanAgainstPropertyClient from './LoanAgainstPropertyClient'
 
 export const metadata = {
   title: 'Loan Against Property | Loanzaar',
   description: 'Apply for a loan against property online'
 }
 
-export default function LoanAgainstProperty() {
-  return <LoanAgainstPropertyPage />
+export default function LoanAgainstPropertyPage() {
+  return <LoanAgainstPropertyClient />
 }

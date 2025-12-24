@@ -1,10 +1,10 @@
-import MachineryLoanPage from '@/pages/MachineryLoanPage'
+import MachineryLoanClient from './MachineryLoanClient'
 
 export const metadata = {
   title: 'Machinery Loan | Loanzaar',
   description: 'Apply for a machinery loan online'
 }
 
-export default function MachineryLoan() {
-  return <MachineryLoanPage />
+export default function MachineryLoanPage() {
+  return <MachineryLoanClient />
 }

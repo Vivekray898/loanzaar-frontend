@@ -30,12 +30,14 @@ export default function NavBar() {
       label: 'Explore Products',
       type: 'dropdown',
       children: [
-        { label: 'Personal Loan', link: '/personal-loan' },
-        { label: 'Business Loan', link: '/business-loan' },
-        { label: 'Home Loan', link: '/home-loan' },
-        { label: 'Credit Cards', link: '/credit-cards' },
-        { label: 'Loan Against Property', link: '/loan-against-property' },
-        { label: 'Mutual Funds', link: '/mutual-funds' },
+        { label: 'Personal Loan', link: '/loans/personal-loan' },
+        { label: 'Business Loan', link: '/loans/business-loan' },
+        { label: 'Home Loan', link: '/loans/home-loan' },
+        { label: 'Car Loan', link: '/loans/car-loan' },
+        { label: 'Machinery Loan', link: '/loans/machinery-loan' },
+        { label: 'Credit Cards', link: '/loans/credit-cards' },
+        { label: 'Loan Against Property', link: '/loans/loan-against-property' },
+        { label: 'Mutual Funds', link: '/loans/mutual-funds' },
       ]
     },
     {

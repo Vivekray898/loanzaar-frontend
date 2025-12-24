@@ -1,10 +1,10 @@
-import CarRefinanceFormPage from '@/pages/CarRefinanceFormPage'
+import CarRefinanceClient from './CarRefinanceClient'
 
 export const metadata = {
   title: 'Car Refinance | Loanzaar',
   description: 'Refinance your car loan with us'
 }
 
-export default function CarRefinance() {
-  return <CarRefinanceFormPage />
+export default function CarRefinancePage() {
+  return <CarRefinanceClient />
 }

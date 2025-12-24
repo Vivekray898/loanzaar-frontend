@@ -1,10 +1,10 @@
-import EducationLoanPage from '@/pages/EducationLoanPage'
+import EducationLoanClient from './EducationLoanClient'
 
 export const metadata = {
   title: 'Education Loan | Loanzaar',
   description: 'Apply for an education loan online'
 }
 
-export default function EducationLoan() {
-  return <EducationLoanPage />
+export default function EducationLoanPage() {
+  return <EducationLoanClient />
 }

@@ -1,10 +1,10 @@
-import CarLoanFormPage from '@/pages/CarLoanFormPage'
+import CarLoanClient from './CarLoanClient'
 
 export const metadata = {
   title: 'Car Loan | Loanzaar',
   description: 'Apply for a car loan online'
 }
 
-export default function CarLoan() {
-  return <CarLoanFormPage />
+export default function CarLoanPage() {
+  return <CarLoanClient />
 }
