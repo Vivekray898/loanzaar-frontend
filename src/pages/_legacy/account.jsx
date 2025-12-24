@@ -6,8 +6,8 @@ import {
   User, Settings, BookOpen, Shield, ChevronRight, 
   Sparkles, Clock, LogOut, LogIn
 } from 'lucide-react'
-import { useUserAuth } from '../context/UserAuthContext'
-import SignInSheet from '../components/SignInSheet'
+import { useUserAuth } from '@/context/UserAuthContext'
+import SignInSheet from '@/components/SignInSheet'
 
 export default function AccountMenu() {
   const { user, isAuthenticated, logout } = useUserAuth()
