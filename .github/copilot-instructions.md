@@ -8,6 +8,7 @@ The directory `src/pages/` is a **legacy path** retained only for migration comp
 - Create new pages or routes inside `src/pages/`
 - Generate new navigation using the Pages Router
 - Suggest adding files under `src/pages/`
+- Create new `.js` or `.jsx` files anywhere in the project
 
 ### ✅ Always:
 - Create all new routes using the **Next.js App Router**
@@ -18,15 +19,24 @@ The directory `src/pages/` is a **legacy path** retained only for migration comp
   - `dashboard`
   - `admin`
 
-### 🧱 File & Language Conventions
-- **Prefer TypeScript (`.tsx`) over JavaScript (`.jsx`) for all new components and pages**
-- Use `.jsx` only when editing or maintaining existing legacy files
-- New server pages should be `page.tsx` by default
-- New client components should be `.tsx` with `'use client'` explicitly declared
+### 💎 Strict TypeScript Conventions
+- **All new files MUST be TypeScript (`.tsx` or `.ts`)**
+- **UI Components:** Use `.tsx`
+- **Logic/Utils:** Use `.ts`
+- **Strict Typing:**
+  - Define `interface` or `type` for all component props.
+  - Avoid using `any`; use specific types or `unknown` if necessary.
+  - Ensure `page.tsx` props (params/searchParams) are typed correctly.
+
+### ⚠️ Legacy JavaScript Usage
+- **Only** use `.jsx` or `.js` if you are modifying an **existing legacy file** that has not yet been migrated.
+- If refactoring a legacy component, prioritize converting it to `.tsx`.
 
 ### 📌 Architecture Rules
-- `page.tsx` files are **Server Components by default**
-- Client-only logic must be placed in separate `'use client'` components
-- Legacy components may be imported **only via client wrappers**
+- **Server Components:** `page.tsx` and `layout.tsx` are Server Components by default. Do not add interactivity (state/hooks) directly to them.
+- **Client Components:**
+  - Must be `.tsx` files.
+  - Must have `'use client'` explicitly declared at the top.
+  - Isolate client logic into small, reusable components imported by Server Pages.
 
-If unsure, prefer existing patterns in `src/app/` and follow Next.js App Router best practices.
+If unsure, default to **TypeScript** and **App Router** patterns.
