@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import NavBar from '@/components/NavBar'
+ 
 import BottomNav from '@/components/BottomNav'
 
 const UsedCarLoanFormPage = dynamic(
@@ -12,7 +12,6 @@ const UsedCarLoanFormPage = dynamic(
 export default function UsedCarLoanClient() {
   return (
     <>
-      <NavBar />
       <UsedCarLoanFormPage />
       <BottomNav />
     </>

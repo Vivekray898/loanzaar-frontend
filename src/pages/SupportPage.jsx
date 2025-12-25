@@ -2,7 +2,6 @@
 
 import React from 'react'
 import Link from 'next/link'
-import NavBar from '../components/NavBar'
 import { 
   Phone, 
   MessageCircle, 
@@ -20,7 +19,6 @@ export default function SupportPage() {
 
   return (
     <div className="bg-slate-50 min-h-screen font-sans">
-      <NavBar />
       
       <div className="pb-10">
         {/* 1. App Header with Greeting */}

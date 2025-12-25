@@ -2,7 +2,6 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import NavBar from "@/components/NavBar"
 import BottomNav from "@/components/BottomNav"
 import { 
   Banknote, 
@@ -41,7 +40,6 @@ export default function ApplyHubPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 font-sans pb-24">
-      <NavBar />
       
       {/* 1. Compact Dashboard Header */}
       <header className="bg-white px-5 pt-8 pb-5 rounded-b-[2rem] shadow-sm border-b border-slate-100">

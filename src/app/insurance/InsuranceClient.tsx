@@ -8,7 +8,7 @@ import {
   ChevronRight
 } from 'lucide-react'
 
-import NavBar from '@/components/NavBar'
+ 
 import BottomNav from '@/components/BottomNav'
 
 const insuranceOptions = [
@@ -27,7 +27,7 @@ const toolOptions = [
 export default function InsuranceClient() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-14">
-      <NavBar />
+      
 
       {/* Header */}
       <div className="bg-white px-6 pt-12 pb-6 rounded-b-[2.5rem] shadow-sm border-b border-slate-100">

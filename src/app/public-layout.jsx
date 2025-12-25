@@ -1,9 +1,7 @@
 'use client'
 
 import React from 'react'
-import NavBar from '@/components/NavBar'
 import BottomNav from '@/components/BottomNav'
-import Footer from '@/components/Footer'
 import ScrollToTop from '@/components/ScrollToTop'
 import StickyCalculator from '@/components/StickyCalculator'
 import SessionManager from '@/components/SessionManager'
@@ -24,7 +22,6 @@ export default function PublicLayout({ children }) {
   return (
     <>
       <ScrollToTop />
-      <NavBar />
       <div className="font-sans text-slate-800 antialiased pb-20 md:pb-0">
         <main>
           {isAuthRoute ? (
@@ -35,7 +32,6 @@ export default function PublicLayout({ children }) {
             children
           )}
         </main>
-        <Footer />
       </div>
       <BottomNav />
       <StickyCalculator />

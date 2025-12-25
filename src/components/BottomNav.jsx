@@ -11,14 +11,14 @@ import {
   User
 } from "lucide-react"
 
-export default function BottomNav({ items } = {}) {
+export default function BottomNav({ items }) {
   const pathname = usePathname() || "/"
 
   const navItems = items || [
     { key: "home", label: "Home", path: "/", icon: Home },
     { key: "loans", label: "Loans", path: "/loans", icon: Briefcase },
 
-    // 🔥 Primary Action
+    // 🔥 Primary Action (Apply)
     { key: "apply", label: "Apply", path: "/apply", icon: PlusCircle, primary: true },
 
     { key: "insurance", label: "Insurance", path: "/insurance", icon: Shield },
@@ -29,65 +29,62 @@ export default function BottomNav({ items } = {}) {
     path === "/" ? pathname === "/" : pathname.startsWith(path)
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white shadow-lg pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-stretch justify-between h-[64px]">
-        {navItems.map((item) => {
-          const active = isActive(item.path)
-          const Icon = item.icon
+    <div className="fixed bottom-6 left-0 right-0 z-50 px-4 pointer-events-none">
+      <nav className="mx-auto max-w-lg w-full bg-white/95 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-slate-200/60 rounded-[2rem] px-1.5 py-1.5 pointer-events-auto">
+        <div className="flex items-center justify-between h-[54px]">
+          {navItems.map((item) => {
+            const active = isActive(item.path)
+            const Icon = item.icon
 
-          // 🌟 Primary Apply Button
-          if (item.primary) {
+            // 🌟 Primary Center Button
+            if (item.primary) {
+              return (
+                <Link
+                  key={item.key}
+                  href={item.path}
+                  className="relative flex-1 flex items-center justify-center -top-3"
+                >
+                  <div className={`
+                    w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 active:scale-90
+                    ${active 
+                      ? "bg-blue-600 text-white" 
+                      : "bg-slate-900 text-white"
+                    }
+                  `}>
+                    <Icon className="w-7 h-7" strokeWidth={2.5} />
+                  </div>
+                </Link>
+              )
+            }
+
             return (
               <Link
                 key={item.key}
                 href={item.path}
-                className="relative -mt-6 flex-1 flex items-center justify-center"
+                className="group relative flex-1 flex flex-col items-center justify-center focus:outline-none h-full px-0.5"
               >
-                <div className="w-14 h-14 rounded-full bg-black text-white flex items-center justify-center shadow-lg">
-                  <Icon className="w-7 h-7" strokeWidth={2} />
+                {/* Visual Indicator: 
+                   Using w-full with parent px-0.5 ensures no overlap even on 320px screens 
+                */}
+                <div className={`
+                  w-full flex flex-col items-center justify-center py-1.5 rounded-2xl transition-all duration-300
+                  ${active ? "bg-blue-50 text-blue-600" : "text-slate-400 hover:text-slate-600"}
+                `}>
+                  <Icon
+                    className={`w-5 h-5 mb-0.5 transition-all duration-300 ${active ? "stroke-[2.5px]" : "stroke-[2px]"}`}
+                  />
+                  <span className={`
+                    text-[9px] font-bold uppercase tracking-tight text-center truncate w-full px-1
+                    ${active ? "opacity-100" : "opacity-70 group-hover:opacity-100"}
+                  `}>
+                    {item.label}
+                  </span>
                 </div>
               </Link>
             )
-          }
-
-          return (
-            <Link
-              key={item.key}
-              href={item.path}
-              className="group relative flex-1 flex flex-col items-center justify-center focus:outline-none"
-            >
-              {/* Active Top Line Indicator */}
-              <span
-                className={`
-                  absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-10 rounded-b-lg transition-colors duration-300
-                  ${active ? "bg-black" : "bg-transparent"}
-                `}
-              />
-
-              <Icon
-                className={`
-                  w-6 h-6 mb-1 transition-all duration-300
-                  ${active
-                    ? "text-black -translate-y-1"
-                    : "text-gray-400 group-hover:text-gray-600"}
-                `}
-                strokeWidth={active ? 2 : 1.5}
-              />
-
-              <span
-                className={`
-                  text-[11px] font-medium tracking-wide
-                  ${active
-                    ? "text-black"
-                    : "text-gray-400 group-hover:text-gray-600"}
-                `}
-              >
-                {item.label}
-              </span>
-            </Link>
-          )
-        })}
-      </div>
-    </nav>
+          })}
+        </div>
+      </nav>
+    </div>
   )
 }

@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-import NavBar from '@/components/NavBar'
 import BottomNav from '@/components/BottomNav'
 import Footer from '@/components/Footer'
 import ScrollToTop from '@/components/ScrollToTop'
@@ -15,12 +14,10 @@ export default function PublicLayout({ children }) {
   return (
     <>
       <ScrollToTop />
-      <NavBar />
       <div className="font-sans text-slate-800 antialiased pb-20 md:pb-0">
         <main>
           {children}
         </main>
-        <Footer />
       </div>
       <BottomNav />
       <StickyCalculator />

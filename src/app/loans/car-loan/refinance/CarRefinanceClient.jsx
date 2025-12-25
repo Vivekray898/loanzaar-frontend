@@ -1,7 +1,6 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import NavBar from '@/components/NavBar'
 import BottomNav from '@/components/BottomNav'
 
 const CarRefinanceFormPage = dynamic(
@@ -12,7 +11,6 @@ const CarRefinanceFormPage = dynamic(
 export default function CarRefinanceClient() {
   return (
     <>
-      <NavBar />
       <CarRefinanceFormPage />
       <BottomNav />
     </>

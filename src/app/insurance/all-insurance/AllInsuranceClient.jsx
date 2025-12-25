@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import NavBar from '@/components/NavBar'
+ 
 import BottomNav from '@/components/BottomNav'
 
 const AllInsurancePage = dynamic(
@@ -12,7 +12,6 @@ const AllInsurancePage = dynamic(
 export default function AllInsuranceClient() {
   return (
     <>
-      <NavBar />
       <AllInsurancePage />
       <BottomNav />
     </>

@@ -2,6 +2,9 @@ import '../index.css'
 import '../App.css'
 
 import Providers from './providers'
+import NavBar from '@/components/NavBar'
+import Footer from '@/components/Footer'
+import Container from '@/components/Container'
 
 // Initialize Supabase config on app load
 import '../config/supabase'
@@ -44,9 +47,15 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="bg-gray-50">
         <Providers>
-          <main className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-            {children}
+          <NavBar />
+
+          <main>
+            <Container>
+              {children}
+            </Container>
           </main>
+
+          <Footer />
         </Providers>
       </body>
     </html>

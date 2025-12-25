@@ -6,6 +6,7 @@ import {
   Facebook, Twitter, Linkedin, Instagram, 
   Mail, Phone, MapPin, ChevronDown, Send, ShieldCheck
 } from 'lucide-react';
+import Container from './Container'
 
 export default function Footer() {
   const [newsletterEmail, setNewsletterEmail] = useState('');
@@ -27,6 +28,7 @@ export default function Footer() {
   const handleNewsletterSubmit = (e) => {
     e.preventDefault();
     setNewsletterEmail('');
+    // In a real app, you would handle the submission logic here
     alert('Thank you for subscribing!');
   };
 
@@ -63,7 +65,7 @@ export default function Footer() {
       
       {/* 1. Top Bar: Trust Indicators Only */}
       <div className="bg-slate-900 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-5 py-6">
+        <Container className="py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             
             <div className="flex flex-wrap justify-center md:justify-start gap-4 text-xs font-medium text-slate-400">
@@ -76,7 +78,7 @@ export default function Footer() {
                 256-bit Secure
               </div>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-full border border-slate-800">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8_rgba(245,158,11,0.5)]"></div>
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
                 100% Digital
               </div>
             </div>
@@ -87,12 +89,13 @@ export default function Footer() {
             </div>
 
           </div>
-        </div>
+        </Container>
       </div>
 
       {/* 2. Main Footer Content */}
-      <div className="max-w-7xl mx-auto px-5 py-8 lg:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 md:gap-10">
+      <div>
+        <Container className="py-8 lg:py-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 md:gap-10">
 
           {/* Brand & Newsletter */}
           <div className="mb-8 md:mb-0 space-y-6">
@@ -189,12 +192,13 @@ export default function Footer() {
             </ul>
           </FooterAccordion>
 
-        </div>
+          </div>
+        </Container>
       </div>
 
       {/* 3. Bottom Bar */}
       <div className="border-t border-slate-900 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-5 py-6">
+        <Container className="py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-600">
             <p className="text-center md:text-left">
               &copy; {new Date().getFullYear()} Loanzaar Financial Services Pvt. Ltd. All rights reserved.
@@ -204,7 +208,7 @@ export default function Footer() {
               <span>ARN: 123456</span>
             </div>
           </div>
-        </div>
+        </Container>
       </div>
 
     </footer>

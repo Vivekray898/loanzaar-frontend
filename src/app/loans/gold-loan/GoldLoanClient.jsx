@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import NavBar from '@/components/NavBar'
+ 
 import BottomNav from '@/components/BottomNav'
 
 const GoldLoanFormPage = dynamic(
@@ -12,7 +12,7 @@ const GoldLoanFormPage = dynamic(
 export default function GoldLoanClient() {
   return (
     <>
-      <NavBar />
+      
       <GoldLoanFormPage />
       <BottomNav />
     </>
