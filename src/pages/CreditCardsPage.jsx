@@ -435,7 +435,7 @@ const CreditCardsPage = () => {
                   </span>
                 </button>
                 {activeFaq === index && (
-                  <div className="px-6 pb-4">
+                  <div className="px-6 pb-14">
                     <p className="text-gray-600">{faq.answer}</p>
                   </div>
                 )}

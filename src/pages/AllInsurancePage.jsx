@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 import Meta from '../components/Meta';
+import BackButton from '../components/BackButton';
 import { submitInsuranceInquiry } from '../config/api';
 import StructuredData from '../components/StructuredData';
 import { 
@@ -67,14 +68,14 @@ const AllInsurancePage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-4 text-slate-900">
+    <div className="min-h-screen bg-slate-50 font-sans pb-14 text-slate-900">
       <Meta title="Insurance | Loanzaar" description="Life, Health & General Insurance." />
       
       {/* 1. Mobile Header (Sticky) */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 h-14 flex items-center justify-between">
-        <a href="/" className="text-sm font-semibold text-slate-500 flex items-center gap-1">
+        <BackButton className="text-sm font-semibold text-slate-500 flex items-center gap-1">
           <ChevronDown className="w-4 h-4 rotate-90" /> Back
-        </a>
+        </BackButton>
         <h1 className="text-sm font-bold text-slate-900">Insurance</h1>
         <div className="w-8"></div>
       </nav>

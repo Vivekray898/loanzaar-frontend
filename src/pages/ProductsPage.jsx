@@ -15,15 +15,15 @@ import {
 
 // Order: Most Common -> Least Common
 const loanOptions = [
-  { title: 'Personal Loan', url: '/personal-loan', icon: Banknote, color: 'text-orange-600', bg: 'bg-orange-50' },
-  { title: 'Home Loan', url: '/home-loan', icon: Home, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  { title: 'Business Loan', url: '/business-loan', icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },
-  { title: 'Loan Against Property', url: '/loan-against-property', icon: Building, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-  { title: 'Gold Loan', url: '/gold-loan', icon: Coins, color: 'text-amber-600', bg: 'bg-amber-50' },
-  { title: 'Education Loan', url: '/education-loan', icon: GraduationCap, color: 'text-teal-600', bg: 'bg-teal-50' },
-  { title: 'Machinery Loan', url: '/machinery-loan', icon: Factory, color: 'text-slate-700', bg: 'bg-slate-100' },
-  { title: 'Solar Loan', url: '/solar-loan', icon: Sun, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-  { title: 'Mutual Funds', url: '/mutual-funds', icon: Landmark, color: 'text-purple-600', bg: 'bg-purple-50' },
+  { title: 'Personal Loan', url: '/loans/personal-loan', icon: Banknote, color: 'text-orange-600', bg: 'bg-orange-50' },
+  { title: 'Home Loan', url: '/loans/home-loan', icon: Home, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  { title: 'Business Loan', url: '/loans/business-loan', icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },
+  { title: 'Loan Against Property', url: '/loans/loan-against-property', icon: Building, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+  { title: 'Gold Loan', url: '/loans/gold-loan', icon: Coins, color: 'text-amber-600', bg: 'bg-amber-50' },
+  { title: 'Education Loan', url: '/loans/education-loan', icon: GraduationCap, color: 'text-teal-600', bg: 'bg-teal-50' },
+  { title: 'Machinery Loan', url: '/loans/machinery-loan', icon: Factory, color: 'text-slate-700', bg: 'bg-slate-100' },
+  { title: 'Solar Loan', url: '/loans/solar-loan', icon: Sun, color: 'text-yellow-600', bg: 'bg-yellow-50' },
+  { title: 'Mutual Funds', url: '/loans/mutual-funds', icon: Landmark, color: 'text-purple-600', bg: 'bg-purple-50' },
 ]
 
 const insuranceOptions = [
@@ -127,7 +127,7 @@ export default function ProductsPage() {
   const { title: sheetTitle, options: currentOptions } = getSheetContent()
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-4 relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50 font-sans pb-14 relative overflow-hidden">
       
       {/* 1. App Header */}
       <div className="bg-white px-6 pt-12 pb-6 rounded-b-[2.5rem] shadow-sm border-b border-slate-100 relative z-10">
@@ -159,37 +159,53 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* 2. Main Categories Grid */}
+      {/* 2. Loans Section */}
       <div className="px-6 mt-8">
-        <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 pl-1">Browse Categories</h2>
-        
+        <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 pl-1">Loans</h2>
         <div className="grid grid-cols-2 gap-4">
-          {categories.map((item, index) => {
-            const Wrapper = item.href ? Link : 'button'
-            const props = item.href ? { href: item.href } : { onClick: () => setActiveSheet(item.id) }
+          {loanOptions.map((opt, i) => (
+            <Link
+              key={i}
+              href={opt.url}
+              className={
+                `group text-left flex flex-col justify-between p-5 rounded-[1.25rem] bg-white border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] active:scale-[0.97] transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 relative overflow-hidden w-full`
+              }
+            >
+              <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity ${opt.bg}`}></div>
+              <div className={`w-11 h-11 rounded-2xl ${opt.bg} ${opt.color} flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                <opt.icon className="w-5 h-5" />
+              </div>
+              <div className="relative z-10">
+                <h3 className="font-bold text-slate-900 text-[15px]">{opt.title}</h3>
+                <p className="text-[11px] text-slate-500 mt-1 font-medium leading-relaxed">{opt.title}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
 
-            return (
-              <Wrapper 
-                key={index} 
-                {...props}
-                className={`
-                  group text-left flex flex-col justify-between p-5 rounded-[1.25rem] bg-white 
-                  border ${item.borderColor} shadow-[0_2px_8px_rgba(0,0,0,0.04)]
-                  active:scale-[0.97] transition-all duration-300 ease-out
-                  hover:shadow-md hover:-translate-y-1 relative overflow-hidden w-full
-                `}
-              >
-                 <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity ${item.bg}`}></div>
-                 <div className={`w-11 h-11 rounded-2xl ${item.bg} ${item.color} flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform duration-300`}>
-                    <item.icon className="w-5 h-5" />
-                 </div>
-                 <div className="relative z-10">
-                    <h3 className="font-bold text-slate-900 text-[15px]">{item.title}</h3>
-                    <p className="text-[11px] text-slate-500 mt-1 font-medium leading-relaxed">{item.subtitle}</p>
-                 </div>
-              </Wrapper>
-            )
-          })}
+      {/* 3. Insurance Section */}
+      <div className="px-6 mt-8">
+        <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 pl-1">Insurance</h2>
+        <div className="grid grid-cols-2 gap-4">
+          {insuranceOptions.map((opt, i) => (
+            <Link
+              key={i}
+              href={opt.url}
+              className={
+                `group text-left flex flex-col justify-between p-5 rounded-[1.25rem] bg-white border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] active:scale-[0.97] transition-all duration-300 ease-out hover:shadow-md hover:-translate-y-1 relative overflow-hidden w-full`
+              }
+            >
+              <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity ${opt.bg}`}></div>
+              <div className={`w-11 h-11 rounded-2xl ${opt.bg} ${opt.color} flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                <opt.icon className="w-5 h-5" />
+              </div>
+              <div className="relative z-10">
+                <h3 className="font-bold text-slate-900 text-[15px]">{opt.title}</h3>
+                <p className="text-[11px] text-slate-500 mt-1 font-medium leading-relaxed">{opt.title}</p>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
 

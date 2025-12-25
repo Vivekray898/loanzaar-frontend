@@ -6,7 +6,7 @@ import { generateWebPageSchema } from '../utils/schema';
 import {
   Banknote, CreditCard, Briefcase, Home, Building, RefreshCw, Zap, Wallet,
   Smartphone, Lightbulb, TrendingUp, Landmark, HeartPulse, Car, 
-  Umbrella, ChevronRight, Shield, CheckCircle, Clock, Percent
+  Umbrella, ChevronRight, Shield, CheckCircle, Clock, Percent, Factory
 } from 'lucide-react';
 
 // --- DATA ---
@@ -17,19 +17,23 @@ const heroSlides = [
 ];
 
 const loansAndCards = [
-  { title: 'Personal', icon: Banknote, ribbon: 'Instant', ribbonColor: 'bg-orange-100 text-orange-700', iconColor: 'text-orange-500', link: '/personal-loan' },
+  { title: 'Personal', icon: Banknote, ribbon: 'Instant', ribbonColor: 'bg-orange-100 text-orange-700', iconColor: 'text-orange-500', link: '/loans/personal-loan' },
   { title: 'Credit Card', icon: CreditCard, ribbon: 'Offers', ribbonColor: 'bg-green-100 text-green-700', iconColor: 'text-blue-600', link: '/credit-cards' },
-  { title: 'Business', icon: Briefcase, iconColor: 'text-slate-700', link: '/business-loan' },
-  { title: 'Home Loan', icon: Home, iconColor: 'text-emerald-600', link: '/home-loan' },
-  { title: 'Property', icon: Building, iconColor: 'text-indigo-600', link: '/loan-against-property' },
-  { title: 'Transfer', icon: RefreshCw, iconColor: 'text-sky-700', link: '/home-loan' },
-  { title: 'Instant', icon: Zap, iconColor: 'text-yellow-500', link: '/personal-loan' },
+  { title: 'Business', icon: Briefcase, iconColor: 'text-slate-700', link: '/loans/business-loan' },
+  { title: 'Home Loan', icon: Home, iconColor: 'text-emerald-600', link: '/loans/home-loan' },
+  { title: 'Property', icon: Building, iconColor: 'text-indigo-600', link: '/loans/loan-against-property' },
+  { title: 'Education', icon: Landmark, iconColor: 'text-blue-600', link: '/loans/education-loan' },
+  { title: 'Machinery', icon: Factory, iconColor: 'text-slate-700', link: '/loans/machinery-loan' },
+  { title: 'Gold', icon: Percent, iconColor: 'text-yellow-600', link: '/loans/gold-loan' },
+  { title: 'Solar', icon: Lightbulb, iconColor: 'text-amber-400', link: '/loans/solar-loan' },
+  { title: 'Transfer', icon: RefreshCw, iconColor: 'text-sky-700', link: '/loans/home-loan' },
+  { title: 'Instant', icon: Zap, iconColor: 'text-yellow-500', link: '/loans/personal-loan' },
   { title: 'Premium', icon: Wallet, iconColor: 'text-purple-600', link: '/credit-cards' }
 ];
 
 const insuranceItems = [
     { title: 'Health', icon: HeartPulse, iconColor: 'text-rose-500' },
-    { title: 'Car', icon: Car, iconColor: 'text-amber-600' },
+    { title: 'General', icon: Shield, iconColor: 'text-amber-600' },
     { title: 'Term Life', icon: Umbrella, iconColor: 'text-blue-500' },
     { title: 'Invest', icon: Landmark, iconColor: 'text-emerald-600' },
 ];
@@ -102,7 +106,7 @@ const HomePage = () => {
   return (
     <>
       <StructuredData schema={schema} />
-      <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-4 overflow-x-hidden">
+      <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-14 overflow-x-hidden">
         
         {/* 1. Offers Banner (First visible element) */}
         <div className="px-2 mt-2 pt-2">
@@ -121,22 +125,23 @@ const HomePage = () => {
            </div>
         </div>
 
-        {/* 3. Bills & Recharge (Compact List) */}
+        {/* 3. Car Loans (Compact List) */}
         <div className="px-5 mt-8">
-           <SectionTitle title="Bills & Recharge" action={{label: 'View All', link: '#'}} />
-           <div className="grid grid-cols-4 gap-3">
-              {[
-                 {title: 'Mobile', icon: Smartphone, color: 'text-blue-500'},
-                 {title: 'Electricity', icon: Lightbulb, color: 'text-yellow-500'},
-                 {title: 'DTH', icon:  Zap, color: 'text-purple-500'},
-                 {title: 'More', icon:  TrendingUp, color: 'text-slate-400'},
-              ].map((item, i) => (
-                 <div key={i} className="bg-white p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center gap-1 shadow-sm h-20">
-                    <item.icon className={`w-5 h-5 ${item.color}`} />
-                    <span className="text-[10px] font-medium text-slate-600">{item.title}</span>
-                 </div>
-              ))}
-           </div>
+           <SectionTitle title="Car Loans" action={{label: 'View All', link: '#'}} />
+            <div className="grid grid-cols-4 gap-3">
+              <a href="/car-loan/new" className="bg-white p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center gap-1 shadow-sm h-20">
+                <Car className="w-5 h-5 text-amber-600" />
+                <span className="text-[10px] font-medium text-slate-600">New Car</span>
+              </a>
+              <a href="/car-loan/used" className="bg-white p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center gap-1 shadow-sm h-20">
+                <CheckCircle className="w-5 h-5 text-green-500" />
+                <span className="text-[10px] font-medium text-slate-600">Used Car</span>
+              </a>
+              <a href="/car-loan/refinance" className="bg-white p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center gap-1 shadow-sm h-20">
+                <RefreshCw className="w-5 h-5 text-sky-600" />
+                <span className="text-[10px] font-medium text-slate-600">Refinance</span>
+              </a>
+            </div>
         </div>
 
         {/* 4. Insurance Row */}

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Meta from '../components/Meta';
+import BackButton from '../components/BackButton';
 import { submitInsuranceInquiry } from '../config/api';
 import { 
   ChevronDown, Check, Shield, Heart, Activity, 
@@ -55,14 +56,14 @@ const LifeInsurancePage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-4 text-slate-900">
+    <div className="min-h-screen bg-slate-50 font-sans pb-14 text-slate-900">
       <Meta title="Life Insurance | Loanzaar" description="Secure your family's future." />
       
       {/* 1. Mobile Header (Sticky) */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 h-14 flex items-center justify-between">
-        <a href="/" className="text-sm font-semibold text-slate-500 flex items-center gap-1">
+        <BackButton className="text-sm font-semibold text-slate-500 flex items-center gap-1">
           <ChevronDown className="w-4 h-4 rotate-90" /> Back
-        </a>
+        </BackButton>
         <h1 className="text-sm font-bold text-slate-900">Life Insurance</h1>
         <div className="w-8"></div>
       </nav>
@@ -227,7 +228,7 @@ const LifeInsurancePage = () => {
                     <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform flex-shrink-0 ${activeFaq === i ? 'rotate-180' : ''}`} />
                   </button>
                   {activeFaq === i && (
-                    <div className="px-4 pb-4 pt-0 bg-white">
+                    <div className="px-4 pb-14 pt-0 bg-white">
                       <div className="h-px bg-slate-100 w-full mb-3"></div>
                       <p className="text-xs text-slate-500 leading-relaxed">{item.a}</p>
                     </div>

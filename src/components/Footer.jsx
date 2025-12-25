@@ -59,7 +59,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-slate-950 text-slate-300 font-sans text-sm pb-4 md:pb-0">
+    <footer className="bg-slate-950 text-slate-300 font-sans text-sm pb-14 md:pb-0">
       
       {/* 1. Top Bar: Trust Indicators Only */}
       <div className="bg-slate-900 border-b border-slate-800">

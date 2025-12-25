@@ -18,7 +18,7 @@ export default function AccountMenu() {
   }, [isAuthenticated])
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-4 md:pb-10">
+    <div className="min-h-screen bg-slate-50 font-sans pb-14 md:pb-10">
       
       {/* 1. Profile Header - Clean & Focused */}
       <div className="bg-white pt-8 pb-6 px-6 rounded-b-[2rem] shadow-sm border-b border-slate-100">

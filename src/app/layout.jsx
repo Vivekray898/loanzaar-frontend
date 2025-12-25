@@ -42,9 +42,11 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>
+      <body className="bg-gray-50">
         <Providers>
-          {children}
+          <main className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+            {children}
+          </main>
         </Providers>
       </body>
     </html>

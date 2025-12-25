@@ -21,6 +21,7 @@
     "libphonenumber-js": "^1.12.31",
     "lucide-react": "^0.545.0",
     "next": "16.0.10",
+    "nextjs-progressbar": "^0.0.16",
     "pg": "^8.16.3",
     "react": "^19.1.1",
     "react-chartjs-2": "^5.2.0",
