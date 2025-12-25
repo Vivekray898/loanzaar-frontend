@@ -3,6 +3,16 @@ const nextConfig = {
   // For dev mode, allow dynamic rendering
   // For build/export, user should use npm run build which uses the export setting
   // This allows catch-all routes to work properly without requiring all paths upfront
+  // Redirect legacy pages to new App Router routes
+  async redirects() {
+    return [
+      {
+        source: '/profile',
+        destination: '/account/profile',
+        permanent: true,
+      },
+    ];
+  },
 }
 
 // Injected content via Sentry wizard below
