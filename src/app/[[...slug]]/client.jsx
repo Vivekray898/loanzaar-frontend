@@ -1,5 +1,5 @@
 // This catch-all has been removed. All routes are now defined as native Next.js routes.
-// See src/app/(public), src/app/(auth), src/app/dashboard, src/app/admin, etc.
+// See src/app/(public), src/app/(auth), src/app/account, src/app/admin, etc.
 
 export default function CatchAll() {
   return (

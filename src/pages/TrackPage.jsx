@@ -92,7 +92,7 @@ export default function TrackPage() {
                 
                 {/* Applications Card */}
                 <Link 
-                  href="/dashboard/applications" 
+                  href="/account/applications" 
                   className="group bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-blue-200 active:scale-[0.98] transition-all relative overflow-hidden flex flex-col justify-between h-full"
                 >
                   <div className="flex items-start justify-between mb-4">
@@ -118,7 +118,7 @@ export default function TrackPage() {
 
                 {/* Support Enquiries Card */}
                 <Link 
-                  href="/dashboard/enquiries" 
+                  href="/account/enquiries" 
                   className="group bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-200 active:scale-[0.98] transition-all relative overflow-hidden flex flex-col justify-between h-full"
                 >
                   <div className="flex items-start justify-between mb-4">

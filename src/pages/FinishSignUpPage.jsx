@@ -65,7 +65,7 @@ const FinishSignUpPageContent = () => {
           localStorage.setItem('supabaseUID', result.uid);
           
           setTimeout(() => {
-            navigate('/dashboard');
+            navigate('/account');
           }, 2000);
         }
       }
@@ -109,7 +109,7 @@ const FinishSignUpPageContent = () => {
         localStorage.setItem('userId', response.data.userId);
         
         setTimeout(() => {
-          navigate('/dashboard');
+          navigate('/account');
         }, 2000);
       }
     } catch (error) {

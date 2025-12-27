@@ -41,12 +41,12 @@ These layouts handle shared UI and SessionManager based on route type:
    - **SessionManager:** User session monitoring
 
 3. **`src/app/admin/layout.jsx`**
-   - **Routes:** `/admin/login`, `/admin/signup`, `/admin/dashboard`, `/admin/settings`, `/admin/forgot-password`
+   - **Routes:** `/admin/login`, `/admin/signup`, `/admin/account`, `/admin/settings`, `/admin/forgot-password`
    - **Includes:** SessionManager (30-min admin timeout) only; no public UI
    - **SessionManager:** Admin session monitoring
 
-4. **`src/app/dashboard/layout.jsx`**
-   - **Routes:** All `/dashboard/*` routes
+4. **`src/app/account/layout.jsx`**
+   - **Routes:** All `/account/*` routes
    - **Includes:** BasicLayout component (dashboard sidebar + main wrapper)
    - **SessionManager:** User session monitoring (via BasicLayout)
 
@@ -92,7 +92,7 @@ Dynamic loan pages with full forms and calculators:
 - `settings/page.jsx` - Admin settings
 - `forgot-password/page.jsx` - Admin password recovery
 
-#### Dashboard Routes (src/app/dashboard/)
+#### Dashboard Routes (src/app/account/)
 - `page.jsx` - Dashboard home (redirects to `/account`)
 - `applications/page.jsx` - Loan applications
 - `apply-loan/page.jsx` - Apply for loan form
@@ -113,7 +113,7 @@ Dynamic loan pages with full forms and calculators:
 **SessionManager** (`src/components/SessionManager.jsx`) still uses `usePathname()` to determine whether to apply user or admin session timeouts. This is intentional and correct because:
 - SessionManager is placed at the right route-group layout level
 - It checks `pathname?.startsWith('/admin')` to apply admin timeout logic
-- It checks `pathname?.startsWith('/dashboard')` to apply user timeout logic
+- It checks `pathname?.startsWith('/account')` to apply user timeout logic
 - This is **not** manual routing - it's localized session management
 
 ### Dynamic Imports
@@ -168,7 +168,7 @@ NavBar uses `usePathname()` only to:
 - [x] Created all loan pages (/loans/*)
 - [x] Created all insurance pages (/insurance/*)
 - [x] Created all auth pages ((auth)/signin, (auth)/signup, etc.)
-- [x] Created all dashboard pages (/dashboard/*)
+- [x] Created all dashboard pages (/account/*)
 - [x] Archived src/App.jsx (old manual routing)
 - [x] Archived src/main.jsx (legacy Vite entry)
 - [x] Verified SessionManager pathname logic is correct
@@ -195,12 +195,12 @@ npm run dev
 
 3. **Admin routes:**
    - `/admin/login` → Admin login (NO NavBar, SessionManager active)
-   - `/admin/dashboard` → Admin dashboard (NO public UI, SessionManager active)
+   - `/admin/account` → Admin dashboard (NO public UI, SessionManager active)
 
 4. **Dashboard routes:**
-   - `/dashboard` → Redirects to `/account`
-   - `/dashboard/applications` → User dashboard with sidebar
-   - `/dashboard/profile` → User profile page with sidebar
+   - `/account` → Redirects to `/account`
+   - `/account/applications` → User dashboard with sidebar
+   - `/account/profile` → User profile page with sidebar
 
 ### Expected Behavior
 - ✅ Routes render without 404 errors

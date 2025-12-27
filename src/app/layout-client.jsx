@@ -12,7 +12,7 @@ import NextNProgress from 'nextjs-progressbar'
 export default function RootLayoutClient({ children }) {
   const pathname = usePathname()
   const isAdminRoute = pathname?.startsWith('/admin')
-  const isUserRoute = pathname?.startsWith('/dashboard') ||
+  const isUserRoute = pathname?.startsWith('/account') ||
                       pathname?.includes('/signin') ||
                       pathname?.includes('/signup') ||
                       pathname?.includes('/forgot-password')

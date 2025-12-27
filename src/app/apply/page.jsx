@@ -266,7 +266,7 @@ export default function ApplyHubPage() {
             {/* Resume Application Card */}
             <div className="lg:sticky lg:top-8">
               <Link 
-                href="/dashboard/applications"
+                href="/account/applications"
                 className="group block relative overflow-hidden bg-slate-900 rounded-2xl md:rounded-3xl p-5 md:p-6 shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-slate-300/50 active:scale-[0.99] transition-all duration-300"
               >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />

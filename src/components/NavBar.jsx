@@ -113,7 +113,7 @@ export default function NavBar() {
     setMobileExpanded(mobileExpanded === label ? null : label);
   };
 
-  const getDashboardLink = () => (user?.role === 'admin' ? '/admin/dashboard' : '/account');
+  const getDashboardLink = () => (user?.role === 'admin' ? '/admin/account' : '/account');
 
   return (
     <>

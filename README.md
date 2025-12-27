@@ -28,7 +28,7 @@ npm start
 
 - Root layout: src/app/layout.jsx
 - Providers (Supabase + global providers): src/app/providers.jsx
-- App Router main groups: src/app/(public), src/app/(auth), src/app/(loans), src/app/dashboard, src/app/admin
+- App Router main groups: src/app/(public), src/app/(auth), src/app/(loans), src/app/account, src/app/admin
 - API routes (App Router): src/app/api/
 - Legacy Pages Router (archive until migration complete): src/pages/ and _archive/
 

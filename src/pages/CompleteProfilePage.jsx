@@ -92,7 +92,7 @@ const CompleteProfilePage = () => {
         // Redirect to dashboard after 1.5 seconds
         setTimeout(() => {
           console.log('🔄 Redirecting to dashboard');
-          router.push('/dashboard');
+          router.push('/account');
         }, 1500);
       } else {
         setStatus('error');

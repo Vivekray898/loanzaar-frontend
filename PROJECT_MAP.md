@@ -557,7 +557,7 @@ HOME (/)
 │   ├── Finish Sign Up (/finish-signup)
 │   └── Complete Profile (/complete-profile)
 │
-├── USER DASHBOARD (/dashboard/*)
+├── USER DASHBOARD (/account/*)
 │   ├── Applications
 │   ├── Apply Loan
 │   ├── Insurance
@@ -574,7 +574,7 @@ HOME (/)
 └── ADMIN ROUTES (/admin/*)
     ├── Login (/admin/login)
     ├── Signup (/admin/signup)
-    ├── Dashboard (/admin/dashboard)
+    ├── Dashboard (/admin/account)
     ├── Settings (/admin/settings)
     └── Forgot Password (/admin/forgot-password)
 ```

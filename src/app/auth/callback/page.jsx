@@ -49,9 +49,9 @@ export default function AuthCallbackPage() {
         if (next) {
           router.replace(next)
         } else if (isAdmin) {
-          router.replace('/admin/dashboard')
+          router.replace('/admin/account')
         } else {
-          router.replace('/dashboard')
+          router.replace('/account')
         }
       } catch (err) {
         console.error('Auth callback error:', err)
