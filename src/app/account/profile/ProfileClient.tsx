@@ -10,21 +10,35 @@ import {
 } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 
+interface ProfileForm {
+  full_name: string;
+  email: string;
+  phone: string;
+  address: string;
+  photo_url: string;
+}
+
+interface FormErrors {
+  full_name?: string;
+  email?: string;
+  phone?: string;
+}
+
 export default function ProfileClient() {
   const { user, isAuthenticated, loading } = useUserAuth()
   const router = useRouter()
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<ProfileForm>({
     full_name: '',
     email: '',
     phone: '',
     address: '',
     photo_url: ''
   })
-  const [errors, setErrors] = useState({})
-  const [busy, setBusy] = useState(false)
-  const [statusMsg, setStatusMsg] = useState('')
-  const [msgType, setMsgType] = useState('')
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [busy, setBusy] = useState<boolean>(false)
+  const [statusMsg, setStatusMsg] = useState<string>('')
+  const [msgType, setMsgType] = useState<'success' | 'error' | ''>('')
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -39,7 +53,7 @@ export default function ProfileClient() {
     }
   }, [user])
 
-  const fetchProfile = async (uid) => {
+  const fetchProfile = async (uid: string) => {
     setBusy(true)
     setStatusMsg('')
     try {
@@ -63,8 +77,8 @@ export default function ProfileClient() {
     }
   }
 
-  const validate = () => {
-    const e = {}
+  const validate = (): boolean => {
+    const e: FormErrors = {}
     if (!form.full_name || form.full_name.trim().length < 2) e.full_name = 'Enter your full name'
     if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Enter a valid email'
     if (form.phone && !/^[0-9]{7,15}$/.test(form.phone)) e.phone = 'Enter a valid phone (digits only)'
@@ -73,13 +87,14 @@ export default function ProfileClient() {
     return Object.keys(e).length === 0
   }
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setForm(prev => ({ ...prev, [name]: value }))
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }))
+    // @ts-ignore - Dynamic key access for error clearing
+    if (errors[name as keyof FormErrors]) setErrors(prev => ({ ...prev, [name]: '' }))
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setStatusMsg('')
     setMsgType('')
@@ -125,7 +140,7 @@ export default function ProfileClient() {
     }
   }
 
-  const inputClass = (hasError) => `
+  const inputClass = (hasError: boolean | string | undefined) => `
     w-full pl-10 pr-4 py-3 bg-white border rounded-xl outline-none transition-all duration-200
     ${hasError 
       ? 'border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-1 focus:ring-red-500' 
@@ -291,7 +306,7 @@ export default function ProfileClient() {
               <div className="pt-4 flex flex-col sm:flex-row gap-4">
                  <button 
                    type="button" 
-                   onClick={() => fetchProfile(user?.uid)} 
+                   onClick={() => fetchProfile(user?.uid || '')} 
                    disabled={busy}
                    className="order-2 sm:order-1 sm:w-1/3 py-3.5 px-4 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all flex items-center justify-center gap-2"
                  >

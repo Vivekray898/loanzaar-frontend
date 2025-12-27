@@ -1,51 +1,62 @@
 # GitHub Copilot Instructions – Loanzaar Frontend
 
-## ⚠️ Legacy Pages Router Notice
+## ✅ App Router Only (Pages Router Removed)
 
-The directory `src/pages/` is a **legacy path** retained only for migration compatibility.
+The legacy **Pages Router** has been **completely removed** from this project.
 
-### ❌ Do NOT:
-- Create new pages or routes inside `src/pages/`
-- Generate new navigation using the Pages Router
-- Suggest adding files under `src/pages/`
-- Create new `.js` or `.jsx` files anywhere in the project
+There is **no `src/pages/` directory** in the codebase.
 
-### ✅ Always:
-- Create all new routes using the **Next.js App Router**
-- Place new pages under `src/app/`
-- Follow the existing App Router layout and route group structure:
-  - `(public)`
-  - `(auth)`
-  - `dashboard`
-  - `admin`
+All routing, layouts, and navigation are handled **exclusively** using the **Next.js App Router**.
 
 ---
 
-## 💎 File Extension Rules
+## ❌ Do NOT
 
-### **NEW Pages & Components → Use `.tsx`**
-- All newly created pages MUST use `.tsx`
-- All new UI components MUST use `.tsx`
-- All new utility files MUST use `.ts`
-- No exceptions for new files
+* Create or suggest a `src/pages/` directory
+* Use Pages Router concepts (`getStaticProps`, `getServerSideProps`, `_app.js`, `_document.js`)
+* Generate routes outside of `src/app/`
+* Suggest adding `.js` or `.jsx` files for new work
 
-### **EXISTING Pages & Components → Continue with `.jsx`**
-- Keep existing `.jsx` files as-is (no forced migration)
-- Only convert to `.tsx` if actively refactoring or enhancing
-- Do NOT change file extensions during minor bug fixes
+---
 
-### **Strict TypeScript Conventions (New Files)**
-- Define `interface` or `type` for all component props
-- Avoid using `any`; use specific types or `unknown` if necessary
-- Ensure `page.tsx` props (params/searchParams) are typed correctly
-- Example:
+## ✅ Always
+
+* Create all routes using the **Next.js App Router**
+* Place pages and layouts under `src/app/`
+* Follow the existing route group structure:
+
+  * `(public)`
+  * `(auth)`
+  * `dashboard`
+  * `admin`
+
+---
+
+## 💎 File Extension Rules (Strict)
+
+### **All New Files → TypeScript Only**
+
+* Pages → `.tsx`
+* Layouts → `.tsx`
+* UI Components → `.tsx`
+* Client Components → `.tsx`
+* Utilities / Helpers → `.ts`
+
+❗ **No new `.js` or `.jsx` files are allowed**
+
+---
+
+## 🧠 TypeScript Conventions (Mandatory)
+
+* Define `interface` or `type` for **all props**
+* Avoid `any` (use specific types or `unknown` if necessary)
+* Type `params` and `searchParams` explicitly in `page.tsx`
+
+### Example: Typed App Router Page
 
 ```tsx
-// ✅ NEW PAGE - Use .tsx with strict typing
 interface PageProps {
-  params: {
-    id: string;
-  };
+  params: { id: string };
   searchParams: Record<string, string | string[]>;
 }
 
@@ -54,30 +65,23 @@ export default function Page({ params, searchParams }: PageProps) {
 }
 ```
 
-```jsx
-// ✅ EXISTING PAGE - Keep as .jsx (no forced changes)
-export default function OldPage({ params }) {
-  return <div>Page ID: {params.id}</div>;
-}
-```
-
 ---
 
-## 📌 Architecture Rules
+## 🧩 Server vs Client Components
 
-### **Server Components**
-- `page.tsx` and `layout.tsx` are Server Components by default
-- Do NOT add interactivity (state/hooks) directly to them
-- Import client components from separate `.tsx` files
+### Server Components (Default)
 
-### **Client Components (New Files)**
-- MUST be `.tsx` files
-- MUST have `'use client'` explicitly declared at the top
-- Isolate client logic into small, reusable components
-- Example:
+* `page.tsx` and `layout.tsx` are **Server Components by default**
+* Do **NOT** use hooks or browser-only APIs
+* Keep them focused on data fetching and composition
+
+### Client Components
+
+* Must be `.tsx`
+* Must include `'use client'` at the top
+* Encapsulate all interactivity (state, effects, events)
 
 ```tsx
-// ✅ NEW CLIENT COMPONENT - .tsx with 'use client'
 'use client';
 
 import { useState } from 'react';
@@ -92,9 +96,9 @@ export function ClientComponent({ title }: ClientComponentProps) {
 }
 ```
 
-### **Server Pages Importing Client Components**
+### Importing Client Components into Server Pages
+
 ```tsx
-// ✅ NEW SERVER PAGE - .tsx (no 'use client')
 import { ClientComponent } from '@/components/ClientComponent';
 
 export default function Page() {
@@ -104,28 +108,23 @@ export default function Page() {
 
 ---
 
-## 🚀 Migration Path
+## 🚀 Architecture Rules
 
-| Scenario | Action | File Extension |
-|----------|--------|-----------------|
-| **Creating a new page** | Follow strict TypeScript conventions | `.tsx` |
-| **Creating a new component** | Use client/server patterns, strict typing | `.tsx` |
-| **Modifying existing legacy page** | Keep as-is, no forced conversion | `.jsx` |
-| **Refactoring existing legacy file** | Prioritize `.tsx` migration | `.tsx` |
-| **Creating utilities/helpers** | Strict TypeScript | `.ts` |
+* Use route groups for separation of concerns
+* Keep layouts minimal and compositional
+* Prefer Server Components unless interactivity is required
+* Isolate business logic into typed utilities
 
 ---
 
-## ✨ Quick Checklist
+## ✨ Final Checklist
 
-- [ ] New page → **Always `.tsx`**
-- [ ] Existing page → **Keep `.jsx` unless actively refactoring**
-- [ ] New component → **Always `.tsx` with strict types**
-- [ ] Server component → **No state or hooks**
-- [ ] Client component → **Has `'use client'` at top**
-- [ ] Props → **Defined with `interface` or `type`**
-- [ ] Avoid `any` → **Use specific types or `unknown`**
+* [ ] App Router only (`src/app`)
+* [ ] No Pages Router APIs
+* [ ] All new files in TypeScript
+* [ ] Client components explicitly marked
+* [ ] Strict typing everywhere
 
 ---
 
-If unsure, default to **TypeScript (`.tsx`)** for new files and **App Router** patterns.
+When in doubt, **default to App Router + TypeScript**.

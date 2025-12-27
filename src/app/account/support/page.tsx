@@ -1,6 +1,7 @@
+import type { Metadata } from 'next'
 import SupportPage from './SupportPage'
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Support | Loanzaar',
   description: 'Get help and support'
 }

@@ -1,6 +1,7 @@
+import type { Metadata } from 'next'
 import TrackPage from './TrackPage'
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Profile | Loanzaar',
   description: 'Edit your profile'
 }
