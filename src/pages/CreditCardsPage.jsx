@@ -8,7 +8,7 @@ import { submitCreditCardApplication } from '../services/supabaseService';
 const CreditCardsPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [activeFaq, setActiveFaq] = useState(null);
-  const recaptchaRef = useRef(null);
+  const turnstileRef = useRef(null);
   const [captchaToken, setCaptchaToken] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -173,8 +173,8 @@ const CreditCardsPage = () => {
           consent: false
         });
         setCaptchaToken(null);
-        if (recaptchaRef.current) {
-          recaptchaRef.current.reset();
+        if (turnstileRef.current) {
+          turnstileRef.current.reset();
         }
       } else {
         alert(`Error: ${result.error || 'Failed to submit application'}`);
@@ -473,7 +473,7 @@ const CreditCardsPage = () => {
           </div>
           <div className="flex justify-center">
             <Turnstile
-              ref={recaptchaRef}
+              ref={turnstileRef}
               sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'}
               onVerify={handleCaptchaChange}
               onExpired={() => setCaptchaToken(null)}

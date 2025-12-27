@@ -2,8 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
-const ReCAPTCHA = dynamic(() => import('react-google-recaptcha'), { ssr: false });
+import Turnstile from '../components/Turnstile';
 import Meta from '../components/Meta';
 import { 
   ChevronDown, 
@@ -29,7 +28,7 @@ const CheckCibilScorePage = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [activeFaq, setActiveFaq] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const recaptchaRef = useRef(null);
+  const turnstileRef = useRef(null);
   const [captchaToken, setCaptchaToken] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -141,15 +140,15 @@ const CheckCibilScorePage = () => {
     setShowModal(false);
     setFieldErrors({});
     setCaptchaToken(null);
-    if (recaptchaRef.current) {
-      recaptchaRef.current.reset();
+    if (turnstileRef.current) {
+      turnstileRef.current.reset();
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    if (!captchaToken) { alert('Please complete the reCAPTCHA verification.'); return; }
+    if (!captchaToken) { alert('Please complete the security verification.'); return; }
     if (!formData.consent) { alert('Please agree to the terms and conditions.'); return; }
 
     setIsLoading(true);
@@ -167,8 +166,8 @@ const CheckCibilScorePage = () => {
         consent: false
       });
       setCaptchaToken(null);
-      if (recaptchaRef.current) {
-        recaptchaRef.current.reset();
+        if (turnstileRef.current) {
+        turnstileRef.current.reset();
       }
       setTimeout(() => {
         setSubmitted(false);
@@ -734,10 +733,11 @@ const CheckCibilScorePage = () => {
                   </div>
 
                   <div className="flex justify-center transform origin-center scale-90">
-                    <ReCAPTCHA
-                      ref={recaptchaRef}
-                      sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
-                      onChange={(token) => setCaptchaToken(token)}
+                    <Turnstile
+                      ref={turnstileRef}
+                      sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"}
+                      onVerify={(token) => setCaptchaToken(token)}
+                      onExpired={() => setCaptchaToken(null)}
                     />
                   </div>
 

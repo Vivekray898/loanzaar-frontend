@@ -10,7 +10,7 @@ import { generateWebPageSchema } from '../utils/schema';
 import { isValidPhoneNumber } from '../utils/phone';
 
 const ContactUsPage = () => {
-  const recaptchaRef = useRef(null);
+  const turnstileRef = useRef(null);
   const [captchaToken, setCaptchaToken] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [message, setMessage] = useState(null);
@@ -170,8 +170,8 @@ const ContactUsPage = () => {
         });
         
         setCaptchaToken(null);
-        if (recaptchaRef.current) {
-          recaptchaRef.current.reset();
+        if (turnstileRef.current) {
+          turnstileRef.current.reset();
         }
 
         setTimeout(() => setMessage(null), 3000);
@@ -438,12 +438,12 @@ const ContactUsPage = () => {
                 )}
               </div>
 
-              {/* reCAPTCHA - ONLY RENDER IF KEY EXISTS */}
+              {/* Turnstile - ONLY RENDER IF KEY EXISTS */}
               <div className="mt-6 flex justify-center flex-col items-center">
                 {siteKey ? (
                   <>
                     <Turnstile
-                      ref={recaptchaRef}
+                      ref={turnstileRef}
                       sitekey={siteKey}
                       onVerify={handleCaptchaChange}
                       onExpired={() => setCaptchaToken(null)}

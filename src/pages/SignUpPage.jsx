@@ -35,7 +35,7 @@ function SignUpPage({ onShowSignin, isModal = false }) {
   const [fieldErrors, setFieldErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState(null);
-  const recaptchaRef = useRef(null);
+  const turnstileRef = useRef(null);
   const [captchaToken, setCaptchaToken] = useState(null);
   const [currentStep, setCurrentStep] = useState(1); 
   const [showPassword, setShowPassword] = useState(false);
@@ -88,7 +88,7 @@ function SignUpPage({ onShowSignin, isModal = false }) {
   };
 
   const handleCaptchaChange = (token) => {
-    console.debug('ReCAPTCHA token received:', token);
+    console.debug('Turnstile token received:', token);
     setCaptchaToken(token);
   };
 
@@ -279,7 +279,7 @@ function SignUpPage({ onShowSignin, isModal = false }) {
                   <div className="flex justify-center mb-6 transform scale-95 sm:scale-100">
                     <div className="w-full max-w-[320px] mx-auto">
                       <Turnstile
-                        ref={recaptchaRef}
+                        ref={turnstileRef}
                         sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '6LdUpOsrAAAAAKqnWvFE0MH-mgcHo8BzFohUEB5b'}
                         onVerify={handleCaptchaChange}
                         onExpired={() => setCaptchaToken(null)}

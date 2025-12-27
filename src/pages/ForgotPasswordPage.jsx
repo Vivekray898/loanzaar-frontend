@@ -15,7 +15,7 @@ export default function ForgotPasswordPage({ onBackToSignin, isModal = false }) 
   const [isLoading, setIsLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [message, setMessage] = useState(null);
-  const recaptchaRef = useRef(null);
+  const turnstileRef = useRef(null);
   const [captchaToken, setCaptchaToken] = useState(null);
   const [formData, setFormData] = useState({ email: '' });
 
@@ -59,7 +59,7 @@ export default function ForgotPasswordPage({ onBackToSignin, isModal = false }) 
     if (!captchaToken) {
       setMessage({
         type: 'error',
-        text: 'Please complete the reCAPTCHA verification.'
+        text: 'Please complete the security verification.'
       });
       return;
     }
@@ -170,7 +170,7 @@ export default function ForgotPasswordPage({ onBackToSignin, isModal = false }) 
               <div className="flex justify-center transform scale-95 sm:scale-100">
                 <div className="w-full max-w-[320px] mx-auto">
                   <Turnstile
-                    ref={recaptchaRef}
+                    ref={turnstileRef}
                     sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '6LdUpOsrAAAAAKqnWvFE0MH-mgcHo8BzFohUEB5b'}
                     onVerify={handleCaptchaChange}
                     onExpired={() => setCaptchaToken(null)}
