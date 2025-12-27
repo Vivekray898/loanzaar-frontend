@@ -1,4 +1,4 @@
-import HomePage from '@/pages/HomePage'
+import HomePageClient from './HomePageClient'
 
 export const metadata = {
   title: 'Loanzaar | Home',
@@ -6,5 +6,5 @@ export const metadata = {
 }
 
 export default function Home() {
-  return <HomePage />
+  return <HomePageClient />
 }
