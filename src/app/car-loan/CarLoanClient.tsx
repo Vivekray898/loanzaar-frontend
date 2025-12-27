@@ -1,34 +1,63 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import Meta from '../components/Meta';
-import BackButton from '../components/BackButton';
-import { submitLoanApplication } from '../config/api';
-import StructuredData from '../components/StructuredData';
-import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
+import Meta from '@/components/Meta';
+import BackButton from '@/components/BackButton';
+import BottomNav from '@/components/BottomNav';
+import { submitLoanApplication } from '@/config/api';
+import StructuredData from '@/components/StructuredData';
+import { generateLoanSchema, generateWebPageSchema } from '@/utils/schema';
 import { 
   ChevronDown, Check, Star, Calculator, FileText, Info, HelpCircle, 
   ArrowRight, Car, Settings, TrendingUp, Calendar, Zap, DollarSign,
-  Layers, Clock, Shield
+  Layers, Clock, Shield, LucideIcon
 } from 'lucide-react';
 
-const CarLoanFormPage = () => {
+// --- Interfaces ---
+
+interface Feature {
+  title: string;
+  icon: LucideIcon;
+  desc: string;
+}
+
+interface EligibilityItem {
+  text: string;
+  icon: string; // Using string identifiers for icon mapping if needed, or could be LucideIcon
+}
+
+interface FaqItem {
+  q: string;
+  a: string;
+}
+
+interface TabItem {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+const CarLoanClient: React.FC = () => {
   // UI State
-  const [activeTab, setActiveTab] = useState('overview');
-  const [activeFaq, setActiveFaq] = useState(null);
+  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
   
   // Calculator State
-  const [loanAmount, setLoanAmount] = useState(1000000);
-  const [interestRate, setInterestRate] = useState(9);
-  const [tenure, setTenure] = useState(60);
-  const [emi, setEmi] = useState(0);
+  const [loanAmount, setLoanAmount] = useState<number>(1000000);
+  const [interestRate, setInterestRate] = useState<number>(9);
+  const [tenure, setTenure] = useState<number>(60);
+  const [emi, setEmi] = useState<number>(0);
 
   // --- EMI Calculation Logic ---
   useEffect(() => {
     const r = interestRate / 12 / 100;
     const n = tenure;
-    const e = loanAmount * r * (Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1));
-    setEmi(Math.round(e));
+    if (loanAmount > 0 && interestRate > 0 && tenure > 0) {
+      const e = loanAmount * r * (Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1));
+      setEmi(Math.round(e));
+    } else {
+      setEmi(0);
+    }
   }, [loanAmount, interestRate, tenure]);
 
   const handleApplyClick = () => {
@@ -36,7 +65,7 @@ const CarLoanFormPage = () => {
   };
 
   // --- Data Preserved from Original ---
-  const features = [
+  const features: Feature[] = [
     { title: 'Loan up to ₹47L', icon: DollarSign, desc: 'High loan amount for new & used cars.' },
     { title: '3 Unique Variants', icon: Layers, desc: 'Standard, Flexi, or Secured options.' },
     { title: '72 Months Tenure', icon: Clock, desc: 'Flexible repayment up to 6 years.' },
@@ -45,26 +74,34 @@ const CarLoanFormPage = () => {
     { title: 'Ownership', icon: Car, desc: 'Drive your own car immediately.' }
   ];
 
-  const eligibilityCriteria = [
+  const eligibilityCriteria: EligibilityItem[] = [
     { text: 'Age: 21 - 65 Years', icon: 'user' },
     { text: 'Income: ₹20k/mo (Min)', icon: 'wallet' },
     { text: 'Score: 650+ CIBIL', icon: 'star' },
     { text: 'Employment: 2 Years Stability', icon: 'briefcase' }
   ];
 
-  const documents = [
+  const documents: string[] = [
     'KYC (PAN, Aadhaar, License)',
     'Last 2 Years ITR (Self-Employed)',
     '3 Months Salary Slips (Salaried)',
     '6 Months Bank Statement'
   ];
 
-  const faqs = [
+  const faqs: FaqItem[] = [
     { q: 'New vs Used car loan?', a: 'New car loans have lower rates (~8-9%). Used car loans have higher rates (~12-15%) and lower LTV.' },
     { q: 'Down payment importance?', a: 'Reduces loan amount and EMI burden. Ideally pay 20% upfront.' },
     { q: 'Can I prepay?', a: 'Yes, after 6-12 months. Charges may apply (usually 3-5%).' },
     { q: 'Max loan amount?', a: 'Up to 100% on-road price for select models/profiles.' },
     { q: 'NOC process?', a: 'Once loan is cleared, bank issues NOC to remove hypothecation from RC.' }
+  ];
+
+  const tabs: TabItem[] = [
+    { id: 'overview', label: 'Overview', icon: Info },
+    { id: 'emi', label: 'Calculator', icon: Calculator },
+    { id: 'features', label: 'Features', icon: Star },
+    { id: 'docs', label: 'Docs', icon: FileText },
+    { id: 'faqs', label: 'FAQs', icon: HelpCircle },
   ];
 
   return (
@@ -114,13 +151,7 @@ const CarLoanFormPage = () => {
         
         {/* Scrollable Tabs */}
         <div className="flex overflow-x-auto gap-2 px-4 py-4 scrollbar-hide border-b border-slate-100 sticky top-14 bg-white z-40">
-          {[
-            { id: 'overview', label: 'Overview', icon: Info },
-            { id: 'emi', label: 'Calculator', icon: Calculator },
-            { id: 'features', label: 'Features', icon: Star },
-            { id: 'docs', label: 'Docs', icon: FileText },
-            { id: 'faqs', label: 'FAQs', icon: HelpCircle },
-          ].map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -200,7 +231,7 @@ const CarLoanFormPage = () => {
                   </div>
                   <input 
                     type="range" min="100000" max="4700000" step="50000" 
-                    value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))}
+                    value={loanAmount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLoanAmount(Number(e.target.value))}
                     className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                   />
                 </div>
@@ -212,7 +243,7 @@ const CarLoanFormPage = () => {
                   </div>
                   <input 
                     type="range" min="12" max="84" step="6" 
-                    value={tenure} onChange={(e) => setTenure(Number(e.target.value))}
+                    value={tenure} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTenure(Number(e.target.value))}
                     className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                   />
                 </div>
@@ -224,7 +255,7 @@ const CarLoanFormPage = () => {
                   </div>
                   <input 
                     type="range" min="7" max="15" step="0.1" 
-                    value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))}
+                    value={interestRate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInterestRate(Number(e.target.value))}
                     className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                   />
                 </div>
@@ -309,9 +340,9 @@ const CarLoanFormPage = () => {
           </button>
         </div>
       </div>
-
+      <BottomNav />
     </div>
   );
 };
 
-export default CarLoanFormPage;
+export default CarLoanClient;

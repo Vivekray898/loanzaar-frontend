@@ -1,4 +1,4 @@
-import UsedCarLoanClient from '@/app/loans/car-loan/used/UsedCarLoanClient'
+import UsedCarLoanClient from './UsedCarLoanClient'
 
 export const metadata = {
   title: 'Used Car Loan | Loanzaar',

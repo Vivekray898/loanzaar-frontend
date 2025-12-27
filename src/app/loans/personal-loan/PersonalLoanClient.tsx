@@ -1,41 +1,62 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic'; // Lazy loading for SEO
-import Meta from '../components/Meta';
-import BackButton from '../components/BackButton';
-import StructuredData from '../components/StructuredData';
-import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
+import Meta from '@/components/Meta';
+import BackButton from '@/components/BackButton';
+import BottomNav from '@/components/BottomNav';
+import StructuredData from '@/components/StructuredData';
+import PersonalLoanForm from '@/components/forms/loans/PersonalLoanForm'; // Ensure this path is correct
+import { generateLoanSchema, generateWebPageSchema } from '@/utils/schema';
 import { 
   ChevronDown, Check, Star, Calculator, FileText, Info, HelpCircle, 
-  ArrowRight, Settings, TrendingUp, IndianRupee, Layers, Shield, Zap, RefreshCw
+  ArrowRight, Shield, Clock, Gift, Layers, Eye, Wallet, 
+  Briefcase
 } from 'lucide-react';
 
-// Dynamic Import: Modal code isn't in initial bundle. 
-// Bots won't see the form code, protecting SEO.
-const MachineryApplicationFrom = dynamic(
-  () => import('../components/forms/loans/MachineryApplicationFrom'), 
-  { ssr: false } 
-);
+// --- Interfaces for Type Safety ---
+interface FeatureItem {
+  id: string;
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+  badge?: string;
+}
 
-const MachineryLoanPage = () => {
+interface CriteriaItem {
+  icon: string; // we map strings to icons later or use ElementType if passing direct component
+  text: string;
+  highlight: boolean;
+}
+
+interface DocSection {
+  title: string;
+  items: string[];
+}
+
+interface FaqItem {
+  q: string;
+  a: string;
+}
+
+const PersonalLoanClient = () => {
   // UI State
-  const [activeTab, setActiveTab] = useState('overview');
-  const [activeFaq, setActiveFaq] = useState(null);
+  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
   
   // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   
   // Calculator State
-  const [loanAmount, setLoanAmount] = useState(2500000);
-  const [interestRate, setInterestRate] = useState(12);
-  const [tenure, setTenure] = useState(60);
-  const [emi, setEmi] = useState(0);
+  const [loanAmount, setLoanAmount] = useState<number>(500000);
+  const [interestRate, setInterestRate] = useState<number>(12);
+  const [tenure, setTenure] = useState<number>(36);
+  const [emi, setEmi] = useState<number>(0);
 
   // --- EMI Calculation Logic ---
   useEffect(() => {
     const r = interestRate / 12 / 100;
     const n = tenure;
+    // Standard EMI Formula: E = P * r * (1+r)^n / ((1+r)^n - 1)
     const e = loanAmount * r * (Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1));
     setEmi(Math.round(e));
   }, [loanAmount, interestRate, tenure]);
@@ -45,7 +66,7 @@ const MachineryLoanPage = () => {
   };
 
   // Smooth Scroll Handler
-  const scrollToSection = (id) => {
+  const scrollToSection = (id: string) => {
     setActiveTab(id);
     const element = document.getElementById(id);
     if (element) {
@@ -62,51 +83,44 @@ const MachineryLoanPage = () => {
     }
   };
 
-  // Data
-  const features = [
-    { id: 'wide-range', icon: Layers, title: 'Wide Range', desc: 'Various machinery loan products.' },
-    { id: 'high-amount', icon: IndianRupee, title: 'High Amount', desc: '₹5 Lakh to ₹5 Crore.' },
-    { id: 'tenure', icon:  Settings, title: 'Flexible Tenure', desc: '12 to 60 Months.' },
-    { id: 'docs', icon: FileText, title: 'Minimal Docs', desc: 'Digital application process.' },
-    { id: 'financing', icon: TrendingUp, title: 'High Financing', desc: 'Up to 100% of equipment price.' },
-    { id: 'rates', icon: Star, title: 'Competitive Rates', desc: 'Starting from 12%.' },
-    { id: 'collateral', icon: Shield, title: 'No Collateral', desc: 'For many loan products.' },
-    { id: 'speed', icon: Zap, title: 'Quick Disbursal', desc: 'Fast processing.' },
-    { id: 'repayment', icon: RefreshCw, title: 'Custom Repayment', desc: 'Flexible options.' }
+  // --- Data ---
+  const features: FeatureItem[] = [
+    { id: 'new-customers', icon: Gift, title: 'New Customer Offers', desc: 'Special rates for first-time borrowers.', badge: 'Popular' },
+    { id: 'variants', icon: Layers, title: '3 Unique Variants', desc: 'Standard, Flexi, or Secured options.' },
+    { id: 'amount', icon: Wallet, title: 'Up to ₹40 Lakhs', desc: 'Substantial funding for major expenses.' },
+    { id: 'tenure', icon: Clock, title: 'Flexible Tenure', desc: 'Repay comfortably over up to 84 months.' },
+    { id: 'no-collateral', icon: Shield, title: 'No Collateral', desc: '100% unsecured loan with zero risk to assets.' },
+    { id: 'transparency', icon: Eye, title: 'No Hidden Fees', desc: 'Complete transparency in all charges.' }
   ];
 
-  const financingOptions = [
-    { title: 'Medical Equipment', desc: 'Healthcare machinery.' },
-    { title: 'Construction Machinery', desc: 'Heavy equipment.' },
-    { title: 'Manufacturing Equipment', desc: 'Production facilities.' },
-    { title: 'Farm Machinery', desc: 'Agricultural equipment.' },
-    { title: 'Aviation Equipment', desc: 'Specialized financing.' },
-    { title: 'Used Machinery', desc: 'Pre-owned options.' },
-    { title: 'Loan Against Machinery', desc: 'Refinance existing assets.' }
+  const eligibilityCriteria: CriteriaItem[] = [
+    { icon: 'user', text: 'Age: 21 - 60 years', highlight: false },
+    { icon: 'wallet', text: 'Income: ₹15k/mo (Salaried/Self)', highlight: true },
+    { icon: 'star', text: 'CIBIL Score: 650+', highlight: true },
+    { icon: 'flag', text: 'Indian Citizen', highlight: false },
+    { icon: 'briefcase', text: 'Stable Employment', highlight: false }
   ];
 
-  const documents = [
-    { title: 'KYC Docs', items: ['Aadhaar', 'PAN', 'License', 'Passport'] },
-    { title: 'Income Proof', items: ['3 Years ITR', '6 Months Bank Stmt'] },
-    { title: 'Business Proof', items: ['Ownership Documents', 'Registration'] },
-    { title: 'Purchase Details', items: ['Proforma Invoice', 'Quotation'] }
+  const documents: DocSection[] = [
+    { title: 'Identity Proof', items: ['PAN Card', 'Aadhaar Card', 'Passport', 'Voter ID'] },
+    { title: 'Address Proof', items: ['Aadhaar Card', 'Utility Bills', 'Rent Agreement'] },
+    { title: 'Income Proof', items: ['3 Months Salary Slips', '6 Months Bank Statement'] },
+    { title: 'Employment', items: ['Company ID Card', 'Appointment Letter'] }
   ];
 
-  const faqs = [
-    { q: 'Interest rate for machinery loan?', a: 'Starts from 12%, depends on profile.' },
-    { q: 'Can machinery be collateral?', a: 'Yes, often results in lower rates.' },
-    { q: 'MSME loan rates?', a: 'Competitive, starting 11-13%.' },
-    { q: 'Who offers these loans?', a: 'Major banks like HDFC, ICICI, and NBFCs.' },
-    { q: 'Refinancing available?', a: 'Yes, most lenders offer refinancing.' },
-    { q: 'Eligibility criteria?', a: 'Age 21-65, 3 yrs vintage, 650+ CIBIL.' },
-    { q: 'Secured or Unsecured?', a: 'Can be both, depends on lender.' }
+  const faqs: FaqItem[] = [
+    { q: 'What is a personal loan?', a: 'An unsecured loan for personal use like medical bills, travel, or renovation without collateral.' },
+    { q: 'How much can I borrow?', a: 'You can borrow between ₹50,000 to ₹40 Lakhs depending on your eligibility.' },
+    { q: 'Minimum credit score required?', a: 'A score of 650+ is recommended for quick approval and better interest rates.' },
+    { q: 'Can I foreclose the loan?', a: 'Yes, foreclosure is allowed after payment of the first EMI, usually with a small fee.' },
+    { q: 'How long does disbursal take?', a: 'Once approved, the amount is credited to your bank account within 24 to 48 hours.' }
   ];
 
-  // --- Reusable Calculator Widget ---
+  // --- Component: EMI Calculator Widget ---
   const CalculatorWidget = () => (
     <div className="space-y-6 md:space-y-8">
       <div className="bg-slate-900 text-white p-6 rounded-2xl text-center shadow-lg">
-        <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Monthly Installment</p>
+        <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Estimated Monthly EMI</p>
         <p className="text-4xl font-bold">₹{emi.toLocaleString()}</p>
         <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-800">
             <div>
@@ -115,7 +129,7 @@ const MachineryLoanPage = () => {
             </div>
             <div>
               <p className="text-[10px] text-slate-400">Total Amount</p>
-              <p className="text-sm font-bold text-orange-400">₹{(emi * tenure).toLocaleString()}</p>
+              <p className="text-sm font-bold text-blue-400">₹{(emi * tenure).toLocaleString()}</p>
             </div>
         </div>
       </div>
@@ -124,12 +138,12 @@ const MachineryLoanPage = () => {
         <div>
           <div className="flex justify-between text-sm font-semibold mb-2">
             <span className="text-slate-500">Loan Amount</span>
-            <span className="text-slate-900">₹{(loanAmount/100000).toFixed(1)}L</span>
+            <span className="text-slate-900">₹{(loanAmount/1000).toFixed(0)}k</span>
           </div>
           <input 
-            type="range" min="500000" max="50000000" step="100000" 
+            type="range" min="50000" max="4000000" step="10000" 
             value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
           />
         </div>
 
@@ -139,9 +153,9 @@ const MachineryLoanPage = () => {
             <span className="text-slate-900">{tenure} Months</span>
           </div>
           <input 
-            type="range" min="12" max="60" step="6" 
+            type="range" min="12" max="84" step="6" 
             value={tenure} onChange={(e) => setTenure(Number(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
           />
         </div>
 
@@ -151,66 +165,65 @@ const MachineryLoanPage = () => {
             <span className="text-slate-900">{interestRate}%</span>
           </div>
           <input 
-            type="range" min="8" max="20" step="0.5" 
+            type="range" min="10" max="24" step="0.5" 
             value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
           />
         </div>
       </div>
 
-      {/* Desktop Only Apply Button */}
       <div className="hidden lg:block pt-2">
         <button 
           onClick={handleApplyClick}
-          className="w-full flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 active:scale-95 transition-all text-white px-6 py-4 rounded-xl font-bold text-base shadow-xl shadow-orange-200"
+          className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-white px-6 py-4 rounded-xl font-bold text-base shadow-xl shadow-blue-200"
         >
           Apply Now <ArrowRight className="w-5 h-5" />
         </button>
-        <p className="text-center text-xs text-slate-400 mt-3">Up to 100% Financing Available</p>
+        <p className="text-center text-xs text-slate-400 mt-3">No impact on credit score to check</p>
       </div>
     </div>
   );
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-20 lg:pb-0 text-slate-900">
-      <Meta title="Machinery Loan | Loanzaar" description="Finance industrial equipment." />
+      <Meta title="Personal Loan | Loanzaar" description="Instant personal loans up to ₹40L." />
       
-      {/* 1. Header (Universal) */}
+      {/* 1. Universal Header */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 h-16 flex items-center justify-between">
         <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
           <BackButton className="text-sm font-semibold text-slate-500 flex items-center gap-1 hover:text-slate-900 transition-colors">
             <ChevronDown className="w-4 h-4 rotate-90" /> Back
           </BackButton>
-          <h1 className="text-base md:text-lg font-bold text-slate-900">Machinery Loan</h1>
+          <h1 className="text-base md:text-lg font-bold text-slate-900">Personal Loan</h1>
           <div className="w-8"></div>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pt-6">
-
+        
         {/* 2. Hero Section */}
         <section id="overview" className="mb-8">
-          <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-[2rem] p-6 md:p-10 text-white shadow-xl shadow-orange-200/50 relative overflow-hidden">
+          <div className="bg-gradient-to-br from-blue-600 to-sky-500 rounded-[2rem] p-6 md:p-10 text-white shadow-xl shadow-blue-200/50 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
             
             <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div className="max-w-2xl">
                 <span className="inline-block px-3 py-1 bg-white/20 rounded-lg text-xs font-bold uppercase tracking-wider mb-4 backdrop-blur-sm border border-white/10">
-                  Equipment Finance
+                  Instant Approval
                 </span>
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-4">
-                  Power up your <br className="hidden md:block"/> <span className="text-orange-100">Production.</span>
+                  Funds for your <span className="text-blue-100">next big step.</span>
                 </h2>
-                <p className="text-orange-50 text-sm md:text-lg mb-6 leading-relaxed max-w-lg">
-                  Up to 100% financing for new & used machinery. Loans up to ₹5 Cr. Fast approval for MSMEs.
+                <p className="text-blue-50 text-sm md:text-lg mb-6 leading-relaxed max-w-lg">
+                  Get up to ₹40 Lakhs instantly. No collateral required. Money in bank within 24 hours.
                 </p>
                 
                 <div className="flex flex-wrap gap-3 text-xs md:text-sm font-medium">
                   <div className="flex items-center gap-2 bg-black/20 px-4 py-2 rounded-full backdrop-blur-md">
-                    <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" /> MSME Approved
+                    <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" /> 4.8/5 Rated
                   </div>
                   <div className="flex items-center gap-2 bg-black/20 px-4 py-2 rounded-full backdrop-blur-md">
-                    <Check className="w-4 h-4 text-white" /> Fast Approval
+                    <Check className="w-4 h-4 text-green-400" /> 100% Digital Process
                   </div>
                 </div>
               </div>
@@ -218,7 +231,7 @@ const MachineryLoanPage = () => {
           </div>
         </section>
 
-        {/* 3. Sticky Navigation Anchor Bar */}
+        {/* 3. Sticky Navigation */}
         <div className="sticky top-16 z-40 bg-slate-50/95 backdrop-blur-sm pt-2 pb-4 border-b border-slate-200 mb-8">
           <div className="flex overflow-x-auto gap-2 md:gap-4 pb-2 scrollbar-hide">
             {[
@@ -234,7 +247,7 @@ const MachineryLoanPage = () => {
                 className={`
                   flex items-center gap-2 px-5 py-2.5 rounded-full text-xs md:text-sm font-bold whitespace-nowrap transition-all duration-300
                   ${activeTab === tab.id 
-                    ? 'bg-orange-600 text-white shadow-md shadow-orange-200' 
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-200' 
                     : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}
                 `}
               >
@@ -248,77 +261,81 @@ const MachineryLoanPage = () => {
         {/* 4. Main Layout Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 pb-12">
           
-          {/* LEFT COLUMN: Content Sections (col-span-8) */}
+          {/* LEFT COLUMN: Content */}
           <div className="lg:col-span-7 xl:col-span-8 space-y-16">
             
-            {/* OVERVIEW CONTENT */}
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div>
                 <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-                  What is a Machinery Loan?
+                  What is a Personal Loan?
                 </h3>
                 <p className="text-sm md:text-base text-slate-600 leading-relaxed text-justify">
-                  A machinery loan helps business owners and entrepreneurs acquire new machinery or upgrade existing equipment without draining their working capital. This loan is crucial for increasing production capacity and operational efficiency.
+                  A personal loan is an unsecured loan you can use for any purpose—medical emergencies, travel, wedding, or home renovation. Unlike other loans, you don't need to provide any collateral or security.
                 </p>
               </div>
 
-              {/* Key Benefits Box */}
-              <div className="bg-orange-50/80 p-6 rounded-2xl border border-orange-100">
-                 <h3 className="text-sm font-bold text-orange-900 mb-4 uppercase tracking-wide">Key Benefits</h3>
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[
-                     { title: 'Financing', val: '100%', sub: 'of Equip. Cost' },
-                     { title: 'Amount', val: '₹5 Cr', sub: 'Maximum' },
-                     { title: 'Tenure', val: '5 Years', sub: 'Flexible' },
-                     { title: 'Collateral', val: 'None*', sub: 'On select loans' },
-                   ].map((stat, i) => (
-                     <div key={i} className="bg-white p-4 rounded-xl border border-orange-50 shadow-sm flex flex-col justify-center">
-                        <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase">{stat.title}</p>
-                        <p className="text-sm md:text-base font-bold text-orange-700 mt-1">{stat.val}</p>
-                        <p className="text-[10px] md:text-xs text-slate-500 mt-0.5">{stat.sub}</p>
+              {/* Eligibility Box */}
+              <div className="bg-blue-50/80 p-6 rounded-2xl border border-blue-100">
+                <h3 className="text-sm font-bold text-blue-900 mb-4 uppercase tracking-wide flex items-center gap-2">
+                  <Shield className="w-4 h-4" /> Eligibility Check
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {eligibilityCriteria.map((item, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm border border-blue-100">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${item.highlight ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
+                        {item.highlight ? <Check className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+                      </div>
+                      <span className="text-sm font-semibold text-slate-700">{item.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Popular Uses Grid */}
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 mb-4">Popular Uses</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                   {[
+                     { title: 'Debt Consolidation', icon: Layers },
+                     { title: 'Home Renovation', icon: Wallet },
+                     { title: 'Medical Emergency', icon: FileText },
+                     { title: 'Travel & Wedding', icon: Gift }
+                   ].map((use, i) => (
+                     <div key={i} className="group bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex flex-col items-center text-center gap-3">
+                        <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center group-hover:bg-blue-50 transition-colors">
+                          <use.icon className="w-5 h-5 text-blue-500" />
+                        </div>
+                        <span className="text-xs md:text-sm font-bold text-slate-700">{use.title}</span>
                      </div>
                    ))}
                 </div>
               </div>
-
-              {/* Financing Options */}
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 mb-4">Financing Options</h3>
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {financingOptions.map((opt, i) => (
-                    <li key={i} className="flex items-center gap-3 text-sm text-slate-700 bg-white p-3 rounded-xl border border-slate-200 hover:border-orange-200 transition-colors shadow-sm">
-                      <Settings className="w-5 h-5 text-orange-500 shrink-0" />
-                      <div>
-                        <span className="font-bold block text-slate-800">{opt.title}</span>
-                        <span className="text-xs text-slate-500">{opt.desc}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
             </div>
 
-            {/* CALCULATOR SECTION (Mobile Only - Hidden on LG) */}
+            {/* Mobile Calculator */}
             <div id="calculator" className="lg:hidden scroll-mt-32 border-t border-slate-200 pt-8">
                <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-                  <Calculator className="w-5 h-5 text-orange-600" /> EMI Calculator
+                  <Calculator className="w-5 h-5 text-blue-600" /> EMI Calculator
                </h3>
                <CalculatorWidget />
             </div>
 
-            {/* FEATURES SECTION */}
+            {/* Features */}
             <div id="features" className="scroll-mt-32 border-t border-slate-200 pt-8">
               <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-                <Star className="w-6 h-6 text-yellow-500 fill-yellow-500" /> Features & Benefits
+                <Star className="w-6 h-6 text-yellow-500 fill-yellow-500" /> Why Choose Loanzaar?
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {features.map((feat) => (
                   <div key={feat.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow flex items-start gap-4">
-                    <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center shadow-inner shrink-0 text-orange-600">
+                    <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center shadow-inner shrink-0 text-blue-600">
                       <feat.icon className="w-6 h-6" strokeWidth={1.5} />
                     </div>
                     <div>
-                      <h4 className="text-base font-bold text-slate-900">{feat.title}</h4>
+                      <h4 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                        {feat.title}
+                        {feat.badge && <span className="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded-full">{feat.badge}</span>}
+                      </h4>
                       <p className="text-sm text-slate-500 leading-snug mt-1.5">{feat.desc}</p>
                     </div>
                   </div>
@@ -326,12 +343,19 @@ const MachineryLoanPage = () => {
               </div>
             </div>
 
-            {/* DOCUMENTS SECTION */}
+            {/* Documents */}
             <div id="docs" className="scroll-mt-32 border-t border-slate-200 pt-8">
               <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <FileText className="w-6 h-6 text-slate-700" /> Required Documents
               </h3>
               
+              <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 flex gap-3 mb-6">
+                <Info className="w-5 h-5 text-orange-600 shrink-0" />
+                <p className="text-sm text-orange-800 leading-relaxed font-medium">
+                  Keep soft copies of these documents ready for a faster, 100% paperless application.
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {documents.map((section, idx) => (
                   <div key={idx} className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
@@ -341,7 +365,7 @@ const MachineryLoanPage = () => {
                     <div className="p-5 bg-white grid grid-cols-1 gap-3">
                       {section.items.map((item, i) => (
                         <div key={i} className="flex items-center gap-3 text-sm font-medium text-slate-600">
-                          <Check className="w-4 h-4 text-orange-500" />
+                          <Check className="w-4 h-4 text-green-500" />
                           {item}
                         </div>
                       ))}
@@ -351,20 +375,20 @@ const MachineryLoanPage = () => {
               </div>
             </div>
 
-            {/* FAQS SECTION */}
+            {/* FAQs */}
             <div id="faqs" className="scroll-mt-32 border-t border-slate-200 pt-8">
               <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <HelpCircle className="w-6 h-6 text-slate-700" /> Frequently Asked Questions
               </h3>
               <div className="space-y-3">
                 {faqs.map((item, i) => (
-                  <div key={i} className="border border-slate-100 rounded-xl overflow-hidden bg-white hover:border-orange-300 transition-colors">
+                  <div key={i} className="border border-slate-200 rounded-xl overflow-hidden bg-white hover:border-blue-300 transition-colors">
                     <button 
                       onClick={() => setActiveFaq(activeFaq === i ? null : i)}
                       className="w-full flex justify-between items-center p-5 text-left"
                     >
                       <span className="text-sm md:text-base font-semibold text-slate-800 pr-4">{item.q}</span>
-                      <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform flex-shrink-0 ${activeFaq === i ? 'rotate-180 text-orange-600' : ''}`} />
+                      <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform flex-shrink-0 ${activeFaq === i ? 'rotate-180 text-blue-600' : ''}`} />
                     </button>
                     {activeFaq === i && (
                       <div className="px-5 pb-5 pt-0 bg-white">
@@ -376,26 +400,25 @@ const MachineryLoanPage = () => {
                 ))}
               </div>
             </div>
-            
+
           </div>
 
-          {/* RIGHT COLUMN: Sticky Sidebar (Calculator) (lg:col-span-4) */}
+          {/* RIGHT COLUMN: Sticky Calculator */}
           <div className="hidden lg:block lg:col-span-5 xl:col-span-4">
              <div className="sticky top-32 space-y-6">
-                <div id="calculator" className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
+                <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
                    <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                      <Calculator className="w-5 h-5 text-orange-600" /> EMI Calculator
+                      <Calculator className="w-5 h-5 text-blue-600" /> EMI Calculator
                    </h3>
                    <CalculatorWidget />
                 </div>
                 
-                {/* Trust Badge Widget */}
                 <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 flex items-center gap-4">
-                   <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-orange-600">
+                   <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-green-600">
                       <Shield className="w-5 h-5" />
                    </div>
                    <div>
-                      <p className="text-sm font-bold text-slate-900">Secure Financing</p>
+                      <p className="text-sm font-bold text-slate-900">Secure Application</p>
                       <p className="text-xs text-slate-500">256-bit SSL Encryption</p>
                    </div>
                 </div>
@@ -405,7 +428,7 @@ const MachineryLoanPage = () => {
         </div>
       </main>
 
-      {/* 5. Sticky Bottom Action Bar (Mobile/Tablet Only) */}
+      {/* 5. Sticky Bottom Action Bar (Mobile Only) */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 pb-safe z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         <div className="flex items-center gap-4 max-w-md mx-auto">
           <div className="flex-1">
@@ -414,29 +437,24 @@ const MachineryLoanPage = () => {
           </div>
           <button 
             onClick={handleApplyClick}
-            className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 active:scale-95 transition-all text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-orange-200"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-200"
           >
             Apply Now <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* 
-         The Dynamic Modal
-         Important: Pass `loanCategory="business"` so the modal shows business fields (Turnover, Vintage) 
-         instead of personal employment fields.
-      */}
-      {isModalOpen && (
-        <MachineryApplicationFrom 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
-          loanType="Machinery Loan"
-          loanCategory="business" 
-        />
-      )}
+      {/* The Loan Form Modal */}
+      <PersonalLoanForm 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        loanType="Personal Loan"
+      />
 
+        {/* Bottom navigation */}
+        <BottomNav />
     </div>
   );
 };
 
-export default MachineryLoanPage;
+export default PersonalLoanClient;

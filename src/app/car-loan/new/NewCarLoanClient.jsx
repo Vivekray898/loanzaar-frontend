@@ -1,18 +1,19 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
-import Meta from '../components/Meta';
-import BackButton from '../components/BackButton';
-import CarRefinanceForm from '../components/forms/cars/CarRefinanceForm'; // ✅ Import Form
-import StructuredData from '../components/StructuredData';
-import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
+import React, { useState, useEffect, useRef } from 'react';
+import Meta from '@/components/Meta';
+import BackButton from '@/components/BackButton';
+import BottomNav from '@/components/BottomNav';
+import NewCarLoanForm from '@/components/forms/cars/NewCarLoanForm'; // ✅ Import Form
+import StructuredData from '@/components/StructuredData';
+import { generateLoanSchema, generateWebPageSchema } from '@/utils/schema';
 import { 
   ChevronDown, Check, Star, Calculator, FileText, Info, HelpCircle, 
-  ArrowRight, RefreshCw, DollarSign, TrendingUp, Clock, Settings, Target,
-  Calendar, Briefcase, User, Shield
+  ArrowRight, DollarSign, Layers, Clock, Zap, Wallet, Settings, Key,
+  TrendingUp, Calendar, Briefcase, User, Shield
 } from 'lucide-react';
 
-const CarRefinanceFormPage = () => {
+const NewCarLoanClient = () => {
   // UI State
   const [activeTab, setActiveTab] = useState('overview');
   const [activeFaq, setActiveFaq] = useState(null);
@@ -36,7 +37,7 @@ const CarRefinanceFormPage = () => {
     setIsFormOpen(true); // ✅ Toggle Form
   };
 
-  // Smooth Scroll Handler
+  // Smooth Scroll Handler for Anchor Links
   const scrollToSection = (id) => {
     setActiveTab(id);
     const element = document.getElementById(id);
@@ -56,52 +57,68 @@ const CarRefinanceFormPage = () => {
 
   // --- Data ---
   const features = [
-    { title: 'Lower Payments', icon: DollarSign, desc: 'Reduce monthly EMI burden.' },
-    { title: 'Max Funding', icon: TrendingUp, desc: 'Up to 150% valuation funding.' },
-    { title: 'Shorten Term', icon: Clock, desc: 'Pay off loan faster.' },
-    { title: 'Switch Lender', icon: RefreshCw, desc: 'Move to better terms.' },
-    { title: 'Adjust Terms', icon: Settings, desc: 'Tailor to current needs.' },
-    { title: 'Debt Free', icon: Target, desc: 'Become debt-free sooner.' }
+    { title: 'Loan up to ₹47 Lakh', icon: DollarSign, desc: 'High loan amount for new cars.' },
+    { title: '3 Unique Variants', icon: Layers, desc: 'Standard, Flexi, or Secured options.' },
+    { title: '72 Months Tenure', icon: Clock, desc: 'Flexible repayment up to 6 years.' },
+    { title: 'Minimal Docs', icon: FileText, desc: 'Paperless approval process.' },
+    { title: 'Immediate Funds', icon: Zap, desc: 'Quick disbursal to dealer.' },
+    { title: 'Flexible Tenures', icon: Calendar, desc: 'Repay at your own pace.' },
+    { title: 'Fixed Rates', icon: TrendingUp, desc: 'Predictable monthly payments.' },
+    { title: 'Custom Amount', icon: Settings, desc: 'Tailored to your car choice.' },
+    { title: 'Easy Repay', icon: Wallet, desc: 'Manageable installments.' },
+    { title: 'Tax Benefits', icon: FileText, desc: 'Savings on interest (if applicable).' },
+    { title: 'New & Used', icon: Settings, desc: 'Options for all car types.' },
+    { title: 'Ownership', icon: Key, desc: 'Drive your own car immediately.' }
   ];
 
   const eligibilityCriteria = [
-    { icon: Calendar, text: 'Age: 21 - 65 Years', highlight: false },
-    { icon: DollarSign, text: 'Income: Min ₹2.5L / year', highlight: true },
-    { icon: Star, text: 'Score: 680+ Credit Score', highlight: true },
-    { icon: Check, text: 'Paid EMIs: Min 12 EMIs paid', highlight: true },
-    { icon: Briefcase, text: 'Employment: 2 Years Stability', highlight: false }
+    { text: 'Age: 21 - 65 Years', icon: Calendar },
+    { text: 'Income: ₹20k/mo (Min)', icon: DollarSign },
+    { text: 'Employment: Stable History', icon: Briefcase },
+    { text: 'Score: 650+ CIBIL', icon: Star },
+    { text: 'Salaried: 2 Yrs Exp (1 Yr Current)', icon: User },
+    { text: 'Self-Employed: 2 Yrs Business', icon: User }
   ];
 
   const documents = [
-    { title: 'KYC Docs', items: ['PAN Card', 'Aadhaar Card', 'Driving License'] },
-    { title: 'Financials', items: ['Latest ITR / Salary Slips', '6 Months Bank Statement'] },
-    { title: 'Loan Details', items: ['Statement of Account (SOA)', 'Foreclosure Letter'] },
-    { title: 'Vehicle Docs', items: ['RC Copy', 'Insurance Copy'] }
+    { title: 'Basic KYC', items: ['PAN, Aadhaar, Passport, Voter ID'] },
+    { title: 'Income Proof (Salaried)', items: ['3 Months Salary Slips', 'Form 16', '6 Months Bank Statement'] },
+    { title: 'Income Proof (Self-Employed)', items: ['Last 2 Years ITR', 'Business Proof', '6 Months Bank Statement'] },
+    { title: 'Other Docs', items: ['Signature Verification', 'Proforma Invoice from Dealer'] }
+  ];
+
+  const fees = [
+    { particular: 'Processing Fees', charges: '₹6200 onwards' },
+    { particular: 'Stamp Duty', charges: 'As Per State Rates' }
   ];
 
   const faqs = [
-    { q: 'What is car refinancing?', a: 'Replacing your current car loan with a new one for better terms like lower interest or tenure.' },
-    { q: 'Why refinance?', a: 'To lower monthly payments, reduce interest rate, or shorten loan tenure.' },
-    { q: 'Can any car be refinanced?', a: 'Generally yes, if it has equity and is less than 10-15 years old at loan maturity.' },
-    { q: 'Does it affect credit score?', a: 'Temporarily dips due to inquiry, but timely payments improve it long-term.' },
-    { q: 'Are there fees?', a: 'Yes, processing fees, valuation charges, and RTO charges may apply.' }
+    { q: 'What is a new car loan?', a: 'A loan to buy a brand new vehicle from a dealership, covering a significant portion of the on-road price.' },
+    { q: 'How does it work?', a: 'You borrow an amount based on the car\'s price, pay a down payment, and repay the loan via fixed monthly EMIs.' },
+    { q: 'What is a down payment?', a: 'An upfront payment reducing the total loan amount, typically 10-20% of the car\'s value.' },
+    { q: 'What is the interest rate?', a: 'The percentage charged on the borrowed money, which can be a fixed or floating rate, varying by lender and your credit profile.' },
+    { q: 'What is the loan tenure?', a: 'The repayment period, usually ranging from 12 to 72 months (1 to 6 years).' },
+    { q: 'Can I choose my EMI date?', a: 'Yes, many lenders offer flexibility to choose an EMI date that aligns with your salary or business cash flow.' },
+    { q: 'Can I customize the loan?', a: 'Yes, depending on your eligibility, you can often include the cost of accessories or extended warranties in the loan amount.' },
+    { q: 'Is prepayment allowed?', a: 'Yes, most lenders allow prepayment after a minimum period (e.g., 6-12 months), usually with a small fee.' },
+    { q: 'How to apply?', a: 'You can apply online through our portal or visit a branch, submitting your KYC and income documents.' }
   ];
 
   // --- Reusable Calculator Widget ---
   const CalculatorWidget = () => (
     <div className="space-y-6 md:space-y-8">
       <div className="bg-slate-900 text-white p-6 rounded-2xl text-center shadow-lg">
-        <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">New Monthly EMI</p>
+        <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Estimated Monthly EMI</p>
         <p className="text-4xl font-bold">₹{emi.toLocaleString()}</p>
         <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-800">
-            <div>
+           <div>
               <p className="text-[10px] text-slate-400">Total Interest</p>
               <p className="text-sm font-bold text-yellow-400">₹{(emi * tenure - loanAmount).toLocaleString()}</p>
-            </div>
-            <div>
+           </div>
+           <div>
               <p className="text-[10px] text-slate-400">Total Amount</p>
               <p className="text-sm font-bold text-red-400">₹{(emi * tenure).toLocaleString()}</p>
-            </div>
+           </div>
         </div>
       </div>
 
@@ -112,7 +129,7 @@ const CarRefinanceFormPage = () => {
             <span className="text-slate-900">₹{(loanAmount/100000).toFixed(1)}L</span>
           </div>
           <input 
-            type="range" min="100000" max="5000000" step="10000" 
+            type="range" min="100000" max="4700000" step="50000" 
             value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))}
             className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-red-600"
           />
@@ -124,7 +141,7 @@ const CarRefinanceFormPage = () => {
             <span className="text-slate-900">{tenure} Months</span>
           </div>
           <input 
-            type="range" min="12" max="84" step="6" 
+            type="range" min="12" max="72" step="6" 
             value={tenure} onChange={(e) => setTenure(Number(e.target.value))}
             className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-red-600"
           />
@@ -136,7 +153,7 @@ const CarRefinanceFormPage = () => {
             <span className="text-slate-900">{interestRate}%</span>
           </div>
           <input 
-            type="range" min="8" max="18" step="0.1" 
+            type="range" min="7" max="15" step="0.1" 
             value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))}
             className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-red-600"
           />
@@ -149,16 +166,16 @@ const CarRefinanceFormPage = () => {
           onClick={handleApplyClick}
           className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 active:scale-95 transition-all text-white px-6 py-4 rounded-xl font-bold text-base shadow-xl shadow-red-200"
         >
-          Refinance Now <ArrowRight className="w-5 h-5" />
+          Apply Now <ArrowRight className="w-5 h-5" />
         </button>
-        <p className="text-center text-xs text-slate-400 mt-3">Reduce your EMI by up to 20%</p>
+        <p className="text-center text-xs text-slate-400 mt-3">Up to 100% On-Road Funding</p>
       </div>
     </div>
   );
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-20 lg:pb-0 text-slate-900">
-      <Meta title="Car Refinance | Loanzaar" description="Lower your car EMI today." />
+      <Meta title="New Car Loan | Loanzaar" description="Drive your dream car today." />
       
       {/* 1. Header (Universal) */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 h-16 flex items-center justify-between">
@@ -166,7 +183,7 @@ const CarRefinanceFormPage = () => {
           <BackButton className="text-sm font-semibold text-slate-500 flex items-center gap-1 hover:text-slate-900 transition-colors">
             <ChevronDown className="w-4 h-4 rotate-90" /> Back
           </BackButton>
-          <h1 className="text-base md:text-lg font-bold text-slate-900">Car Refinance</h1>
+          <h1 className="text-base md:text-lg font-bold text-slate-900">New Car Loan</h1>
           <div className="w-8"></div>
         </div>
       </nav>
@@ -181,21 +198,21 @@ const CarRefinanceFormPage = () => {
             <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div className="max-w-2xl">
                 <span className="inline-block px-3 py-1 bg-white/20 rounded-lg text-xs font-bold uppercase tracking-wider mb-4 backdrop-blur-sm border border-white/10">
-                  Reduce EMI
+                  Showroom Ready
                 </span>
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-4">
-                  Stop Overpaying <br className="hidden md:block"/> <span className="text-red-100">for your Car.</span>
+                  Drive Home Your <br className="hidden md:block"/> <span className="text-red-100">Dream Car.</span>
                 </h2>
                 <p className="text-red-50 text-sm md:text-lg mb-6 leading-relaxed max-w-lg">
-                  Refinance now to lower interest rates and unlock cash equity. Top-up loans available.
+                  Up to 100% on-road funding. Lowest interest rates. Instant sanction.
                 </p>
                 
                 <div className="flex flex-wrap gap-3 text-xs md:text-sm font-medium">
                   <div className="flex items-center gap-2 bg-black/20 px-4 py-2 rounded-full backdrop-blur-md">
-                    <RefreshCw className="w-4 h-4 text-cyan-400" /> Easy Switch
+                    <Zap className="w-4 h-4 text-yellow-400 fill-yellow-400" /> Instant Sanction
                   </div>
                   <div className="flex items-center gap-2 bg-black/20 px-4 py-2 rounded-full backdrop-blur-md">
-                    <TrendingUp className="w-4 h-4 text-green-400" /> Max Funding
+                    <Settings className="w-4 h-4 text-white" /> Custom EMI
                   </div>
                 </div>
               </div>
@@ -240,41 +257,42 @@ const CarRefinanceFormPage = () => {
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div>
                 <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-                  What is Car Refinancing?
+                  What is a New Car Loan?
                 </h3>
                 <p className="text-sm md:text-base text-slate-600 leading-relaxed text-justify">
-                  Car refinancing is the process of replacing your existing car loan with a new one, typically from a different lender. The primary goal is to secure better terms, such as a lower interest rate, smaller monthly payments (EMI), or a shorter loan tenure.
+                  A new car loan provides financial assistance to purchase a brand new vehicle from a dealership. It covers a significant portion of the car's on-road price, including ex-showroom cost, RTO charges, and insurance.
                 </p>
               </div>
 
-              {/* Benefits Grid */}
+              {/* Quick Stats Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                  <div className="bg-red-50 p-4 rounded-xl border border-red-100 shadow-sm flex flex-col justify-center">
-                    <h4 className="text-xs md:text-sm font-bold text-red-800 mb-1">Lower Rate</h4>
-                    <p className="text-sm md:text-base font-bold text-red-600">Save 2-3%</p>
-                    <p className="text-[10px] text-slate-500">On interest cost</p>
+                    <h4 className="text-xs md:text-sm font-bold text-red-800 mb-1">Max Funding</h4>
+                    <p className="text-sm md:text-base font-bold text-red-600">100%</p>
+                    <p className="text-[10px] text-slate-500">On-road price</p>
                  </div>
                  <div className="bg-red-50 p-4 rounded-xl border border-red-100 shadow-sm flex flex-col justify-center">
-                    <h4 className="text-xs md:text-sm font-bold text-red-800 mb-1">Top-Up</h4>
-                    <p className="text-sm md:text-base font-bold text-red-600">150% LTV</p>
-                    <p className="text-[10px] text-slate-500">Get extra cash</p>
+                    <h4 className="text-xs md:text-sm font-bold text-red-800 mb-1">Ownership</h4>
+                    <p className="text-sm md:text-base font-bold text-red-600">Your Name</p>
+                    <p className="text-[10px] text-slate-500">Immediate</p>
                  </div>
                  <div className="bg-red-50 p-4 rounded-xl border border-red-100 shadow-sm flex flex-col justify-center">
                     <h4 className="text-xs md:text-sm font-bold text-red-800 mb-1">Tenure</h4>
-                    <p className="text-sm md:text-base font-bold text-red-600">Flexible</p>
-                    <p className="text-[10px] text-slate-500">Extend or Shorten</p>
+                    <p className="text-sm md:text-base font-bold text-red-600">7 Years</p>
+                    <p className="text-[10px] text-slate-500">Maximum</p>
                  </div>
                  <div className="bg-red-50 p-4 rounded-xl border border-red-100 shadow-sm flex flex-col justify-center">
-                    <h4 className="text-xs md:text-sm font-bold text-red-800 mb-1">Process</h4>
-                    <p className="text-sm md:text-base font-bold text-red-600">Digital</p>
-                    <p className="text-[10px] text-slate-500">Fast Approval</p>
+                    <h4 className="text-xs md:text-sm font-bold text-red-800 mb-1">Rates From</h4>
+                    <p className="text-sm md:text-base font-bold text-red-600">8.50%</p>
+                    <p className="text-[10px] text-slate-500">Fixed p.a.</p>
                  </div>
               </div>
+
 
               {/* Eligibility */}
               <div className="bg-blue-50/80 p-6 rounded-2xl border border-blue-100">
                 <h3 className="text-sm font-bold text-blue-900 mb-4 uppercase tracking-wide flex items-center gap-2">
-                  <Shield className="w-4 h-4" /> Eligibility Check
+                  <Shield className="w-4 h-4" /> Eligibility Criteria
                 </h3>
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {eligibilityCriteria.map((item, i) => (
@@ -285,6 +303,30 @@ const CarRefinanceFormPage = () => {
                   ))}
                 </ul>
               </div>
+
+               {/* Fees Section */}
+               <div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-4">Fees & Charges</h3>
+                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                     <table className="min-w-full divide-y divide-slate-100">
+                        <thead className="bg-slate-50">
+                           <tr>
+                              <th scope="col" className="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Particular</th>
+                              <th scope="col" className="px-5 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Charges</th>
+                           </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-slate-100">
+                           {fees.map((fee, i) => (
+                              <tr key={i}>
+                                 <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-slate-800">{fee.particular}</td>
+                                 <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-600 text-right">{fee.charges}</td>
+                              </tr>
+                           ))}
+                        </tbody>
+                     </table>
+                  </div>
+               </div>
+
             </div>
 
             {/* CALCULATOR SECTION (Mobile Only - Hidden on LG) */}
@@ -324,7 +366,7 @@ const CarRefinanceFormPage = () => {
               <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 flex gap-3 mb-6">
                 <Info className="w-5 h-5 text-orange-600 shrink-0" />
                 <p className="text-sm text-orange-800 leading-relaxed font-medium">
-                  Statement of Account (SOA) from your existing lender is mandatory to process the balance transfer.
+                  Submit these documents for faster processing and approval.
                 </p>
               </div>
               
@@ -391,7 +433,7 @@ const CarRefinanceFormPage = () => {
                       <Shield className="w-5 h-5" />
                    </div>
                    <div>
-                      <p className="text-sm font-bold text-slate-900">Secure Process</p>
+                      <p className="text-sm font-bold text-slate-900">Secure Loan</p>
                       <p className="text-xs text-slate-500">256-bit Encryption</p>
                    </div>
                 </div>
@@ -405,26 +447,28 @@ const CarRefinanceFormPage = () => {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 pb-safe z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         <div className="flex items-center gap-4 max-w-md mx-auto">
           <div className="flex-1">
-            <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">New EMI</p>
+            <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">EMI Starts at</p>
             <p className="text-lg font-bold text-slate-900">₹{emi.toLocaleString()}<span className="text-xs text-slate-400 font-normal">/mo</span></p>
           </div>
           <button 
             onClick={handleApplyClick}
             className="flex items-center gap-2 bg-red-600 hover:bg-red-700 active:scale-95 transition-all text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-red-200"
           >
-            Refinance Now <ArrowRight className="w-4 h-4" />
+            Apply Now <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {/* ✅ Wired Form Component */}
-      <CarRefinanceForm 
+      <NewCarLoanForm 
         isOpen={isFormOpen} 
         onClose={() => setIsFormOpen(false)} 
       />
 
+      {/* Bottom navigation */}
+        <BottomNav />
     </div>
   );
 };
 
-export default CarRefinanceFormPage;
+export default NewCarLoanClient;

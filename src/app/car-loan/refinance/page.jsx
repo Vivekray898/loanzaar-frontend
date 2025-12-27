@@ -1,4 +1,4 @@
-import CarRefinanceClient from '@/app/loans/car-loan/refinance/CarRefinanceClient'
+import CarRefinanceClient from './CarRefinanceClient'
 
 export const metadata = {
   title: 'Car Refinance | Loanzaar',
