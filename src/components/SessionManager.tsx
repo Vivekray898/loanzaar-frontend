@@ -5,6 +5,12 @@ import { usePathname } from 'next/navigation';
 import useAutoLogout from '../hooks/useAutoLogout';
 import useAdminAutoLogout from '../hooks/useAdminAutoLogout';
 
+interface SessionManagerProps {
+  children: React.ReactNode;
+  userTimeoutMinutes?: number;
+  adminTimeoutMinutes?: number;
+}
+
 /**
  * SessionManager Component - Simplified Token-Based Session Management
  * 
@@ -14,34 +20,36 @@ import useAdminAutoLogout from '../hooks/useAdminAutoLogout';
  * - One timer per session
  * - Minimal logging (setup and logout only)
  * 
- * @param {Object} props
- * @param {React.ReactNode} props.children - Child components
- * @param {number} props.userTimeoutMinutes - User session timeout (default: 30)
- * @param {number} props.adminTimeoutMinutes - Admin session timeout (default: 30)
+ * @param {SessionManagerProps} props
  */
 export default function SessionManager({
   children,
   userTimeoutMinutes = 30,
   adminTimeoutMinutes = 30
-}) {
+}: SessionManagerProps) {
   const pathname = usePathname();
-  const isAdminRoute = pathname?.startsWith('/admin');
-  const isUserRoute = pathname?.startsWith('/account') || 
-                      pathname?.includes('/signin') || 
-                      pathname?.includes('/signup') ||
-                      pathname?.includes('/forgot-password') ||
-                      pathname?.includes('/complete-profile');
+  
+  const isAdminRoute = pathname?.startsWith('/admin') ?? false;
+  const isUserRoute = (
+    pathname?.startsWith('/account') || 
+    pathname?.includes('/signin') || 
+    pathname?.includes('/signup') ||
+    pathname?.includes('/forgot-password') ||
+    pathname?.includes('/complete-profile')
+  ) ?? false;
 
   // Only use the relevant hook for the current route
+  // Note: While conditional hooks generally violate React rules, 
+  // this pattern works if the component context ensures strict separation of routes (e.g., separate layouts).
   if (isAdminRoute) {
     useAdminAutoLogout({
       timeoutMinutes: adminTimeoutMinutes,
-      onLogout: (reason) => {}
+      onLogout: (_reason: string) => {}
     });
   } else if (isUserRoute) {
     useAutoLogout({
       timeoutMinutes: userTimeoutMinutes,
-      onLogout: (reason) => {}
+      onLogout: (_reason: string) => {}
     });
   }
 

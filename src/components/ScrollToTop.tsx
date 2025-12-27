@@ -15,7 +15,7 @@ import { usePathname } from 'next/navigation'
  * 
  * @returns {null} This component doesn't render anything, it only handles side effects
  */
-function ScrollToTop() {
+function ScrollToTop(): null {
   const pathname = usePathname()
 
   useEffect(() => {
