@@ -1,21 +1,34 @@
-"use client"
+'use client'
 
 import React, { useState } from "react"
 import Link from "next/link"
 import BottomNav from "@/components/BottomNav"
 import { 
   Banknote, Home, Car, Briefcase, HeartPulse, ShieldCheck, 
-  Umbrella, ChevronRight, FileText, Sparkles, Search, ArrowRight, 
-  Zap, Clock, Coins, GraduationCap, Factory, Sun, Building2, 
-  CreditCard, RefreshCw, Layers
+  Umbrella, ChevronRight, Search, Zap, Coins, GraduationCap, Factory, Sun, Building2, 
+  CreditCard, RefreshCw, Layers, LucideIcon, Star, CheckCircle2
 } from "lucide-react"
 
-export default function ApplyHubPage() {
-  const [activeTab, setActiveTab] = useState('loans');
-  const [query, setQuery] = useState('')
+// --- Interfaces ---
+
+interface ProductItem {
+  href: string;
+  title: string;
+  hint: string;
+  promo: string;
+  icon: LucideIcon;
+  color: string;
+  bg: string;
+}
+
+interface HubCardProps extends ProductItem {}
+
+export default function ApplyHubClient() {
+  const [activeTab, setActiveTab] = useState<'loans' | 'insurance'>('loans');
+  const [query, setQuery] = useState<string>('')
 
   // Full List of Loan Products
-  const LOANS = [
+  const LOANS: ProductItem[] = [
     { 
       href: '/loans/personal-loan', 
       title: 'Personal Loan', 
@@ -127,7 +140,7 @@ export default function ApplyHubPage() {
   ]
 
   // Full List of Insurance Products
-  const INSURANCE = [
+  const INSURANCE: ProductItem[] = [
     { 
       href: '/insurance/health-insurance', 
       title: 'Health Insurance', 
@@ -183,7 +196,7 @@ export default function ApplyHubPage() {
               <Search className="absolute left-3.5 top-2.5 md:top-3 h-4 w-4 md:h-5 md:w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
               <input 
                 type="text" 
-                placeholder="Search products..." 
+                placeholder="Search products (e.g., Personal Loan)..." 
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="w-full bg-slate-50 md:bg-white border border-slate-200 md:border-slate-200 rounded-xl py-2 md:py-2.5 pl-10 pr-4 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-xs md:text-sm font-medium placeholder:text-slate-400 shadow-sm"
@@ -220,12 +233,12 @@ export default function ApplyHubPage() {
               <div className="hidden lg:flex items-center justify-between">
                  <div className="flex items-center gap-2">
                     <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                        <Layers className="w-5 h-5" />
+                       <Layers className="w-5 h-5" />
                     </div>
                     <h2 className="text-lg font-bold text-slate-900">Loan Products</h2>
                  </div>
                  <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-md">
-                    ⚡ Fast Disbursal Active
+                   ⚡ Fast Disbursal Active
                  </span>
               </div>
               
@@ -256,6 +269,91 @@ export default function ApplyHubPage() {
               </div>
             </div>
 
+            {/* SEO RICH CONTENT SECTION - REDESIGNED */}
+            <section className="mt-12">
+              <div className="bg-white rounded-[2rem] p-8 md:p-12 border border-slate-200 shadow-sm relative overflow-hidden">
+                {/* Decorative Background */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                
+                <div className="relative z-10">
+                    <h2 className="text-2xl md:text-3xl font-black text-slate-900 mb-4">
+                        India&apos;s Premier Digital <br className="hidden md:block"/>
+                        <span className="text-blue-600">Loan & Insurance Marketplace</span>
+                    </h2>
+                    
+                    <p className="text-slate-600 text-sm md:text-base leading-relaxed max-w-3xl mb-10">
+                        Loanzaar simplifies the borrowing process by connecting you with India&apos;s top banks and NBFCs. 
+                        Whether you need a <span className="font-semibold text-slate-900">Personal Loan</span> for emergencies, 
+                        a <span className="font-semibold text-slate-900">Home Loan</span> for your dream house, or 
+                        <span className="font-semibold text-slate-900"> Business Capital</span> to expand your enterprise, 
+                        we ensure a seamless, paperless experience.
+                    </p>
+
+                    <div className="grid md:grid-cols-2 gap-10 lg:gap-16">
+                        
+                        {/* Column 1: Why Apply */}
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-900 mb-5 flex items-center gap-2">
+                                <span className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+                                    <Zap className="w-4 h-4" />
+                                </span>
+                                Why Apply with Loanzaar?
+                            </h3>
+                            <ul className="space-y-4">
+                                {[
+                                    { title: "Instant Approval", desc: "Get pre-approved offers in minutes." },
+                                    { title: "Best Interest Rates", desc: "Compare rates starting from 10.25% p.a." },
+                                    { title: "Minimal Documentation", desc: "100% digital KYC and verification." },
+                                    { title: "Secure & Private", desc: "256-bit encryption ensures data safety." },
+                                ].map((item, i) => (
+                                    <li key={i} className="flex gap-3">
+                                        <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                                        <div>
+                                            <span className="block text-sm font-bold text-slate-900">{item.title}</span>
+                                            <span className="block text-xs text-slate-500">{item.desc}</span>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {/* Column 2: Popular Products */}
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-900 mb-5 flex items-center gap-2">
+                                <span className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">
+                                    <Star className="w-4 h-4" />
+                                </span>
+                                Popular Financial Products
+                            </h3>
+                            <div className="grid grid-cols-1 gap-3">
+                                {[
+                                    { label: "Credit Cards", desc: "Lifetime free cards with cashback." },
+                                    { label: "Health Insurance", desc: "Comprehensive coverage & cashless claims." },
+                                    { label: "Education Loans", desc: "Fund studies in India or abroad." },
+                                    { label: "Car Refinance", desc: "Lower your existing car loan EMI." },
+                                ].map((item, i) => (
+                                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                        <div>
+                                            <span className="block text-sm font-bold text-slate-800">{item.label}</span>
+                                            <span className="block text-[10px] text-slate-500">{item.desc}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-10 pt-6 border-t border-slate-100">
+                        <p className="text-[10px] md:text-xs text-slate-400 italic leading-relaxed">
+                            *Disclaimer: Loan approval, interest rates, and disbursal times are at the sole discretion of the lending partners. 
+                            Terms and conditions apply.
+                        </p>
+                    </div>
+                </div>
+              </div>
+            </section>
+
           </div>
 
           {/* =========================================================
@@ -274,7 +372,7 @@ export default function ApplyHubPage() {
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md text-white border border-white/5">
-                      <FileText className="w-6 h-6" />
+                      <Layers className="w-6 h-6" />
                     </div>
                     <span className="bg-white/10 text-white text-[10px] font-bold px-2 py-1 rounded-full backdrop-blur-sm animate-pulse">
                        2 Drafts Pending
@@ -289,7 +387,7 @@ export default function ApplyHubPage() {
                   </div>
 
                   <div className="mt-6 flex items-center text-xs font-bold text-white uppercase tracking-widest opacity-80 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
-                    Resume Now <ArrowRight className="w-4 h-4 ml-2" />
+                    Resume Now <ChevronRight className="w-4 h-4 ml-2" />
                   </div>
                 </div>
               </Link>
@@ -340,7 +438,7 @@ export default function ApplyHubPage() {
 
 // --- Optimized Components ---
 
-function HubCard({ href, icon: Icon, color, bg, title, hint, promo }) {
+function HubCard({ href, icon: Icon, color, bg, title, hint, promo }: HubCardProps) {
   return (
     <Link 
       href={href}
@@ -366,7 +464,7 @@ function HubCard({ href, icon: Icon, color, bg, title, hint, promo }) {
   )
 }
 
-function HubListCard({ href, icon: Icon, color, bg, title, hint, promo }) {
+function HubListCard({ href, icon: Icon, color, bg, title, hint, promo }: HubCardProps) {
   return (
     <Link 
       href={href}
