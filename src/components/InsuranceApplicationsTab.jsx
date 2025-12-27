@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, AlertCircle } from 'lucide-react';
-import { listenToPendingSubmissions, getPendingSubmissions } from '../services/firestoreService';
+import { listenToPendingSubmissions, getPendingSubmissions } from '../services/supabaseService';
 import { authenticatedFetch as fetchWithFirebaseToken } from '../utils/supabaseTokenHelper';
 
 function InsuranceApplicationsTab() {

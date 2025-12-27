@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Meta from '../components/Meta';
 import BackButton from '../components/BackButton';
+import CarRefinanceForm from '../components/forms/cars/CarRefinanceForm'; // ✅ Import Form
 import StructuredData from '../components/StructuredData';
 import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
 import { 
@@ -15,6 +16,7 @@ const CarRefinanceFormPage = () => {
   // UI State
   const [activeTab, setActiveTab] = useState('overview');
   const [activeFaq, setActiveFaq] = useState(null);
+  const [isFormOpen, setIsFormOpen] = useState(false); // ✅ Added state
   
   // Calculator State
   const [loanAmount, setLoanAmount] = useState(1000000);
@@ -31,7 +33,7 @@ const CarRefinanceFormPage = () => {
   }, [loanAmount, interestRate, tenure]);
 
   const handleApplyClick = () => {
-    alert("Opens Application Form Sheet"); 
+    setIsFormOpen(true); // ✅ Toggle Form
   };
 
   // Smooth Scroll Handler
@@ -414,6 +416,12 @@ const CarRefinanceFormPage = () => {
           </button>
         </div>
       </div>
+
+      {/* ✅ Wired Form Component */}
+      <CarRefinanceForm 
+        isOpen={isFormOpen} 
+        onClose={() => setIsFormOpen(false)} 
+      />
 
     </div>
   );

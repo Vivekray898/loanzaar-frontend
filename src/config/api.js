@@ -10,7 +10,7 @@
 import { 
   submitLoanApplication as fireLoanSubmit,
   submitInsuranceApplication as fireInsuranceSubmit,
-} from '../services/firestoreService';
+} from '../services/supabaseService';
 
 // Base API URL - Change this in production
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://loanzaar-react-base.onrender.com/api';

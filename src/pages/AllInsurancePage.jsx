@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Meta from '../components/Meta';
 import BackButton from '../components/BackButton';
+import AllInsuranceForm from '../components/forms/insurances/AllInsuranceForm'; 
 import { 
   ChevronDown, Check, Star, Shield, Heart, Activity, 
   Umbrella, Users, FileText, Info, HelpCircle, 
@@ -12,17 +13,19 @@ import {
 const AllInsurancePage = () => {
   // UI State
   const [activeTab, setActiveTab] = useState('what-is');
+  const [isFormOpen, setIsFormOpen] = useState(false);
   
   const handleApplyClick = () => {
-    alert("Opens Insurance Inquiry Form"); 
+    setIsFormOpen(true);
   };
 
   // Smooth Scroll Handler
   const scrollToSection = (id) => {
-    setActiveTab(id);
+    setActiveTab(id); // Keeps the button highlighted
     const element = document.getElementById(id);
     if (element) {
-      const offset = 120; // Height of sticky headers
+      // Adjusted offset to account for Header + Sticky Nav height
+      const offset = 140; 
       const bodyRect = document.body.getBoundingClientRect().top;
       const elementRect = element.getBoundingClientRect().top;
       const elementPosition = elementRect - bodyRect;
@@ -96,7 +99,7 @@ const AllInsurancePage = () => {
       <main className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pt-6">
 
         {/* 2. Hero Section */}
-        <section id="what-is" className="mb-8">
+        <section id="what-is" className="mb-8 scroll-mt-32">
           <div className="bg-gradient-to-br from-blue-600 to-purple-700 rounded-[2rem] p-6 md:p-10 text-white shadow-xl shadow-blue-200/50 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
             
@@ -157,8 +160,8 @@ const AllInsurancePage = () => {
           {/* LEFT COLUMN: Content Sections (col-span-8) */}
           <div className="lg:col-span-7 xl:col-span-8 space-y-16">
             
-            {/* BASICS SECTION */}
-            <div className={`space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 ${activeTab === 'what-is' ? 'block' : 'hidden lg:block'}`}>
+            {/* BASICS SECTION (Always Visible) */}
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div>
                 <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
                   What is Insurance?
@@ -167,7 +170,7 @@ const AllInsurancePage = () => {
                   Insurance is a financial contract that transfers the risk of potential financial loss from you to an insurance company. In exchange for a small periodic payment (premium), the insurer agrees to compensate you for specific losses or damages.
                 </p>
                 
-                {/* How it Works - Horizontal Flow on Desktop */}
+                {/* How it Works */}
                 <div className="bg-blue-50/80 p-6 rounded-2xl border border-blue-100">
                   <h3 className="text-sm font-bold text-blue-900 mb-6 uppercase tracking-wide">How it Works</h3>
                   <div className="flex flex-col md:flex-row md:items-center gap-6">
@@ -199,8 +202,8 @@ const AllInsurancePage = () => {
               </div>
             </div>
 
-            {/* TYPES SECTION */}
-            <div id="types" className={`scroll-mt-32 border-t border-slate-200 pt-8 ${activeTab === 'types' ? 'block' : 'hidden lg:block'}`}>
+            {/* TYPES SECTION (Always Visible) */}
+            <div id="types" className="scroll-mt-48 border-t border-slate-200 pt-8">
               <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <Umbrella className="w-6 h-6 text-purple-600" /> Types of Insurance
               </h3>
@@ -228,8 +231,8 @@ const AllInsurancePage = () => {
               </div>
             </div>
 
-            {/* BENEFITS SECTION */}
-            <div id="benefits" className={`scroll-mt-32 border-t border-slate-200 pt-8 ${activeTab === 'benefits' ? 'block' : 'hidden lg:block'}`}>
+            {/* BENEFITS SECTION (Always Visible) */}
+            <div id="benefits" className="scroll-mt-48 border-t border-slate-200 pt-8">
               <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <Star className="w-6 h-6 text-yellow-500 fill-yellow-500" /> Key Benefits
               </h3>
@@ -246,8 +249,8 @@ const AllInsurancePage = () => {
               </div>
             </div>
 
-            {/* TIPS SECTION */}
-            <div id="tips" className={`scroll-mt-32 border-t border-slate-200 pt-8 ${activeTab === 'tips' ? 'block' : 'hidden lg:block'}`}>
+            {/* TIPS SECTION (Always Visible) */}
+            <div id="tips" className="scroll-mt-48 border-t border-slate-200 pt-8">
               <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <HelpCircle className="w-6 h-6 text-slate-700" /> Buying Guide
               </h3>
@@ -276,7 +279,7 @@ const AllInsurancePage = () => {
             
           </div>
 
-          {/* RIGHT COLUMN: Sticky Sidebar (Consultation) (lg:col-span-4) */}
+          {/* RIGHT COLUMN: Sticky Sidebar */}
           <div className="hidden lg:block lg:col-span-5 xl:col-span-4">
              <div className="sticky top-32 space-y-6">
                 <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
@@ -294,7 +297,6 @@ const AllInsurancePage = () => {
                    <p className="text-center text-xs text-slate-400 mt-3">No spam. Only helpful advice.</p>
                 </div>
                 
-                {/* Trust Badge Widget */}
                 <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 flex items-center gap-4">
                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-blue-600">
                       <Shield className="w-5 h-5" />
@@ -325,6 +327,11 @@ const AllInsurancePage = () => {
           </button>
         </div>
       </div>
+
+      <AllInsuranceForm 
+        isOpen={isFormOpen} 
+        onClose={() => setIsFormOpen(false)} 
+      />
 
     </div>
   );

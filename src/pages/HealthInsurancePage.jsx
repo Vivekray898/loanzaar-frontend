@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Meta from '../components/Meta';
 import BackButton from '../components/BackButton';
+import HealthInsuranceForm from '../components/forms/insurances/HealthInsuranceForm'; // ✅ Import Form
 import { 
   ChevronDown, Check, Shield, Heart, Activity, 
   Umbrella, Users, FileText, Info, HelpCircle, 
@@ -14,9 +15,10 @@ const HealthInsurancePage = () => {
   // UI State
   const [activeTab, setActiveTab] = useState('basics');
   const [activeFaq, setActiveFaq] = useState(null);
+  const [isFormOpen, setIsFormOpen] = useState(false); // ✅ Added State for Form
 
   const handleApplyClick = () => {
-    alert("Opens Health Insurance Inquiry Form"); 
+    setIsFormOpen(true); // ✅ Open Form instead of alert
   };
 
   // Smooth Scroll Handler
@@ -341,6 +343,12 @@ const HealthInsurancePage = () => {
           </button>
         </div>
       </div>
+
+      {/* ✅ Wired Form Component */}
+      <HealthInsuranceForm 
+        isOpen={isFormOpen} 
+        onClose={() => setIsFormOpen(false)} 
+      />
 
     </div>
   );

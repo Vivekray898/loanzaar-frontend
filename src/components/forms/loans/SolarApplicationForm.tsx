@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { submitApplication } from '../../../services/firestoreService';
+import { submitApplication } from '../../../services/supabaseService';
 import { X, User, Sun, Check, Loader2, MapPin, Zap, ArrowRight, IndianRupee } from 'lucide-react';
+import Turnstile from '@/components/Turnstile'; // ✅ Added Import
 
 interface SolarFormData {
   fullName: string;
@@ -40,6 +41,10 @@ export default function SolarApplicationForm({
     roofType: 'Concrete'
   });
 
+  // ✅ Added Captcha State
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
+
   // Reset state on open/close
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -47,7 +52,10 @@ export default function SolarApplicationForm({
     if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
-      timer = setTimeout(() => setStep(1), 300);
+      timer = setTimeout(() => {
+        setStep(1);
+        setCaptchaToken(null); // ✅ Reset captcha
+      }, 300);
     }
     return () => {
       if (timer) clearTimeout(timer);
@@ -93,10 +101,14 @@ export default function SolarApplicationForm({
         }
       };
 
-      const res = await submitApplication(payload);
+      // ✅ Include Captcha Token
+      const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;
+
+      const res = await submitApplication(submitPayload);
       
       if (res && res.success) {
         setStep(3); // Move to Success Screen
+        setCaptchaToken(null); // ✅ Clear token on success
       } else {
         alert(res?.message || 'Submission failed. Please try again.');
       }
@@ -281,6 +293,14 @@ export default function SolarApplicationForm({
                  </div>
               </div>
 
+              {/* ✅ Captcha Widget */}
+              {TURNSTILE_SITE_KEY && (
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                  <p className="text-xs font-semibold text-slate-600 mb-3">Security Check</p>
+                  <Turnstile sitekey={TURNSTILE_SITE_KEY} onVerify={(token) => setCaptchaToken(token)} />
+                </div>
+              )}
+
               <div className="flex gap-3 pt-2">
                 <button 
                   onClick={() => setStep(1)} 
@@ -290,10 +310,10 @@ export default function SolarApplicationForm({
                 </button>
                 <button 
                   onClick={handleFinalSubmit} 
-                  disabled={isLoading} 
-                  className="flex-[2] bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  disabled={isLoading || (!!TURNSTILE_SITE_KEY && !captchaToken)} 
+                  className="flex-[2] bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Get Free Quote'}
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (!!TURNSTILE_SITE_KEY && !captchaToken ? 'Complete Security Check' : 'Get Free Quote')}
                 </button>
               </div>
             </div>

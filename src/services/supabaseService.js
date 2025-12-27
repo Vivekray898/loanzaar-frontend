@@ -56,10 +56,22 @@ export const submitToFirestore = async (type, formData, status = 'pending') => {
 
     // For public writes, route through a server API to use the service role key
     if (isPublicWrite) {
-      const res = await fetch('/api/submit', {
+      // Normalize a basic application payload expected by /api/apply
+      const payload = {
+        type,
+        fullName: formData.fullName || formData.name || formData.full_name || null,
+        mobile: formData.mobile || formData.phone || formData.mobile_number || null,
+        email: formData.email || null,
+        city: formData.city || null,
+        loanType: formData.loanType || formData.product_type || null,
+        source: status || 'website',
+        metadata: formData.metadata || formData || {},
+      };
+
+      const res = await fetch('/api/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, formData, status }),
+        body: JSON.stringify(payload),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Submission failed');
@@ -119,39 +131,20 @@ export const submitLoanApplication = async (loanData) => {
  */
 export const submitApplication = async (applicationData) => {
   try {
-    const row = {
-      full_name: applicationData.fullName,
-      mobile_number: applicationData.mobile,
-      email: applicationData.email || null,
-      city: applicationData.city || null,
-      product_category: 'loan',
-      product_type: applicationData.loanType || applicationData.product_type || 'personal',
-      application_stage: 'started',
-      status: 'new',
-      source: applicationData.source || 'website',
-      metadata: applicationData.metadata || {
-        employmentType: applicationData.employmentType || null,
-        monthlyIncome: applicationData.monthlyIncome || null,
-        pincode: applicationData.pincode || null
-      },
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    console.log('📤 Inserting application into `applications` table:', { product_type: row.product_type, mobile: row.mobile_number });
-
-    const { data, error } = await supabase
-      .from('applications')
-      .insert([row])
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    console.log('✅ Application inserted:', data.id);
-    return { success: true, docId: data.id, data };
+    // Proxy the application submission to the server route which uses the service role key
+    const res = await fetch('/api/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(applicationData),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      console.error('❌ Server rejected application:', json);
+      return { success: false, message: json.error || 'Failed to submit application' };
+    }
+    return { success: true, docId: json.id || null, data: json.data };
   } catch (error) {
-    console.error('❌ Error inserting application:', error);
+    console.error('❌ Error submitting application via server:', error);
     return { success: false, message: error.message || 'Failed to submit application' };
   }
 };

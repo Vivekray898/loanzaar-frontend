@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Meta from '../components/Meta';
 import BackButton from '../components/BackButton';
+import NewCarLoanForm from '../components/forms/cars/NewCarLoanForm'; // ✅ Import Form
 import StructuredData from '../components/StructuredData';
 import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
 import { 
@@ -15,6 +16,7 @@ const NewCarLoanFormPage = () => {
   // UI State
   const [activeTab, setActiveTab] = useState('overview');
   const [activeFaq, setActiveFaq] = useState(null);
+  const [isFormOpen, setIsFormOpen] = useState(false); // ✅ Added state
   
   // Calculator State
   const [loanAmount, setLoanAmount] = useState(1000000);
@@ -31,7 +33,7 @@ const NewCarLoanFormPage = () => {
   }, [loanAmount, interestRate, tenure]);
 
   const handleApplyClick = () => {
-    alert("Opens Application Form Sheet"); 
+    setIsFormOpen(true); // ✅ Toggle Form
   };
 
   // Smooth Scroll Handler for Anchor Links
@@ -455,6 +457,12 @@ const NewCarLoanFormPage = () => {
           </button>
         </div>
       </div>
+
+      {/* ✅ Wired Form Component */}
+      <NewCarLoanForm 
+        isOpen={isFormOpen} 
+        onClose={() => setIsFormOpen(false)} 
+      />
 
     </div>
   );

@@ -13,8 +13,8 @@ import {
 
 // 1. Dynamic Import: The Modal code will NOT be in the initial HTML bundle.
 // Bots won't see it, and it won't affect initial load performance.
-const HomeApplicationFrom = dynamic(
-  () => import('../components/forms/loans/HomeApplicationFrom'), 
+const HomeApplicationForm = dynamic(
+  () => import('../components/forms/loans/HomeApplicationForm'), 
   { ssr: false } 
 );
 
@@ -431,7 +431,7 @@ const HomeLoanPage = () => {
          it won't be part of the initial HTML payload, helping SEO.
       */}
       {isModalOpen && (
-        <HomeApplicationFrom 
+        <HomeApplicationForm 
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)} 
           loanType="Home Loan"

@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Meta from '../components/Meta';
 import BackButton from '../components/BackButton';
-import StructuredData from '../components/StructuredData';
-import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
+import UsedCarLoanForm from '../components/forms/cars/UsedCarLoanForm'; // ✅ Import Form
 import { 
   ChevronDown, Check, Star, Calculator, FileText, Info, HelpCircle, 
   ArrowRight, DollarSign, Layers, Clock, Zap, Wallet, Settings, Key,
@@ -15,6 +14,7 @@ const UsedCarLoanFormPage = () => {
   // UI State
   const [activeTab, setActiveTab] = useState('overview');
   const [activeFaq, setActiveFaq] = useState(null);
+  const [isFormOpen, setIsFormOpen] = useState(false); // ✅ Added state for form
   
   // Calculator State
   const [loanAmount, setLoanAmount] = useState(500000); // Default lower for used car
@@ -31,7 +31,7 @@ const UsedCarLoanFormPage = () => {
   }, [loanAmount, interestRate, tenure]);
 
   const handleApplyClick = () => {
-    alert("Opens Application Form Sheet"); 
+    setIsFormOpen(true); // ✅ Toggle Form
   };
 
   // Smooth Scroll Handler
@@ -447,6 +447,12 @@ const UsedCarLoanFormPage = () => {
           </button>
         </div>
       </div>
+
+      {/* ✅ Wired Form Component */}
+      <UsedCarLoanForm 
+        isOpen={isFormOpen} 
+        onClose={() => setIsFormOpen(false)} 
+      />
 
     </div>
   );

@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { submitApplication } from '@/services/firestoreService';
+import { submitApplication } from '@/services/supabaseService';
 import { X, Home, User, Check, Loader2, MapPin, Building } from 'lucide-react';
+import Turnstile from '@/components/Turnstile'; // ✅ Added Import
 
 interface FormData {
   fullName: string;
@@ -39,13 +40,22 @@ export default function LoanAgainstPropertyForm({ isOpen, onClose, loanType = 'L
     city: ''
   });
 
+  // ✅ Added Captcha State
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
+
+  // Reset state when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
-      const t = setTimeout(() => setStep(1), 300);
+      const t = setTimeout(() => {
+        setStep(1);
+        setCaptchaToken(null); // ✅ Reset captcha
+      }, 300);
       return () => clearTimeout(t);
     }
   }, [isOpen]);
 
+  // Lock body scroll
   useEffect(() => {
     if (isOpen) document.body.style.overflow = 'hidden';
     else document.body.style.overflow = 'unset';
@@ -92,12 +102,17 @@ export default function LoanAgainstPropertyForm({ isOpen, onClose, loanType = 'L
         }
       };
 
-      console.log('📤 Submitting LAP application to `applications` table', { mobile: payload.mobile });
+      // ✅ Include Captcha Token
+      const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;
 
-      const res = await submitApplication(payload);
+      console.log('📤 Submitting LAP application...', { mobile: payload.mobile });
+
+      const res = await submitApplication(submitPayload);
+      
       if (res && res.success) {
         console.log('✅ LAP application submitted:', res.docId || res);
         setStep(3);
+        setCaptchaToken(null); // ✅ Clear token on success
       } else {
         console.error('❌ LAP submission failed:', res);
         alert(res?.message || 'Failed to submit application. Please try again.');
@@ -115,7 +130,9 @@ export default function LoanAgainstPropertyForm({ isOpen, onClose, loanType = 'L
   return (
     <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="w-full max-w-lg bg-white md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in slide-in-from-bottom-10 duration-300">
-        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+        
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
           <div>
             <h3 className="text-lg font-bold text-slate-900">{loanType}</h3>
             <p className="text-xs text-slate-500">Quick Property Application</p>
@@ -125,6 +142,7 @@ export default function LoanAgainstPropertyForm({ isOpen, onClose, loanType = 'L
           </button>
         </div>
 
+        {/* Progress Bar */}
         {step < 3 && (
           <div className="h-1 w-full bg-slate-100">
             <div className="h-full bg-indigo-600 transition-all duration-500 ease-out" style={{ width: step === 1 ? '50%' : '100%' }} />
@@ -221,24 +239,59 @@ export default function LoanAgainstPropertyForm({ isOpen, onClose, loanType = 'L
                 </div>
               </div>
 
+              {/* ✅ Captcha Widget */}
+              {TURNSTILE_SITE_KEY && (
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                  <p className="text-xs font-semibold text-slate-600 mb-3">Security Check</p>
+                  <Turnstile sitekey={TURNSTILE_SITE_KEY} onVerify={(token) => setCaptchaToken(token)} />
+                </div>
+              )}
+
               <div className="flex gap-3 pt-2">
-                <button onClick={() => setStep(1)} className="flex-1 bg-white border border-slate-200 text-slate-700 font-bold py-4 rounded-xl hover:bg-slate-50">Back</button>
-                <button onClick={handleFinalSubmit} disabled={isLoading} className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2">{isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Get Offers'}</button>
+                <button 
+                  onClick={() => setStep(1)} 
+                  className="flex-1 bg-white border border-slate-200 text-slate-700 font-bold py-4 rounded-xl hover:bg-slate-50"
+                >
+                  Back
+                </button>
+                <button 
+                  onClick={handleFinalSubmit} 
+                  disabled={isLoading || (!!TURNSTILE_SITE_KEY && !captchaToken)} 
+                  className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (!!TURNSTILE_SITE_KEY && !captchaToken ? 'Complete Security Check' : 'Get Offers')}
+                </button>
               </div>
             </div>
           )}
 
           {step === 3 && (
             <div className="text-center py-8 animate-in zoom-in duration-300">
-              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ring-4 ring-green-50">
                 <Check className="w-12 h-12 text-green-600" strokeWidth={3} />
               </div>
               <h3 className="text-2xl font-black text-slate-900 mb-2">Request Received!</h3>
-              <p className="text-slate-500 mb-8 max-w-xs mx-auto">Thank you, <b>{formData.fullName}</b>. Our loan expert will contact you on <b>{formData.mobile}</b> shortly with LAP options.</p>
-              <button onClick={onClose} className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 shadow-lg">Back to Home</button>
+              <p className="text-slate-500 mb-8 max-w-xs mx-auto">
+                Thank you, <b>{formData.fullName}</b>. Our loan expert will contact you on <b>{formData.mobile}</b> shortly with LAP options.
+              </p>
+              <button 
+                onClick={onClose} 
+                className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 shadow-lg transition-all"
+              >
+                Back to Home
+              </button>
             </div>
           )}
         </div>
+
+        {/* Footer Note */}
+        {step < 3 && (
+          <div className="p-4 bg-slate-50 border-t border-slate-200 text-center">
+            <p className="text-[10px] text-slate-400 font-medium">
+              100% Spam Free. Your data is secure.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

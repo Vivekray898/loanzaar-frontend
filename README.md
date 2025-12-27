@@ -274,7 +274,7 @@ frontend/
     - firebaseAuthApi.js
     - firebaseAuthService.js.OLD
     - firebaseMessaging.js
-    - firestoreService.js
+    - supabaseService.js
     - supabaseAuthService.js
     - useFCM.js
   + types

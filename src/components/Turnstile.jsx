@@ -71,6 +71,9 @@ const Turnstile = forwardRef((props, ref) => {
     ...rest 
   } = props;
 
+  // Support both env variants for backwards compatibility and standardize on NEXT_PUBLIC_TURNSTILE_SITE_KEY
+  const finalSiteKey = sitekey || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || process.env.NEXT_PUBLIC_TURNSTILE_SITEKEY || '';
+
   const containerRef = useRef(null);
   const widgetIdRef = useRef(null);
   const [failed, setFailed] = useState(false);
@@ -83,7 +86,7 @@ const Turnstile = forwardRef((props, ref) => {
   }, [onVerify, onExpired, onError, onLoad, onBeforeInteractive]);
 
   useEffect(() => {
-    if (!sitekey) return;
+    if (!finalSiteKey) return;
 
     let mounted = true;
 
@@ -98,7 +101,7 @@ const Turnstile = forwardRef((props, ref) => {
 
       try {
         const id = window.turnstile.render(containerRef.current, {
-          sitekey,
+          sitekey: finalSiteKey,
           theme,
           callback: (token) => callbacksRef.current.onVerify?.(token),
           'expired-callback': () => callbacksRef.current.onExpired?.(),

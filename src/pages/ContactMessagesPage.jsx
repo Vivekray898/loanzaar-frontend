@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Meta from '../components/Meta';
-import { getPendingSubmissions } from '../services/firestoreService';
+import { getPendingSubmissions } from '../services/supabaseService';
 import { Search, MessageSquare, Eye, Trash2, RefreshCw } from 'lucide-react';
 import { supabase } from '../config/supabase';
 import { authenticatedFetch as fetchWithFirebaseToken } from '../utils/supabaseTokenHelper';

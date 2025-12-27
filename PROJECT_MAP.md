@@ -440,7 +440,7 @@ src/pages/
 | `supabaseAuthService.js` | Supabase authentication API calls |
 | `firebaseAuthService.js.OLD` | Legacy Firebase auth (deprecated) |
 | `firebaseAuthApi.js` | Firebase auth API wrapper |
-| `firestoreService.js` | Firestore database operations |
+| `supabaseService.js` | Firestore database operations |
 | `firebaseMessaging.js` | Firebase Cloud Messaging (push notifications) |
 | `adminDashboardService.js` | Admin dashboard data & operations |
 | `useFCM.js` | FCM (Firebase Cloud Messaging) hook |

@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import { X, User, Shield, Check, Loader2, Calendar, Phone } from 'lucide-react';
-import { submitApplication } from '../../../services/firestoreService';
+import { submitApplication } from '../../../services/supabaseService';
+import Turnstile from '@/components/Turnstile';
 
 interface LifeInsuranceFormData {
   fullName: string;
@@ -34,6 +35,9 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
     pincode: '',
     coverageAmount: ''
   });
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
+
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -90,11 +94,16 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
         }
       };
 
-      const res = await submitApplication(payload);
+      // Prepare submission payload and include captcha token if available (avoid mutating the original payload object)
+      const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;
+
+      const res = await submitApplication(submitPayload);
 
       if (res && res.success) {
         setStep(3);
         console.log(`Submitted ${insuranceType} Inquiry:`, res);
+        // reset captcha for future submissions
+        setCaptchaToken(null);
       } else {
         alert(res?.message || 'Submission failed. Please try again.');
       }
@@ -253,6 +262,13 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
                 />
               </div>
 
+              {TURNSTILE_SITE_KEY && (
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                  <p className="text-xs font-semibold text-slate-600 mb-3">Security Check</p>
+                  <Turnstile sitekey={TURNSTILE_SITE_KEY} onVerify={(token) => setCaptchaToken(token)} />
+                </div>
+              )}
+
               <div className="flex gap-3 pt-2">
                 <button 
                   onClick={() => setStep(1)} 
@@ -262,10 +278,10 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
                 </button>
                 <button 
                   onClick={handleFinalSubmit} 
-                  disabled={isLoading} 
-                  className="flex-[2] bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-teal-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  disabled={isLoading || (!!TURNSTILE_SITE_KEY && !captchaToken)} 
+                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-teal-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'View Plans'}
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (!!TURNSTILE_SITE_KEY && !captchaToken ? 'Complete Security Check' : 'View Plans')}
                 </button>
               </div>
             </div>

@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import Turnstile from '../components/Turnstile';
 import Meta from '../components/Meta';
-import { submitCreditCardApplication } from '../services/firestoreService';
+import { submitCreditCardApplication } from '../services/supabaseService';
 
 const CreditCardsPage = () => {
   const [activeTab, setActiveTab] = useState('overview');

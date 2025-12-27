@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Meta from '../components/Meta';
 import { Search, Filter, Eye, Edit2, Trash2, Download, RefreshCw, FileText, CreditCard } from 'lucide-react';
-import { getPendingSubmissions } from '../services/firestoreService';
+import { getPendingSubmissions } from '../services/supabaseService';
 import { supabase } from '../config/supabase';
 import { authenticatedFetch as fetchWithFirebaseToken } from '../utils/supabaseTokenHelper';
 

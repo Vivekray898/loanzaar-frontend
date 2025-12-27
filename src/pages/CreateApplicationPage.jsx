@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Meta from '../components/Meta';
 import { FileText, Shield, Check, AlertCircle } from 'lucide-react';
-import { submitLoanApplication, submitInsuranceApplication } from '../services/firestoreService';
+import { submitLoanApplication, submitInsuranceApplication } from '../services/supabaseService';
 import { authenticatedFetch as fetchWithFirebaseToken } from '../utils/supabaseTokenHelper';
 
 function CreateApplicationPage() {

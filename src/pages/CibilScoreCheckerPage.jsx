@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { submitToFirestore } from '../services/firestoreService';
+import { submitToFirestore } from '../services/supabaseService';
 // import Meta from '../components/Meta'; // Assuming Meta component exists for SEO
 
 // --- FAQ DATA ---

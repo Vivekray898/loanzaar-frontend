@@ -33,10 +33,16 @@ export default function NavBar() {
       icon: CreditCard,
       children: [
         { label: 'Personal Loan', link: '/loans/personal-loan' },
-        { label: 'Business Loan', link: '/loans/business-loan' },
         { label: 'Home Loan', link: '/loans/home-loan' },
+        { label: 'Business Loan', link: '/loans/business-loan' },
+        { label: 'Loan Against Property', link: '/loans/loan-against-property' },
+        { label: 'Gold Loan', link: '/loans/gold-loan' },
+        { label: 'Education Loan', link: '/loans/education-loan' },
+        { label: 'Machinery Loan', link: '/loans/machinery-loan' },
+        { label: 'Solar Loan', link: '/loans/solar-loan' },
         { label: 'Car Loan', link: '/loans/car-loan' },
         { label: 'Credit Cards', link: '/loans/credit-cards' },
+        { label: 'All Loans', link: '/loans' },
       ]
     },
     {
@@ -44,11 +50,13 @@ export default function NavBar() {
       type: 'dropdown',
       icon: ShieldCheck,
       children: [
+        { label: 'All Insurance', link: '/insurance/all-insurance' },
         { label: 'Life Insurance', link: '/insurance/life-insurance' },
         { label: 'Health Insurance', link: '/insurance/health-insurance' },
         { label: 'General Insurance', link: '/insurance/general-insurance' },
       ]
     },
+
     {
       label: 'Resources',
       type: 'dropdown',

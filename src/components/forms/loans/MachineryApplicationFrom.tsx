@@ -1,8 +1,9 @@
- 'use client'
+'use client'
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { submitApplication } from '../../../services/firestoreService';
+import { submitApplication } from '../../../services/supabaseService';
 import { X, User, Briefcase, Check, Loader2, IndianRupee, MapPin, Building2, Calendar } from 'lucide-react';
+import Turnstile from '@/components/Turnstile'; // ✅ Added Import
 
 interface FormData {
   fullName: string;
@@ -43,14 +44,21 @@ const MachineryApplicationFrom: React.FC<MachineryApplicationFromProps> = ({
     pincode: ''
   });
 
+  // ✅ Added Captcha State
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
+
   // Reset state on open
   useEffect(() => {
-    let timer;
+    let timer: NodeJS.Timeout;
     const prevOverflow = document.body.style.overflow;
     if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
-      timer = setTimeout(() => setStep(1), 300);
+      timer = setTimeout(() => {
+        setStep(1);
+        setCaptchaToken(null); // ✅ Reset captcha
+      }, 300);
     }
     return () => {
       if (timer) clearTimeout(timer);
@@ -100,9 +108,14 @@ const MachineryApplicationFrom: React.FC<MachineryApplicationFromProps> = ({
         }
       };
 
-      const res = await submitApplication(payload);
+      // ✅ Include Captcha Token
+      const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;
+
+      const res = await submitApplication(submitPayload);
+      
       if (res && res.success) {
         setStep(3);
+        setCaptchaToken(null); // ✅ Clear token on success
         console.log('✅ Machinery application submitted:', res);
       } else {
         const msg = res?.message || 'Submission failed. Please try again.';
@@ -123,7 +136,7 @@ const MachineryApplicationFrom: React.FC<MachineryApplicationFromProps> = ({
       <div className="w-full max-w-lg bg-white md:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in slide-in-from-bottom-10 duration-300">
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
           <div>
             <h3 className="text-lg font-bold text-slate-900">{loanType}</h3>
             <p className="text-xs text-slate-500">
@@ -247,10 +260,27 @@ const MachineryApplicationFrom: React.FC<MachineryApplicationFromProps> = ({
                 </div>
               </div>
 
+              {/* ✅ Captcha Widget */}
+              {TURNSTILE_SITE_KEY && (
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                  <p className="text-xs font-semibold text-slate-600 mb-3">Security Check</p>
+                  <Turnstile sitekey={TURNSTILE_SITE_KEY} onVerify={(token) => setCaptchaToken(token)} />
+                </div>
+              )}
+
               <div className="flex gap-3 pt-2">
-                <button onClick={() => setStep(1)} className="flex-1 bg-white border border-slate-200 text-slate-700 font-bold py-4 rounded-xl hover:bg-slate-50">Back</button>
-                <button onClick={handleFinalSubmit} disabled={isLoading} className="flex-[2] bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Get Offers'}
+                <button 
+                  onClick={() => setStep(1)} 
+                  className="flex-1 bg-white border border-slate-200 text-slate-700 font-bold py-4 rounded-xl hover:bg-slate-50"
+                >
+                  Back
+                </button>
+                <button 
+                  onClick={handleFinalSubmit} 
+                  disabled={isLoading || (!!TURNSTILE_SITE_KEY && !captchaToken)} 
+                  className="flex-[2] bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (!!TURNSTILE_SITE_KEY && !captchaToken ? 'Complete Security Check' : 'Get Offers')}
                 </button>
               </div>
             </div>
@@ -259,14 +289,16 @@ const MachineryApplicationFrom: React.FC<MachineryApplicationFromProps> = ({
           {/* STEP 3: Success */}
           {step === 3 && (
             <div className="text-center py-8 animate-in zoom-in duration-300">
-              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ring-4 ring-green-50">
                 <Check className="w-12 h-12 text-green-600" strokeWidth={3} />
               </div>
               <h3 className="text-2xl font-black text-slate-900 mb-2">Application Received!</h3>
               <p className="text-slate-500 mb-8 max-w-xs mx-auto">
                 Thank you, <b>{formData.fullName}</b>. Our team will contact you on <b>{formData.mobile}</b> shortly.
               </p>
-              <button onClick={onClose} className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 shadow-lg">Back to Home</button>
+              <button onClick={onClose} className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 shadow-lg transition-all">
+                Back to Home
+              </button>
             </div>
           )}
         </div>

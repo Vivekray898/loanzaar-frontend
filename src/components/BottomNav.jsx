@@ -11,7 +11,7 @@ import {
   User
 } from "lucide-react"
 
-export default function BottomNav({ items }) {
+export default function BottomNav({ items } = {}) {
   const pathname = usePathname() || "/"
 
   // --- Dynamic Hide Logic ---

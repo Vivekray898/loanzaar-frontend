@@ -17,6 +17,8 @@ model applications {
   mobile_number     String
   email             String?
   city              String?
+  ip            String?  @db.VarChar(64)
+  user_agent    String?  @db.VarChar(512)
   product_category  String
   product_type      String
   application_stage String   @default("started")
