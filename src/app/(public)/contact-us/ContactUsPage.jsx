@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Meta from '@/components/Meta';
-import dynamic from 'next/dynamic';
 import Turnstile from '@/components/Turnstile';
 import { submitContactForm } from '@/config/api';
 import StructuredData from '@/components/StructuredData';

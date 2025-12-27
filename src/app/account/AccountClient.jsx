@@ -158,7 +158,7 @@ export default function AccountMenu() {
                   />
                   <div className="h-px bg-slate-50 mx-4" />
                   <MenuLink 
-                    href="/legal" 
+                    href="/privacy-policy" 
                     icon={Shield} 
                     color="text-emerald-600 bg-emerald-50" 
                     title="Legal & Privacy" 
