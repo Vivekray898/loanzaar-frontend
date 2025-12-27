@@ -1,5 +1,6 @@
 // Supabase Configuration and Initialization
-import { createClient } from '@supabase/supabase-js';
+// Delegate to centralized client in src/config/supabaseClient.js
+import supabaseClient from './supabaseClient';
 
 /**
  * Supabase Configuration
@@ -35,18 +36,9 @@ const validateSupabaseConfig = () => {
   }
 };
 
-// Validate configuration on initialization
-validateSupabaseConfig();
-
-// Initialize Supabase Client
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-  },
-});
+// The actual Supabase client is provided by `src/config/supabaseClient.js`.
+// Keep a compatible export for legacy imports.
+export const supabase = supabaseClient;
 
 /**
  * Get the current user's session

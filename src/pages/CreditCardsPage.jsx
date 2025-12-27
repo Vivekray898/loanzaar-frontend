@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef } from 'react';
-import ReCAPTCHA from 'react-google-recaptcha';
+import Turnstile from '../components/Turnstile';
 import Meta from '../components/Meta';
 import { submitCreditCardApplication } from '../services/firestoreService';
 
@@ -61,7 +61,7 @@ const CreditCardsPage = () => {
 
   const handleCaptchaChange = (token) => {
     setCaptchaToken(token);
-    console.log('✅ reCAPTCHA token received:', token);
+    console.log('✅ Turnstile token received:', token);
   };
 
   const validateField = (fieldName, value) => {
@@ -127,7 +127,7 @@ const CreditCardsPage = () => {
     }
 
     if (!captchaToken) {
-      alert('Please complete the reCAPTCHA verification.');
+      alert('Please complete the verification.');
       return;
     }
 
@@ -456,7 +456,40 @@ const CreditCardsPage = () => {
         </div>
       </div>
 
-      {/* Modal form removed - functionality disabled */}
+      {/* Inline small form area for Turnstile (legacy modal removed) */}
+      <div className="max-w-md mx-auto px-4 mb-12">
+        <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Full Name *</label>
+            <input value={formData.fullName} onChange={(e) => { setFormData({ ...formData, fullName: e.target.value }); validateField('fullName', e.target.value); }} className="w-full px-4 py-2 border rounded" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Email *</label>
+            <input value={formData.email} onChange={(e) => { setFormData({ ...formData, email: e.target.value }); validateField('email', e.target.value); }} className="w-full px-4 py-2 border rounded" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Phone *</label>
+            <input value={formData.phone} onChange={(e) => { setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') }); validateField('phone', e.target.value.replace(/\D/g, '')); }} className="w-full px-4 py-2 border rounded" />
+          </div>
+          <div className="flex justify-center">
+            <Turnstile
+              ref={recaptchaRef}
+              sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'}
+              onVerify={handleCaptchaChange}
+              onExpired={() => setCaptchaToken(null)}
+            />
+          </div>
+          <div>
+            <label className="inline-flex items-center">
+              <input type="checkbox" checked={formData.consent} onChange={(e) => setFormData({ ...formData, consent: e.target.checked })} className="mr-2" />
+              <span className="text-sm text-slate-600">I agree to be contacted</span>
+            </label>
+          </div>
+          <div>
+            <button type="submit" disabled={isLoading} className="w-full py-3 bg-blue-600 text-white rounded">{isLoading ? 'Processing...' : 'Submit Application'}</button>
+          </div>
+        </form>
+      </div>
 
       {/* Success Message */}
       {submitted && (

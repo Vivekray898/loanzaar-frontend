@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic'; // 1. Lazy Load
 import Meta from '../components/Meta';
 import BackButton from '../components/BackButton';
 import StructuredData from '../components/StructuredData';
@@ -10,10 +11,19 @@ import {
   ArrowRight, Briefcase, TrendingUp, ShieldCheck, Zap
 } from 'lucide-react';
 
+// 2. Dynamic Import of the Modal (SEO Safe)
+const BusinessApplicationFrom = dynamic(
+  () => import('../components/forms/loans/BusinessApplicationFrom'), 
+  { ssr: false } 
+);
+
 const BusinessLoanFormPage = () => {
   // UI State
   const [activeTab, setActiveTab] = useState('overview');
   const [activeFaq, setActiveFaq] = useState(null);
+  
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Calculator State
   const [loanAmount, setLoanAmount] = useState(500000);
@@ -30,7 +40,7 @@ const BusinessLoanFormPage = () => {
   }, [loanAmount, interestRate, tenure]);
 
   const handleApplyClick = () => {
-    alert("Opens Application Form Sheet"); 
+    setIsModalOpen(true); // Open the modal
   };
 
   // Smooth Scroll Handler
@@ -38,16 +48,12 @@ const BusinessLoanFormPage = () => {
     setActiveTab(id);
     const element = document.getElementById(id);
     if (element) {
-      const offset = 120; // Height of sticky headers
+      const offset = 120;
       const bodyRect = document.body.getBoundingClientRect().top;
       const elementRect = element.getBoundingClientRect().top;
       const elementPosition = elementRect - bodyRect;
       const offsetPosition = elementPosition - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
     }
   };
 
@@ -370,6 +376,20 @@ const BusinessLoanFormPage = () => {
           </button>
         </div>
       </div>
+
+      {/* 
+         The Dynamic Modal
+         Important: Pass `loanCategory="business"` so the modal shows business fields (Turnover, Vintage) 
+         instead of personal employment fields.
+      */}
+      {isModalOpen && (
+        <BusinessApplicationFrom 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          loanType="Business Loan"
+          loanCategory="business" 
+        />
+      )}
 
     </div>
   );

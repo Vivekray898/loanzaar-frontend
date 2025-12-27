@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Meta from '../components/Meta';
+import dynamic from 'next/dynamic';
+const EducationLoanForm = dynamic(() => import('../components/forms/loans/EducationLoanForm'), { ssr: false });
 import BackButton from '../components/BackButton';
 import StructuredData from '../components/StructuredData';
 import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
@@ -21,6 +23,9 @@ const EducationLoanPage = () => {
   const [tenure, setTenure] = useState(120);
   const [emi, setEmi] = useState(0);
 
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   // --- EMI Calculation Logic ---
   useEffect(() => {
     const r = interestRate / 12 / 100;
@@ -30,7 +35,7 @@ const EducationLoanPage = () => {
   }, [loanAmount, interestRate, tenure]);
 
   const handleApplyClick = () => {
-    alert("Opens Application Form Sheet"); 
+    setIsModalOpen(true);
   };
 
   // Smooth Scroll Handler
@@ -402,6 +407,11 @@ const EducationLoanPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Dynamic Education Loan Modal */}
+      {isModalOpen && (
+        <EducationLoanForm isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} loanType="Education Loan" />
+      )}
 
     </div>
   );

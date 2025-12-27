@@ -19,24 +19,113 @@ The directory `src/pages/` is a **legacy path** retained only for migration comp
   - `dashboard`
   - `admin`
 
-### 💎 Strict TypeScript Conventions
-- **All new files MUST be TypeScript (`.tsx` or `.ts`)**
-- **UI Components:** Use `.tsx`
-- **Logic/Utils:** Use `.ts`
-- **Strict Typing:**
-  - Define `interface` or `type` for all component props.
-  - Avoid using `any`; use specific types or `unknown` if necessary.
-  - Ensure `page.tsx` props (params/searchParams) are typed correctly.
+---
 
-### ⚠️ Legacy JavaScript Usage
-- **Only** use `.jsx` or `.js` if you are modifying an **existing legacy file** that has not yet been migrated.
-- If refactoring a legacy component, prioritize converting it to `.tsx`.
+## 💎 File Extension Rules
 
-### 📌 Architecture Rules
-- **Server Components:** `page.tsx` and `layout.tsx` are Server Components by default. Do not add interactivity (state/hooks) directly to them.
-- **Client Components:**
-  - Must be `.tsx` files.
-  - Must have `'use client'` explicitly declared at the top.
-  - Isolate client logic into small, reusable components imported by Server Pages.
+### **NEW Pages & Components → Use `.tsx`**
+- All newly created pages MUST use `.tsx`
+- All new UI components MUST use `.tsx`
+- All new utility files MUST use `.ts`
+- No exceptions for new files
 
-If unsure, default to **TypeScript** and **App Router** patterns.
+### **EXISTING Pages & Components → Continue with `.jsx`**
+- Keep existing `.jsx` files as-is (no forced migration)
+- Only convert to `.tsx` if actively refactoring or enhancing
+- Do NOT change file extensions during minor bug fixes
+
+### **Strict TypeScript Conventions (New Files)**
+- Define `interface` or `type` for all component props
+- Avoid using `any`; use specific types or `unknown` if necessary
+- Ensure `page.tsx` props (params/searchParams) are typed correctly
+- Example:
+
+```tsx
+// ✅ NEW PAGE - Use .tsx with strict typing
+interface PageProps {
+  params: {
+    id: string;
+  };
+  searchParams: Record<string, string | string[]>;
+}
+
+export default function Page({ params, searchParams }: PageProps) {
+  return <div>Page ID: {params.id}</div>;
+}
+```
+
+```jsx
+// ✅ EXISTING PAGE - Keep as .jsx (no forced changes)
+export default function OldPage({ params }) {
+  return <div>Page ID: {params.id}</div>;
+}
+```
+
+---
+
+## 📌 Architecture Rules
+
+### **Server Components**
+- `page.tsx` and `layout.tsx` are Server Components by default
+- Do NOT add interactivity (state/hooks) directly to them
+- Import client components from separate `.tsx` files
+
+### **Client Components (New Files)**
+- MUST be `.tsx` files
+- MUST have `'use client'` explicitly declared at the top
+- Isolate client logic into small, reusable components
+- Example:
+
+```tsx
+// ✅ NEW CLIENT COMPONENT - .tsx with 'use client'
+'use client';
+
+import { useState } from 'react';
+
+interface ClientComponentProps {
+  title: string;
+}
+
+export function ClientComponent({ title }: ClientComponentProps) {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(count + 1)}>{title}: {count}</button>;
+}
+```
+
+### **Server Pages Importing Client Components**
+```tsx
+// ✅ NEW SERVER PAGE - .tsx (no 'use client')
+import { ClientComponent } from '@/components/ClientComponent';
+
+export default function Page() {
+  return <ClientComponent title="Counter" />;
+}
+```
+
+---
+
+## 🚀 Migration Path
+
+| Scenario | Action | File Extension |
+|----------|--------|-----------------|
+| **Creating a new page** | Follow strict TypeScript conventions | `.tsx` |
+| **Creating a new component** | Use client/server patterns, strict typing | `.tsx` |
+| **Modifying existing legacy page** | Keep as-is, no forced conversion | `.jsx` |
+| **Refactoring existing legacy file** | Prioritize `.tsx` migration | `.tsx` |
+| **Creating utilities/helpers** | Strict TypeScript | `.ts` |
+
+---
+
+## ✨ Quick Checklist
+
+- [ ] New page → **Always `.tsx`**
+- [ ] Existing page → **Keep `.jsx` unless actively refactoring**
+- [ ] New component → **Always `.tsx` with strict types**
+- [ ] Server component → **No state or hooks**
+- [ ] Client component → **Has `'use client'` at top**
+- [ ] Props → **Defined with `interface` or `type`**
+- [ ] Avoid `any` → **Use specific types or `unknown`**
+
+---
+
+If unsure, default to **TypeScript (`.tsx`)** for new files and **App Router** patterns.

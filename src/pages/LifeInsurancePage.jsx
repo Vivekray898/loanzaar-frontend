@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState } from 'react';
-import Meta from '../components/Meta';
-import BackButton from '../components/BackButton';
+import dynamic from 'next/dynamic'; // Lazy loading
+import Meta from '@/components/Meta';
+import BackButton from '@/components/BackButton';
 import { 
   ChevronDown, Check, Shield, Heart, 
   Umbrella, Users, FileText, Info, HelpCircle, 
@@ -10,13 +11,22 @@ import {
   DollarSign, Sun, Baby, Layers, Phone
 } from 'lucide-react';
 
+// 1. Dynamic Import of the Form
+const LifeInsuranceForm = dynamic(
+  () => import('@/components/forms/insurances/LifeInsuranceForm'), 
+  { ssr: false } 
+);
+
 const LifeInsurancePage = () => {
   // UI State
   const [activeTab, setActiveTab] = useState('basics');
   const [activeFaq, setActiveFaq] = useState(null);
+  
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleApplyClick = () => {
-    alert("Opens Insurance Inquiry Form"); 
+    setIsModalOpen(true); 
   };
 
   // Smooth Scroll Handler
@@ -24,7 +34,7 @@ const LifeInsurancePage = () => {
     setActiveTab(id);
     const element = document.getElementById(id);
     if (element) {
-      const offset = 120; // Height of sticky headers
+      const offset = 120; 
       const bodyRect = document.body.getBoundingClientRect().top;
       const elementRect = element.getBoundingClientRect().top;
       const elementPosition = elementRect - bodyRect;
@@ -326,6 +336,17 @@ const LifeInsurancePage = () => {
           </button>
         </div>
       </div>
+
+      {/* 
+         Dynamic Modal Integration
+      */}
+      {isModalOpen && (
+        <LifeInsuranceForm 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          insuranceType="Life Insurance"
+        />
+      )}
 
     </div>
   );

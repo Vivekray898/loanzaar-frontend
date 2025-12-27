@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic'; // Lazy loading for SEO
 import Meta from '../components/Meta';
 import BackButton from '../components/BackButton';
 import StructuredData from '../components/StructuredData';
@@ -10,10 +11,20 @@ import {
   ArrowRight, Settings, TrendingUp, IndianRupee, Layers, Shield, Zap, RefreshCw
 } from 'lucide-react';
 
+// Dynamic Import: Modal code isn't in initial bundle. 
+// Bots won't see the form code, protecting SEO.
+const MachineryApplicationFrom = dynamic(
+  () => import('../components/forms/loans/MachineryApplicationFrom'), 
+  { ssr: false } 
+);
+
 const MachineryLoanPage = () => {
   // UI State
   const [activeTab, setActiveTab] = useState('overview');
   const [activeFaq, setActiveFaq] = useState(null);
+  
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Calculator State
   const [loanAmount, setLoanAmount] = useState(2500000);
@@ -30,7 +41,7 @@ const MachineryLoanPage = () => {
   }, [loanAmount, interestRate, tenure]);
 
   const handleApplyClick = () => {
-    alert("Opens Application Form Sheet"); 
+    setIsModalOpen(true);
   };
 
   // Smooth Scroll Handler
@@ -347,7 +358,7 @@ const MachineryLoanPage = () => {
               </h3>
               <div className="space-y-3">
                 {faqs.map((item, i) => (
-                  <div key={i} className="border border-slate-200 rounded-xl overflow-hidden bg-white hover:border-orange-300 transition-colors">
+                  <div key={i} className="border border-slate-100 rounded-xl overflow-hidden bg-white hover:border-orange-300 transition-colors">
                     <button 
                       onClick={() => setActiveFaq(activeFaq === i ? null : i)}
                       className="w-full flex justify-between items-center p-5 text-left"
@@ -409,6 +420,20 @@ const MachineryLoanPage = () => {
           </button>
         </div>
       </div>
+
+      {/* 
+         The Dynamic Modal
+         Important: Pass `loanCategory="business"` so the modal shows business fields (Turnover, Vintage) 
+         instead of personal employment fields.
+      */}
+      {isModalOpen && (
+        <MachineryApplicationFrom 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          loanType="Machinery Loan"
+          loanCategory="business" 
+        />
+      )}
 
     </div>
   );

@@ -1,42 +1,71 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import Meta from '../components/Meta';
-import BackButton from '../components/BackButton';
-import { submitLoanApplication } from '../config/api';
-import StructuredData from '../components/StructuredData';
-import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
+import Meta from '@/components/Meta';
+import BackButton from '@/components/BackButton';
+import StructuredData from '@/components/StructuredData';
+import LoanApplicationModal from '@/components/forms/loans/PersonalLoanForm'; // Ensure this path is correct
+import { generateLoanSchema, generateWebPageSchema } from '@/utils/schema';
 import { 
   ChevronDown, Check, Star, Calculator, FileText, Info, HelpCircle, 
-  ArrowRight, Shield, Clock, Gift, Layers, Eye, Wallet, TrendingUp,
+  ArrowRight, Shield, Clock, Gift, Layers, Eye, Wallet, 
   Briefcase
 } from 'lucide-react';
 
+// --- Interfaces for Type Safety ---
+interface FeatureItem {
+  id: string;
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+  badge?: string;
+}
+
+interface CriteriaItem {
+  icon: string; // we map strings to icons later or use ElementType if passing direct component
+  text: string;
+  highlight: boolean;
+}
+
+interface DocSection {
+  title: string;
+  items: string[];
+}
+
+interface FaqItem {
+  q: string;
+  a: string;
+}
+
 const PersonalLoanFormPage = () => {
   // UI State
-  const [activeTab, setActiveTab] = useState('overview');
-  const [activeFaq, setActiveFaq] = useState(null);
+  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   
   // Calculator State
-  const [loanAmount, setLoanAmount] = useState(500000);
-  const [interestRate, setInterestRate] = useState(12);
-  const [tenure, setTenure] = useState(36);
-  const [emi, setEmi] = useState(0);
+  const [loanAmount, setLoanAmount] = useState<number>(500000);
+  const [interestRate, setInterestRate] = useState<number>(12);
+  const [tenure, setTenure] = useState<number>(36);
+  const [emi, setEmi] = useState<number>(0);
 
   // --- EMI Calculation Logic ---
   useEffect(() => {
     const r = interestRate / 12 / 100;
     const n = tenure;
+    // Standard EMI Formula: E = P * r * (1+r)^n / ((1+r)^n - 1)
     const e = loanAmount * r * (Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1));
     setEmi(Math.round(e));
   }, [loanAmount, interestRate, tenure]);
 
   const handleApplyClick = () => {
-    alert("Opens Application Form Sheet"); 
+    setIsModalOpen(true);
   };
 
   // Smooth Scroll Handler
-  const scrollToSection = (id) => {
+  const scrollToSection = (id: string) => {
     setActiveTab(id);
     const element = document.getElementById(id);
     if (element) {
@@ -54,7 +83,7 @@ const PersonalLoanFormPage = () => {
   };
 
   // --- Data ---
-  const features = [
+  const features: FeatureItem[] = [
     { id: 'new-customers', icon: Gift, title: 'New Customer Offers', desc: 'Special rates for first-time borrowers.', badge: 'Popular' },
     { id: 'variants', icon: Layers, title: '3 Unique Variants', desc: 'Standard, Flexi, or Secured options.' },
     { id: 'amount', icon: Wallet, title: 'Up to ₹40 Lakhs', desc: 'Substantial funding for major expenses.' },
@@ -63,7 +92,7 @@ const PersonalLoanFormPage = () => {
     { id: 'transparency', icon: Eye, title: 'No Hidden Fees', desc: 'Complete transparency in all charges.' }
   ];
 
-  const eligibilityCriteria = [
+  const eligibilityCriteria: CriteriaItem[] = [
     { icon: 'user', text: 'Age: 21 - 60 years', highlight: false },
     { icon: 'wallet', text: 'Income: ₹15k/mo (Salaried/Self)', highlight: true },
     { icon: 'star', text: 'CIBIL Score: 650+', highlight: true },
@@ -71,14 +100,14 @@ const PersonalLoanFormPage = () => {
     { icon: 'briefcase', text: 'Stable Employment', highlight: false }
   ];
 
-  const documents = [
+  const documents: DocSection[] = [
     { title: 'Identity Proof', items: ['PAN Card', 'Aadhaar Card', 'Passport', 'Voter ID'] },
     { title: 'Address Proof', items: ['Aadhaar Card', 'Utility Bills', 'Rent Agreement'] },
     { title: 'Income Proof', items: ['3 Months Salary Slips', '6 Months Bank Statement'] },
     { title: 'Employment', items: ['Company ID Card', 'Appointment Letter'] }
   ];
 
-  const faqs = [
+  const faqs: FaqItem[] = [
     { q: 'What is a personal loan?', a: 'An unsecured loan for personal use like medical bills, travel, or renovation without collateral.' },
     { q: 'How much can I borrow?', a: 'You can borrow between ₹50,000 to ₹40 Lakhs depending on your eligibility.' },
     { q: 'Minimum credit score required?', a: 'A score of 650+ is recommended for quick approval and better interest rates.' },
@@ -86,7 +115,7 @@ const PersonalLoanFormPage = () => {
     { q: 'How long does disbursal take?', a: 'Once approved, the amount is credited to your bank account within 24 to 48 hours.' }
   ];
 
-  // --- Component: EMI Calculator Widget (Reused) ---
+  // --- Component: EMI Calculator Widget ---
   const CalculatorWidget = () => (
     <div className="space-y-6 md:space-y-8">
       <div className="bg-slate-900 text-white p-6 rounded-2xl text-center shadow-lg">
@@ -142,7 +171,6 @@ const PersonalLoanFormPage = () => {
         </div>
       </div>
 
-      {/* Desktop Only Apply Button */}
       <div className="hidden lg:block pt-2">
         <button 
           onClick={handleApplyClick}
@@ -202,7 +230,7 @@ const PersonalLoanFormPage = () => {
           </div>
         </section>
 
-        {/* 3. Sticky Navigation Anchor Bar */}
+        {/* 3. Sticky Navigation */}
         <div className="sticky top-16 z-40 bg-slate-50/95 backdrop-blur-sm pt-2 pb-4 border-b border-slate-200 mb-8">
           <div className="flex overflow-x-auto gap-2 md:gap-4 pb-2 scrollbar-hide">
             {[
@@ -232,10 +260,9 @@ const PersonalLoanFormPage = () => {
         {/* 4. Main Layout Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 pb-12">
           
-          {/* LEFT COLUMN: Content Sections (col-span-8) */}
+          {/* LEFT COLUMN: Content */}
           <div className="lg:col-span-7 xl:col-span-8 space-y-16">
             
-            {/* OVERVIEW CONTENT */}
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div>
                 <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
@@ -284,7 +311,7 @@ const PersonalLoanFormPage = () => {
               </div>
             </div>
 
-            {/* CALCULATOR SECTION (Mobile Only - Hidden on LG) */}
+            {/* Mobile Calculator */}
             <div id="calculator" className="lg:hidden scroll-mt-32 border-t border-slate-200 pt-8">
                <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                   <Calculator className="w-5 h-5 text-blue-600" /> EMI Calculator
@@ -292,7 +319,7 @@ const PersonalLoanFormPage = () => {
                <CalculatorWidget />
             </div>
 
-            {/* FEATURES SECTION */}
+            {/* Features */}
             <div id="features" className="scroll-mt-32 border-t border-slate-200 pt-8">
               <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <Star className="w-6 h-6 text-yellow-500 fill-yellow-500" /> Why Choose Loanzaar?
@@ -315,7 +342,7 @@ const PersonalLoanFormPage = () => {
               </div>
             </div>
 
-            {/* DOCUMENTS SECTION */}
+            {/* Documents */}
             <div id="docs" className="scroll-mt-32 border-t border-slate-200 pt-8">
               <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <FileText className="w-6 h-6 text-slate-700" /> Required Documents
@@ -347,7 +374,7 @@ const PersonalLoanFormPage = () => {
               </div>
             </div>
 
-            {/* FAQS SECTION */}
+            {/* FAQs */}
             <div id="faqs" className="scroll-mt-32 border-t border-slate-200 pt-8">
               <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <HelpCircle className="w-6 h-6 text-slate-700" /> Frequently Asked Questions
@@ -375,7 +402,7 @@ const PersonalLoanFormPage = () => {
 
           </div>
 
-          {/* RIGHT COLUMN: Sticky Sidebar (Calculator) (lg:col-span-4) */}
+          {/* RIGHT COLUMN: Sticky Calculator */}
           <div className="hidden lg:block lg:col-span-5 xl:col-span-4">
              <div className="sticky top-32 space-y-6">
                 <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
@@ -385,7 +412,6 @@ const PersonalLoanFormPage = () => {
                    <CalculatorWidget />
                 </div>
                 
-                {/* Trust Badge Widget */}
                 <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 flex items-center gap-4">
                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-green-600">
                       <Shield className="w-5 h-5" />
@@ -401,7 +427,7 @@ const PersonalLoanFormPage = () => {
         </div>
       </main>
 
-      {/* 5. Sticky Bottom Action Bar (Mobile/Tablet Only) */}
+      {/* 5. Sticky Bottom Action Bar (Mobile Only) */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 pb-safe z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         <div className="flex items-center gap-4 max-w-md mx-auto">
           <div className="flex-1">
@@ -416,6 +442,13 @@ const PersonalLoanFormPage = () => {
           </button>
         </div>
       </div>
+
+      {/* The Loan Form Modal */}
+      <LoanApplicationModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        loanType="Personal Loan"
+      />
 
     </div>
   );

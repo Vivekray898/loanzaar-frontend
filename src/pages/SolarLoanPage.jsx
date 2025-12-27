@@ -10,10 +10,14 @@ import {
   ArrowRight, Sun, Leaf, Zap, Landmark, TrendingUp, IndianRupee, Shield, Settings
 } from 'lucide-react';
 
+import dynamic from 'next/dynamic';
+const SolarApplicationForm = dynamic(() => import('../components/forms/loans/SolarApplicationForm'), { ssr: false });
+
 const SolarLoanPage = () => {
   // UI State
   const [activeTab, setActiveTab] = useState('overview');
   const [activeFaq, setActiveFaq] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Calculator State
   const [loanAmount, setLoanAmount] = useState(1000000);
@@ -29,9 +33,7 @@ const SolarLoanPage = () => {
     setEmi(Math.round(e));
   }, [loanAmount, interestRate, tenure]);
 
-  const handleApplyClick = () => {
-    alert("Opens Application Form Sheet"); 
-  };
+  const handleApplyClick = () => setIsModalOpen(true);
 
   // Smooth Scroll Handler
   const scrollToSection = (id) => {
@@ -421,6 +423,15 @@ const SolarLoanPage = () => {
           </button>
         </div>
       </div>
+
+      {isModalOpen && (
+        <SolarApplicationForm
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          loanType="Solar Loan"
+          loanCategory="business"
+        />
+      )}
 
     </div>
   );

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic'; // Import dynamic for lazy loading
 import Meta from '../components/Meta';
 import BackButton from '../components/BackButton';
 import StructuredData from '../components/StructuredData';
@@ -10,10 +11,20 @@ import {
   ArrowRight, Home, Hammer, Expand, Paintbrush, Globe, Clock, Shield
 } from 'lucide-react';
 
+// 1. Dynamic Import: The Modal code will NOT be in the initial HTML bundle.
+// Bots won't see it, and it won't affect initial load performance.
+const HomeApplicationFrom = dynamic(
+  () => import('../components/forms/loans/HomeApplicationFrom'), 
+  { ssr: false } 
+);
+
 const HomeLoanPage = () => {
   // UI State
   const [activeTab, setActiveTab] = useState('overview');
   const [activeFaq, setActiveFaq] = useState(null);
+  
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Calculator State
   const [loanAmount, setLoanAmount] = useState(2000000);
@@ -30,7 +41,7 @@ const HomeLoanPage = () => {
   }, [loanAmount, interestRate, tenure]);
 
   const handleApplyClick = () => {
-    alert("Opens Application Form Sheet"); 
+    setIsModalOpen(true);
   };
 
   // Smooth Scroll Handler
@@ -85,7 +96,7 @@ const HomeLoanPage = () => {
     { q: 'Co-applicants?', a: 'Spouse, parents, or siblings can be co-applicants to increase eligibility.' }
   ];
 
-  // --- Reusable Calculator Widget ---
+  // --- Component: EMI Calculator Widget ---
   const CalculatorWidget = () => (
     <div className="space-y-6 md:space-y-8">
       <div className="bg-slate-900 text-white p-6 rounded-2xl text-center shadow-lg">
@@ -412,6 +423,20 @@ const HomeLoanPage = () => {
           </button>
         </div>
       </div>
+
+      {/* The Loan Application Modal */}
+      {/* 
+         Conditionally rendered based on 'isModalOpen'. 
+         Since it is loaded via 'next/dynamic' with 'ssr: false', 
+         it won't be part of the initial HTML payload, helping SEO.
+      */}
+      {isModalOpen && (
+        <HomeApplicationFrom 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          loanType="Home Loan"
+        />
+      )}
 
     </div>
   );

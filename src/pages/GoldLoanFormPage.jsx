@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Meta from '../components/Meta';
+import dynamic from 'next/dynamic';
+const GoldLoanForm = dynamic(() => import('../components/forms/loans/GoldLoanForm'), { ssr: false });
 import BackButton from '../components/BackButton';
 import StructuredData from '../components/StructuredData';
 import { generateLoanSchema, generateWebPageSchema } from '../utils/schema';
@@ -20,6 +22,8 @@ const GoldLoanFormPage = () => {
   const [interestRate, setInterestRate] = useState(10);
   const [tenure, setTenure] = useState(12);
   const [emi, setEmi] = useState(0);
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // --- EMI Calculation Logic ---
   useEffect(() => {
@@ -30,7 +34,7 @@ const GoldLoanFormPage = () => {
   }, [loanAmount, interestRate, tenure]);
 
   const handleApplyClick = () => {
-    alert("Opens Application Form Sheet"); 
+    setIsModalOpen(true);
   };
 
   // Smooth Scroll Handler
@@ -398,6 +402,11 @@ const GoldLoanFormPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Dynamic Gold Loan Modal */}
+      {isModalOpen && (
+        <GoldLoanForm isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} loanType="Gold Loan" />
+      )}
 
     </div>
   );

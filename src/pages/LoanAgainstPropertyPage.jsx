@@ -1,6 +1,9 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+// Dynamic modal import (client-side only)
+const LoanAgainstPropertyForm = dynamic(() => import('../components/forms/loans/LoanAgainstPropertyForm'), { ssr: false });
 import Meta from '../components/Meta';
 import BackButton from '../components/BackButton';
 import StructuredData from '../components/StructuredData';
@@ -20,6 +23,8 @@ const LoanAgainstPropertyPage = () => {
   const [interestRate, setInterestRate] = useState(9.5);
   const [tenure, setTenure] = useState(120);
   const [emi, setEmi] = useState(0);
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // --- EMI Calculation Logic ---
   useEffect(() => {
@@ -30,7 +35,7 @@ const LoanAgainstPropertyPage = () => {
   }, [loanAmount, interestRate, tenure]);
 
   const handleApplyClick = () => {
-    alert("Opens Application Form Sheet"); 
+    setIsModalOpen(true);
   };
 
   // Smooth Scroll Handler
@@ -400,6 +405,11 @@ const LoanAgainstPropertyPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Dynamic Loan Against Property Modal */}
+      {isModalOpen && (
+        <LoanAgainstPropertyForm isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} loanType="Loan Against Property" />
+      )}
 
     </div>
   );

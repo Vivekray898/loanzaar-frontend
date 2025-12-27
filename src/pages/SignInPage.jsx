@@ -5,11 +5,11 @@ import Meta from '../components/Meta';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import Turnstile from '../components/Turnstile';
 import { signInWithEmailPassword } from '../services/supabaseAuthService';
 import { getUserProfileByUID } from '../services/firebaseAuthApi';
 
-// Dynamic import ReCAPTCHA
-const ReCAPTCHA = dynamic(() => import('react-google-recaptcha'), { ssr: false });
+// Use Turnstile (Cloudflare) component
 
 // --- Icon Components ---
 const MailIcon = () => (
@@ -236,12 +236,12 @@ function SignInPage({ onShowSignup, onShowForgot, isModal = false }) {
                {/* ReCAPTCHA */}
                <div className="flex justify-center transform scale-95 sm:scale-100">
                 <div className="w-full max-w-[320px] mx-auto">
-                  <ReCAPTCHA
+                    <Turnstile
                       ref={recaptchaRef}
-                      sitekey="6LdUpOsrAAAAAKqnWvFE0MH-mgcHo8BzFohUEB5b"
-                      onChange={handleCaptchaChange}
+                      sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '6LdUpOsrAAAAAKqnWvFE0MH-mgcHo8BzFohUEB5b'}
+                      onVerify={handleCaptchaChange}
                       onExpired={() => setCaptchaToken(null)}
-                  />
+                    />
                 </div>
                </div>
 

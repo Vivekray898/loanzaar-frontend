@@ -53,6 +53,21 @@ export const submitToFirestore = async (type, formData, status = 'pending') => {
     };
 
     console.log(`📤 Submitting ${type} to table '${collectionName}'...`);
+
+    // For public writes, route through a server API to use the service role key
+    if (isPublicWrite) {
+      const res = await fetch('/api/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, formData, status }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Submission failed');
+      console.log(`✅ ${type} submitted successfully to ${collectionName}:`, json.id);
+      return json.id;
+    }
+
+    // Fallback for authenticated writes (keep existing client-side behavior)
     const { data, error } = await supabase
       .from(collectionName)
       .insert([rowData])
@@ -93,6 +108,51 @@ export const submitLoanApplication = async (loanData) => {
       success: false,
       message: error.message || 'Failed to submit loan application. Please try again.'
     };
+  }
+};
+
+/**
+ * Submit a public application record into the `applications` table.
+ * Maps common personal loan form fields into the application's schema safely.
+ * @param {Object} applicationData - { fullName, mobile, email?, city?, loanType, employmentType, monthlyIncome, pincode, source }
+ * @returns {Promise<Object>} { success, docId, message }
+ */
+export const submitApplication = async (applicationData) => {
+  try {
+    const row = {
+      full_name: applicationData.fullName,
+      mobile_number: applicationData.mobile,
+      email: applicationData.email || null,
+      city: applicationData.city || null,
+      product_category: 'loan',
+      product_type: applicationData.loanType || applicationData.product_type || 'personal',
+      application_stage: 'started',
+      status: 'new',
+      source: applicationData.source || 'website',
+      metadata: applicationData.metadata || {
+        employmentType: applicationData.employmentType || null,
+        monthlyIncome: applicationData.monthlyIncome || null,
+        pincode: applicationData.pincode || null
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    console.log('📤 Inserting application into `applications` table:', { product_type: row.product_type, mobile: row.mobile_number });
+
+    const { data, error } = await supabase
+      .from('applications')
+      .insert([row])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log('✅ Application inserted:', data.id);
+    return { success: true, docId: data.id, data };
+  } catch (error) {
+    console.error('❌ Error inserting application:', error);
+    return { success: false, message: error.message || 'Failed to submit application' };
   }
 };
 
