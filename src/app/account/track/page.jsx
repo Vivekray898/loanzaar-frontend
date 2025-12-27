@@ -1,10 +1,10 @@
-import TrackClient from '@/app/track/TrackClient'
+import TrackPage from './TrackPage'
 
 export const metadata = {
-  title: 'Track | Loanzaar',
-  description: 'Monitor your financial journey'
+  title: 'Profile | Loanzaar',
+  description: 'Edit your profile'
 }
 
-export default function AccountTrackPage() {
-  return <TrackClient />
+export default function ProfilePage() {
+  return <TrackPage />
 }

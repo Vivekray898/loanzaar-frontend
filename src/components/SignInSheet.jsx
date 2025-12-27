@@ -3,9 +3,9 @@
 import React, { useEffect } from 'react'
 import { X, ArrowLeft } from 'lucide-react'
 import { useUserAuth } from '../context/UserAuthContext'
-import SignInPage from '../pages/SignInPage'
-import SignUpPage from '../pages/SignUpPage'
-import ForgotPasswordPage from '../pages/ForgotPasswordPage'
+import SignInPage from '../app/(auth)/signin/SignInPage'
+import SignUpPage from '../app/(auth)/signup/SignUpPage'
+import ForgotPasswordPage from '../app/(auth)/forgot-password/ForgotPasswordPage'
 
 export default function SignInSheet({ open = false, onClose = () => {} }) {
   const { isAuthenticated } = useUserAuth()

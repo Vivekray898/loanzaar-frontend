@@ -1,0 +1,10 @@
+import SupportPage from './SupportPage'
+
+export const metadata = {
+  title: 'Support | Loanzaar',
+  description: 'Get help and support'
+}
+
+export default function Page() {
+  return <SupportPage />
+}

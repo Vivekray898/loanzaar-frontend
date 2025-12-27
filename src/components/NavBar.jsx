@@ -6,14 +6,18 @@ import { usePathname, useRouter } from 'next/navigation';
 import { UserAuthContext } from '../context/UserAuthContext';
 import { 
   ChevronDown, Phone, LogOut, LayoutDashboard, User, 
-  Menu, X, ChevronRight, ShieldCheck, CreditCard 
+  Menu, X, ChevronRight, ShieldCheck, CreditCard, Wallet 
 } from 'lucide-react';
 import Container from './Container';
 
 export default function NavBar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hoverOpen, setHoverOpen] = useState(null); 
+  
+  // Mobile Expansion States
   const [mobileExpanded, setMobileExpanded] = useState(null); 
+  const [mobileNestedExpanded, setMobileNestedExpanded] = useState(null);
+
   const [showUserMenu, setShowUserMenu] = useState(false); 
 
   const dropdownRefs = useRef({});
@@ -30,7 +34,7 @@ export default function NavBar() {
     {
       label: 'Loans',
       type: 'dropdown',
-      icon: CreditCard,
+      icon: Wallet,
       children: [
         { label: 'Personal Loan', link: '/loans/personal-loan' },
         { label: 'Home Loan', link: '/loans/home-loan' },
@@ -40,10 +44,22 @@ export default function NavBar() {
         { label: 'Education Loan', link: '/loans/education-loan' },
         { label: 'Machinery Loan', link: '/loans/machinery-loan' },
         { label: 'Solar Loan', link: '/loans/solar-loan' },
-        { label: 'Car Loan', link: '/loans/car-loan' },
-        { label: 'Credit Cards', link: '/loans/credit-cards' },
+        { 
+          label: 'Car Loan', 
+          children: [
+            { label: 'New Car Loan', link: '/car-loan/new-car-loan' },
+            { label: 'Used Car Loan', link: '/car-loan/used-car-loan' },
+            { label: 'Car Refinance', link: '/car-loan/car-refinance' },
+          ]
+        },
         { label: 'All Loans', link: '/loans' },
       ]
+    },
+    { 
+      label: 'Credit Cards', 
+      type: 'link', 
+      link: '/credit-card',
+      icon: CreditCard 
     },
     {
       label: 'Insurance',
@@ -56,7 +72,6 @@ export default function NavBar() {
         { label: 'General Insurance', link: '/insurance/general-insurance' },
       ]
     },
-
     {
       label: 'Resources',
       type: 'dropdown',
@@ -66,6 +81,7 @@ export default function NavBar() {
         { label: 'Calculators', link: '/calculators' },
       ]
     },
+    { label: 'Check CIBIL Score', link: '/check-cibil-score', type: 'link' },
     { label: 'Contact', link: '/contact-us', type: 'link' },
   ];
 
@@ -75,7 +91,8 @@ export default function NavBar() {
     setHoverOpen(null);
     setShowUserMenu(false);
     setMobileExpanded(null);
-    document.body.style.overflow = 'unset'; // Ensure scroll is unlocked
+    setMobileNestedExpanded(null);
+    document.body.style.overflow = 'unset'; 
   }, [pathname]);
 
   // Handle Outside Clicks
@@ -92,14 +109,13 @@ export default function NavBar() {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [hoverOpen, showUserMenu]);
 
-  // Lock Body Scroll logic with cleanup
+  // Lock Body Scroll logic
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
     }
-    // Cleanup on unmount
     return () => { document.body.style.overflow = 'unset'; };
   }, [isMobileMenuOpen]);
 
@@ -111,16 +127,18 @@ export default function NavBar() {
 
   const toggleMobileAccordion = (label) => {
     setMobileExpanded(mobileExpanded === label ? null : label);
+    // Optional: Reset nested state if you want collapsing parent to collapse children too
+    // setMobileNestedExpanded(null); 
+  };
+
+  const toggleMobileNestedAccordion = (label) => {
+    setMobileNestedExpanded(mobileNestedExpanded === label ? null : label);
   };
 
   const getDashboardLink = () => (user?.role === 'admin' ? '/admin/account' : '/account');
 
   return (
     <>
-      {/* 
-        HEADER: Z-Index 100 ensures it stays above the mobile menu 
-        BG-White ensures content doesn't bleed through
-      */}
       <header className="sticky top-0 z-[100] w-full bg-white border-b border-slate-200 shadow-sm">
         <Container>
           <div className="flex items-center justify-between h-16 lg:h-20 bg-white relative z-[101]">
@@ -128,7 +146,7 @@ export default function NavBar() {
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 z-[101]">
               <img
-                src="/images/loanzaar--logo.avif"
+                src="/images/logo/loanzaar--logo.avif"
                 alt="Loanzaar"
                 className="h-8 md:h-9 w-auto object-contain"
                 onError={(e) => {
@@ -156,12 +174,37 @@ export default function NavBar() {
                         <span>{item.label}</span>
                         <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${hoverOpen === item.label ? 'rotate-180' : ''}`} />
                       </button>
+                      
+                      {/* Main Dropdown */}
                       {hoverOpen === item.label && (
                         <div className="absolute left-0 top-full mt-0 w-64 rounded-xl bg-white shadow-xl border border-slate-100 p-2 z-50">
                           {item.children.map((child) => (
-                            <Link key={child.label} href={child.link} className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors">
-                              {child.label}
-                            </Link>
+                            <div key={child.label}>
+                              {child.children ? (
+                                <div className="relative group/nested">
+                                  <button className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors text-left">
+                                    {child.label}
+                                    <ChevronRight className="w-3.5 h-3.5" />
+                                  </button>
+                                  {/* Nested Dropdown Menu */}
+                                  <div className="absolute left-full top-0 ml-2 w-56 rounded-xl bg-white shadow-xl border border-slate-100 p-2 z-50 invisible group-hover/nested:visible opacity-0 group-hover/nested:opacity-100 transition-all duration-200">
+                                    {child.children.map((subChild) => (
+                                      <Link 
+                                        key={subChild.label} 
+                                        href={subChild.link} 
+                                        className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors"
+                                      >
+                                        {subChild.label}
+                                      </Link>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : (
+                                <Link href={child.link} className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors">
+                                  {child.label}
+                                </Link>
+                              )}
+                            </div>
                           ))}
                         </div>
                       )}
@@ -213,23 +256,19 @@ export default function NavBar() {
         </Container>
       </header>
 
-      {/* 
-          MOBILE MENU OVERLAY
-          - z-[99] puts it just below the header (z-[100])
-          - fixed inset-0 covers the WHOLE screen
-          - pt-20 pushes content down below the header area
-      */}
+      {/* MOBILE MENU OVERLAY */}
       <div 
         className={`
-          lg:hidden fixed inset-0 bg-white z-[99] overflow-y-auto transition-all duration-300 ease-in-out
-          ${isMobileMenuOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}
+          lg:hidden fixed inset-0 z-[99] bg-white transition-all duration-300 ease-in-out overflow-y-auto
+          ${isMobileMenuOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'}
         `}
       >
-        <div className="pt-20 px-6 pb-24 space-y-6">
+        {/* Added extra padding bottom to ensure last items are visible on all devices */}
+        <div className="pt-24 px-6 pb-32 flex flex-col min-h-screen">
           
           {/* Auth Card */}
           {isAuthenticated ? (
-            <div className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between border border-slate-100">
+            <div className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between border border-slate-100 mb-6 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
                   {user?.name?.charAt(0).toUpperCase() || 'U'}
@@ -244,31 +283,80 @@ export default function NavBar() {
               </Link>
             </div>
           ) : (
-            <div className="bg-blue-50 rounded-2xl p-6 text-center">
+            <div className="bg-blue-50 rounded-2xl p-6 text-center mb-6 shrink-0">
               <h3 className="font-bold text-blue-900 mb-2">Welcome to Loanzaar</h3>
               <p className="text-xs text-blue-700 mb-4">Sign in to track applications & get offers.</p>
               <Link href="/signin" className="block w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md">Sign In / Register</Link>
             </div>
           )}
 
-          {/* Links */}
-          <div className="space-y-2">
+          {/* Navigation Links Container */}
+          <div className="flex-1 space-y-1">
             {navItems.map((item) => (
               <div key={item.label} className="border-b border-slate-100 last:border-0">
                 {item.type === 'link' ? (
-                  <Link href={item.link} className="flex items-center justify-between py-4 text-slate-800 font-semibold">{item.label}</Link>
+                  <Link 
+                    href={item.link} 
+                    className="flex items-center justify-between py-4 text-slate-800 font-semibold active:text-blue-600"
+                  >
+                    {item.label}
+                  </Link>
                 ) : (
                   <div>
-                    <button onClick={() => toggleMobileAccordion(item.label)} className="w-full flex items-center justify-between py-4 text-slate-800 font-semibold focus:outline-none">
+                    {/* Level 1 Accordion Toggle */}
+                    <button 
+                      onClick={() => toggleMobileAccordion(item.label)} 
+                      className="w-full flex items-center justify-between py-4 text-slate-800 font-semibold focus:outline-none"
+                    >
                       <span className="flex items-center gap-3">{item.label}</span>
                       <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${mobileExpanded === item.label ? 'rotate-180 text-blue-600' : ''}`} />
                     </button>
-                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${mobileExpanded === item.label ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                      <div className="pl-4 pb-4 space-y-2">
+                    
+                    {/* Level 1 Accordion Content */}
+                    <div 
+                      className={`overflow-hidden transition-all duration-300 ease-in-out`}
+                      style={{ maxHeight: mobileExpanded === item.label ? '1000px' : '0px' }}
+                    >
+                      <div className="pl-4 pb-4 space-y-1">
                         {item.children.map((child) => (
-                          <Link key={child.label} href={child.link} className="block py-2.5 px-4 rounded-lg text-sm text-slate-500 hover:text-blue-600 hover:bg-slate-50">
-                            {child.label}
-                          </Link>
+                          <div key={child.label}>
+                            {child.children ? (
+                                /* Level 2 Accordion (Nested) */
+                                <div>
+                                    <button 
+                                      onClick={() => toggleMobileNestedAccordion(child.label)} 
+                                      className="w-full flex items-center justify-between py-3 px-4 rounded-lg text-sm text-slate-600 font-medium hover:bg-slate-50 active:bg-slate-100"
+                                    >
+                                      <span>{child.label}</span>
+                                      <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${mobileNestedExpanded === child.label ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    
+                                    {/* Level 2 Accordion Content */}
+                                    <div 
+                                      className={`overflow-hidden transition-all duration-300 ease-in-out border-l-2 border-slate-100 ml-4`}
+                                      style={{ maxHeight: mobileNestedExpanded === child.label ? '500px' : '0px' }}
+                                    >
+                                      {child.children.map((subChild) => (
+                                        <Link 
+                                          key={subChild.label} 
+                                          href={subChild.link} 
+                                          className="block py-3 px-4 text-sm text-slate-500 hover:text-blue-600"
+                                        >
+                                          {subChild.label}
+                                        </Link>
+                                      ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                /* Standard Child Link */
+                                <Link 
+                                  href={child.link} 
+                                  className="block py-3 px-4 rounded-lg text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50"
+                                >
+                                  {child.label}
+                                </Link>
+                            )}
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -278,8 +366,9 @@ export default function NavBar() {
             ))}
           </div>
 
+          {/* Sign Out Button (Mobile) */}
           {isAuthenticated && (
-             <button onClick={handleLogout} className="w-full py-3 flex items-center justify-center gap-2 text-red-600 font-semibold bg-red-50 rounded-xl mt-4">
+             <button onClick={handleLogout} className="w-full py-4 flex items-center justify-center gap-2 text-red-600 font-semibold bg-red-50 rounded-xl mt-8 shrink-0">
                 <LogOut className="w-4 h-4" /> Sign Out
              </button>
           )}

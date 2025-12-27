@@ -198,7 +198,7 @@ export default function EMICalculatorModal({ open, onClose }) {
             Explore More
           </a>
           <a
-            href={tab === 'home' ? '/home-loan' : tab === 'personal' ? '/personal-loan' : '/business-loan'}
+            href={tab === 'home' ? '/loans/home-loan' : tab === 'personal' ? '/loans/personal-loan' : '/loans/business-loan'}
             className="w-full sm:flex-1 py-2.5 rounded-md text-blue-600 font-semibold border border-blue-600 text-center hover:bg-blue-50 transition-colors text-[15px]"
             onClick={onClose}
           >

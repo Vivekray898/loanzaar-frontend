@@ -1,4 +1,4 @@
-import CompleteProfilePage from '@/pages/CompleteProfilePage'
+import CompleteProfilePage from './CompleteProfilePage'
 
 export const metadata = {
   title: 'Complete Profile | Loanzaar',

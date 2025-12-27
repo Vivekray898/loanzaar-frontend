@@ -89,7 +89,7 @@ export default function ApplyHubPage() {
       bg: 'bg-green-50' 
     },
     { 
-      href: '/car-loan/new', 
+      href: '/car-loan/new-car-loan', 
       title: 'New Car Loan', 
       hint: 'Drive your Dream Car', 
       promo: '🚗 100% On-Road',
@@ -98,7 +98,7 @@ export default function ApplyHubPage() {
       bg: 'bg-red-50' 
     },
     { 
-      href: '/car-loan/used', 
+      href: '/car-loan/used-car-loan', 
       title: 'Used Car Loan', 
       hint: 'Pre-owned Vehicles', 
       promo: '🗝️ Quick Transfer',
@@ -107,7 +107,7 @@ export default function ApplyHubPage() {
       bg: 'bg-rose-50' 
     },
     { 
-      href: '/car-loan/refinance', 
+      href: '/car-loan/car-refinance', 
       title: 'Car Refinance', 
       hint: 'Reduce your Car EMI', 
       promo: '📉 Cash Top-up',

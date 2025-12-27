@@ -24,9 +24,9 @@ const loanOptions = [
 ]
 
 const carLoanOptions = [
-  { title: 'New Car Loan', url: '/car-loan/new', icon: Car, color: 'text-blue-600', bg: 'bg-blue-50' },
-  { title: 'Used Car Loan', url: '/car-loan/used', icon: ShoppingCart, color: 'text-orange-600', bg: 'bg-orange-50' },
-  { title: 'Car Refinance', url: '/car-loan/refinance', icon: RefreshCw, color: 'text-purple-600', bg: 'bg-purple-50' },
+  { title: 'New Car Loan', url: '/car-loan/new-car-loan', icon: Car, color: 'text-blue-600', bg: 'bg-blue-50' },
+  { title: 'Used Car Loan', url: '/car-loan/used-car-loan', icon: ShoppingCart, color: 'text-orange-600', bg: 'bg-orange-50' },
+  { title: 'Car Refinance', url: '/car-loan/car-refinance', icon: RefreshCw, color: 'text-purple-600', bg: 'bg-purple-50' },
 ]
 
 const toolOptions = [

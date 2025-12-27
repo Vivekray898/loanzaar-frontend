@@ -166,7 +166,7 @@ export default function HomePageClient() {
             <section className="flex flex-col h-full">
               <SectionTitle title="Car Loans" action={{ label: 'View All', link: '/car-loans' }} />
               <div className="grid grid-cols-3 gap-3 md:gap-4 flex-1">
-                {[{ label: 'New Car', icon: Car, color: 'text-amber-600', link: '/car-loan/new' }, { label: 'Used Car', icon: CheckCircle, color: 'text-green-500', link: '/car-loan/used' }, { label: 'Refinance', icon: RefreshCw, color: 'text-sky-600', link: '/car-loan/refinance' }].map((item, i) => (
+                {[{ label: 'New Car', icon: Car, color: 'text-amber-600', link: '/car-loan/new-car-loan' }, { label: 'Used Car', icon: CheckCircle, color: 'text-green-500', link: '/car-loan/used-car-loan' }, { label: 'Refinance', icon: RefreshCw, color: 'text-sky-600', link: '/car-loan/car-refinance' }].map((item, i) => (
                   <a key={i} href={item.link} className="group bg-white p-4 md:p-6 rounded-2xl border border-slate-100 flex flex-col items-center justify-center gap-3 shadow-sm hover:shadow-md hover:border-blue-100 active:scale-95 transition-all duration-200"><item.icon className={`w-7 h-7 md:w-9 md:h-9 ${item.color} transition-transform group-hover:scale-110`} /><span className="text-xs md:text-sm font-semibold text-slate-700 group-hover:text-slate-900">{item.label}</span></a>
                 ))}
               </div>

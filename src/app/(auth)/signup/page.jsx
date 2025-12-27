@@ -1,4 +1,4 @@
-import SignUpPage from '@/pages/SignUpPage'
+import SignUpPage from './SignUpPage'
 
 export const metadata = {
   title: 'Sign Up | Loanzaar',
