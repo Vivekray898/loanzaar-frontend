@@ -8,10 +8,23 @@ import {
   Briefcase,
   PlusCircle,
   Shield,
-  User
+  User,
+  LucideIcon
 } from "lucide-react"
 
-export default function BottomNav({ items } = {}) {
+export interface NavItem {
+  key: string
+  label: string
+  path: string
+  icon: LucideIcon
+  primary?: boolean
+}
+
+interface BottomNavProps {
+  items?: NavItem[]
+}
+
+export default function BottomNav({ items }: BottomNavProps) {
   const pathname = usePathname() || "/"
 
   // --- Dynamic Hide Logic ---
@@ -28,18 +41,18 @@ export default function BottomNav({ items } = {}) {
   
   const responsiveHideClass = shouldHideOnMobile ? "hidden lg:block" : ""
 
-  const navItems = items || [
+  const defaultItems: NavItem[] = [
     { key: "home", label: "Home", path: "/", icon: Home },
     { key: "loans", label: "Loans", path: "/loans", icon: Briefcase },
-
     // 🔥 Primary Action (Apply)
     { key: "apply", label: "Apply", path: "/apply", icon: PlusCircle, primary: true },
-
     { key: "insurance", label: "Insurance", path: "/insurance", icon: Shield },
     { key: "profile", label: "Profile", path: "/account", icon: User },
   ]
 
-  const isActive = (path) =>
+  const navItems = items || defaultItems
+
+  const isActive = (path: string) =>
     path === "/" ? pathname === "/" : pathname.startsWith(path)
 
   return (

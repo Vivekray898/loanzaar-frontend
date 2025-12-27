@@ -5,32 +5,57 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { UserAuthContext } from '../context/UserAuthContext';
 import { 
-  ChevronDown, Phone, LogOut, LayoutDashboard, User, 
-  Menu, X, ChevronRight, ShieldCheck, CreditCard, Wallet 
+  ChevronDown, Phone, LogOut, LayoutDashboard, User as UserIcon, 
+  Menu, X, ChevronRight, ShieldCheck, CreditCard, Wallet, LucideIcon 
 } from 'lucide-react';
 import Container from './Container';
 
+// --- Interfaces ---
+
+interface UserData {
+  uid?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+}
+
+interface AuthContextType {
+  user: UserData | null;
+  logout: () => void;
+}
+
+interface NavItem {
+  label: string;
+  link?: string;
+  type?: 'link' | 'dropdown';
+  icon?: LucideIcon;
+  children?: NavItem[];
+}
+
 export default function NavBar() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [hoverOpen, setHoverOpen] = useState(null); 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const [hoverOpen, setHoverOpen] = useState<string | null>(null); 
   
   // Mobile Expansion States
-  const [mobileExpanded, setMobileExpanded] = useState(null); 
-  const [mobileNestedExpanded, setMobileNestedExpanded] = useState(null);
+  const [mobileExpanded, setMobileExpanded] = useState<string | null>(null); 
+  const [mobileNestedExpanded, setMobileNestedExpanded] = useState<string | null>(null);
 
-  const [showUserMenu, setShowUserMenu] = useState(false); 
+  const [showUserMenu, setShowUserMenu] = useState<boolean>(false); 
 
-  const dropdownRefs = useRef({});
-  const userMenuRef = useRef(null);
+  // Refs
+  const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  
   const pathname = usePathname();
   const router = useRouter();
   
-  const authContext = useContext(UserAuthContext);
+  // Context
+  const authContext = useContext(UserAuthContext) as AuthContextType | null;
   const user = authContext?.user ?? null;
   const isAuthenticated = !!user;
   const logout = authContext?.logout ?? (() => router.push('/signin'));
 
-  const navItems = [
+  const navItems: NavItem[] = [
     {
       label: 'Loans',
       type: 'dropdown',
@@ -97,11 +122,12 @@ export default function NavBar() {
 
   // Handle Outside Clicks
   useEffect(() => {
-    const handleOutsideClick = (event) => {
-      if (hoverOpen && dropdownRefs.current[hoverOpen] && !dropdownRefs.current[hoverOpen].contains(event.target)) {
+    const handleOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (hoverOpen && dropdownRefs.current[hoverOpen] && !dropdownRefs.current[hoverOpen]?.contains(target)) {
         setHoverOpen(null);
       }
-      if (showUserMenu && userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+      if (showUserMenu && userMenuRef.current && !userMenuRef.current.contains(target)) {
         setShowUserMenu(false);
       }
     };
@@ -125,13 +151,11 @@ export default function NavBar() {
     setIsMobileMenuOpen(false);
   };
 
-  const toggleMobileAccordion = (label) => {
+  const toggleMobileAccordion = (label: string) => {
     setMobileExpanded(mobileExpanded === label ? null : label);
-    // Optional: Reset nested state if you want collapsing parent to collapse children too
-    // setMobileNestedExpanded(null); 
   };
 
-  const toggleMobileNestedAccordion = (label) => {
+  const toggleMobileNestedAccordion = (label: string) => {
     setMobileNestedExpanded(mobileNestedExpanded === label ? null : label);
   };
 
@@ -150,8 +174,9 @@ export default function NavBar() {
                 alt="Loanzaar"
                 className="h-8 md:h-9 w-auto object-contain"
                 onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = 'https://placehold.co/160x40/f8fafc/0ea5e9?text=Loanzaar&font=sans';
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = 'https://placehold.co/160x40/f8fafc/0ea5e9?text=Loanzaar&font=sans';
                 }}
               />
             </Link>
@@ -159,9 +184,9 @@ export default function NavBar() {
             {/* Desktop Nav */}
             <nav className="hidden lg:flex items-center space-x-8">
               {navItems.map((item) => (
-                <div key={item.label} className="relative" ref={(el) => (dropdownRefs.current[item.label] = el)}>
+                <div key={item.label} className="relative" ref={(el) => { dropdownRefs.current[item.label] = el; }}>
                   {item.type === 'link' ? (
-                    <Link href={item.link} className="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors py-2">
+                    <Link href={item.link!} className="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors py-2">
                       {item.label}
                     </Link>
                   ) : (
@@ -176,7 +201,7 @@ export default function NavBar() {
                       </button>
                       
                       {/* Main Dropdown */}
-                      {hoverOpen === item.label && (
+                      {hoverOpen === item.label && item.children && (
                         <div className="absolute left-0 top-full mt-0 w-64 rounded-xl bg-white shadow-xl border border-slate-100 p-2 z-50">
                           {item.children.map((child) => (
                             <div key={child.label}>
@@ -191,7 +216,7 @@ export default function NavBar() {
                                     {child.children.map((subChild) => (
                                       <Link 
                                         key={subChild.label} 
-                                        href={subChild.link} 
+                                        href={subChild.link!} 
                                         className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors"
                                       >
                                         {subChild.label}
@@ -200,7 +225,7 @@ export default function NavBar() {
                                   </div>
                                 </div>
                               ) : (
-                                <Link href={child.link} className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors">
+                                <Link href={child.link!} className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors">
                                   {child.label}
                                 </Link>
                               )}
@@ -296,7 +321,7 @@ export default function NavBar() {
               <div key={item.label} className="border-b border-slate-100 last:border-0">
                 {item.type === 'link' ? (
                   <Link 
-                    href={item.link} 
+                    href={item.link!} 
                     className="flex items-center justify-between py-4 text-slate-800 font-semibold active:text-blue-600"
                   >
                     {item.label}
@@ -318,7 +343,7 @@ export default function NavBar() {
                       style={{ maxHeight: mobileExpanded === item.label ? '1000px' : '0px' }}
                     >
                       <div className="pl-4 pb-4 space-y-1">
-                        {item.children.map((child) => (
+                        {item.children?.map((child) => (
                           <div key={child.label}>
                             {child.children ? (
                                 /* Level 2 Accordion (Nested) */
@@ -339,7 +364,7 @@ export default function NavBar() {
                                       {child.children.map((subChild) => (
                                         <Link 
                                           key={subChild.label} 
-                                          href={subChild.link} 
+                                          href={subChild.link!} 
                                           className="block py-3 px-4 text-sm text-slate-500 hover:text-blue-600"
                                         >
                                           {subChild.label}
@@ -350,7 +375,7 @@ export default function NavBar() {
                             ) : (
                                 /* Standard Child Link */
                                 <Link 
-                                  href={child.link} 
+                                  href={child.link!} 
                                   className="block py-3 px-4 rounded-lg text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50"
                                 >
                                   {child.label}

@@ -5,10 +5,49 @@ import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState } f
 const SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
 const SCRIPT_ID = 'cf-turnstile-script';
 
+// --- Types ---
+
+interface TurnstileOptions {
+  sitekey: string;
+  theme?: 'light' | 'dark' | 'auto';
+  callback?: (token: string) => void;
+  'expired-callback'?: () => void;
+  'error-callback'?: (error: any) => void;
+  'before-interactive-callback'?: () => void;
+  action?: string;
+  cData?: string;
+}
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: string | HTMLElement, options: TurnstileOptions) => string;
+      reset: (widgetId: string) => void;
+      remove: (widgetId: string) => void;
+      getResponse: (widgetId: string) => string | undefined;
+    };
+  }
+}
+
+export interface TurnstileRef {
+  reset: () => void;
+  getResponse: () => string | undefined | null;
+}
+
+export interface TurnstileProps extends React.HTMLAttributes<HTMLDivElement> {
+  sitekey?: string;
+  onVerify?: (token: string) => void;
+  onExpired?: () => void;
+  onLoad?: () => void;
+  onError?: (error?: any) => void;
+  onBeforeInteractive?: () => void;
+  theme?: 'light' | 'dark' | 'auto';
+}
+
 /**
  * Global script loader to ensure the script is injected only once.
  */
-function injectScript(onLoad, onError) {
+function injectScript(onLoad: () => void, onError: (err: any) => void) {
   if (typeof window === 'undefined') return;
 
   // 1. If turnstile is already ready, callback immediately
@@ -18,12 +57,10 @@ function injectScript(onLoad, onError) {
   }
 
   // 2. If script is already in DOM, listen for the load event
-  let script = document.getElementById(SCRIPT_ID);
+  let script = document.getElementById(SCRIPT_ID) as HTMLScriptElement;
   
   if (script) {
     // If script exists but isn't loaded yet, we need to poll or wait.
-    // Cloudflare api.js doesn't expose a standard promise, so polling is safer here
-    // if we missed the onload event.
     const interval = setInterval(() => {
       if (window.turnstile) {
         clearInterval(interval);
@@ -59,7 +96,7 @@ function injectScript(onLoad, onError) {
   document.head.appendChild(script);
 }
 
-const Turnstile = forwardRef((props, ref) => {
+const Turnstile = forwardRef<TurnstileRef, TurnstileProps>((props, ref) => {
   const { 
     sitekey, 
     onVerify, 
@@ -74,8 +111,8 @@ const Turnstile = forwardRef((props, ref) => {
   // Support both env variants for backwards compatibility and standardize on NEXT_PUBLIC_TURNSTILE_SITE_KEY
   const finalSiteKey = sitekey || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || process.env.NEXT_PUBLIC_TURNSTILE_SITEKEY || '';
 
-  const containerRef = useRef(null);
-  const widgetIdRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const widgetIdRef = useRef<string | null>(null);
   const [failed, setFailed] = useState(false);
   
   // Keep refs to callbacks to avoid resetting widget when functions are recreated
@@ -103,9 +140,9 @@ const Turnstile = forwardRef((props, ref) => {
         const id = window.turnstile.render(containerRef.current, {
           sitekey: finalSiteKey,
           theme,
-          callback: (token) => callbacksRef.current.onVerify?.(token),
+          callback: (token: string) => callbacksRef.current.onVerify?.(token),
           'expired-callback': () => callbacksRef.current.onExpired?.(),
-          'error-callback': (err) => {
+          'error-callback': (err: any) => {
             setFailed(true);
             callbacksRef.current.onError?.(err);
           },
@@ -141,7 +178,7 @@ const Turnstile = forwardRef((props, ref) => {
         widgetIdRef.current = null;
       }
     };
-  }, [sitekey, theme]); // Only re-run if sitekey or theme changes
+  }, [sitekey, finalSiteKey, theme]); // Only re-run if sitekey or theme changes
 
   useImperativeHandle(ref, () => ({
     reset() {

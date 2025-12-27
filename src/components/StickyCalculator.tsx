@@ -1,14 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Calculator } from 'lucide-react'
 import useSticky from '@/hooks/useSticky'
 
+// If EMICalculatorModal has specific props, you can define them here for better type safety with dynamic
+// However, typically Next.js dynamic imports infer types from the component file itself.
 const EMICalculatorModal = dynamic(() => import('@/components/EMICalculatorModal'), { ssr: false })
 
 export default function StickyCalculator() {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState<boolean>(false)
   const { isVisible } = useSticky({ triggerAfter: 300, bottomOffset: 160 })
 
   return (
@@ -33,6 +35,7 @@ export default function StickyCalculator() {
       {/* Mobile FAB removed: the floating circular button is hidden on small screens per request */}
 
       {/* Modal */}
+      {/* @ts-ignore - Dynamic import types can sometimes be tricky without the component definition */}
       <EMICalculatorModal open={open} onClose={() => setOpen(false)} />
     </>
   )

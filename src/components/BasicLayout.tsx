@@ -2,7 +2,11 @@
 
 import React from 'react';
 
-export default function BasicLayout({ children }) {
+interface BasicLayoutProps {
+  children: React.ReactNode;
+}
+
+export default function BasicLayout({ children }: BasicLayoutProps) {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200">

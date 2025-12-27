@@ -1,19 +1,39 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { X, ChevronLeft } from 'lucide-react'
 import useEMICalculator from '@/hooks/useEMICalculator'
 import { formatINR, formatINRCurrency } from '@/utils/emiCalculations'
 
-export default function EMICalculatorModal({ open, onClose }) {
-  const amountRef = useRef(null)
-  const { formValues, setters, results, tenureInMonths } = useEMICalculator()
+interface EMICalculatorModalProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+interface TenureLimit {
+  years: number;
+  months: number;
+}
+
+interface TenureLimits {
+  [key: string]: TenureLimit;
+}
+
+interface ResultRowProps {
+  label: string;
+  color: string;
+  value: string;
+}
+
+export default function EMICalculatorModal({ open, onClose }: EMICalculatorModalProps) {
+  const amountRef = useRef<HTMLInputElement>(null)
+  const { formValues, setters, results } = useEMICalculator()
   const { tab, principal, rate, tenure, tenureUnit } = formValues
   const { setTab, setPrincipal, setRate, setTenure, setTenureUnit } = setters
 
   useEffect(() => {
     if (!open) return
-    const onKey = (e) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose?.()
     }
     window.addEventListener('keydown', onKey)
@@ -27,11 +47,7 @@ export default function EMICalculatorModal({ open, onClose }) {
   const LoanLabel = tab === 'home' ? 'Home Loan' : tab === 'personal' ? 'Personal Loan' : 'Business Loan'
 
   // Max tenure by product type (India, typical lender limits)
-  // Sources (retrieved Oct 31, 2025):
-  // - Home loan up to 30 years: https://www.bankbazaar.com/home-loan.html
-  // - Personal loan up to 7 years: https://www.bankbazaar.com/personal-loan.html (mentions up to 7 years)
-  // - Business loan typically up to 5 years (unsecured): https://www.bankbazaar.com/business-loan.html
-  const tenureLimits = {
+  const tenureLimits: TenureLimits = {
     home: { years: 30, months: 360 },
     personal: { years: 7, months: 84 },
     business: { years: 5, months: 60 },
@@ -39,14 +55,14 @@ export default function EMICalculatorModal({ open, onClose }) {
   const currentMax = tenureLimits[tab] || tenureLimits.home
   const maxForUnit = tenureUnit === 'years' ? currentMax.years : currentMax.months
 
-  const handleChangeTab = (nextTab) => {
+  const handleChangeTab = (nextTab: string) => {
     const limits = tenureLimits[nextTab]
     const nextMax = tenureUnit === 'years' ? limits.years : limits.months
     if (tenure > nextMax) setTenure(nextMax)
     setTab(nextTab)
   }
 
-  const handleChangeUnit = (unit) => {
+  const handleChangeUnit = (unit: 'years' | 'months') => {
     if (unit === tenureUnit) return
     const toYears = unit === 'years'
     const converted = toYears ? Math.max(1, Math.round(tenure / 12)) : Math.max(1, Math.round(tenure * 12))
@@ -68,7 +84,7 @@ export default function EMICalculatorModal({ open, onClose }) {
   return (
     <div role="dialog" aria-label="EMI Calculator Dialog" aria-modal="true">
       {overlay}
-  <div className="fixed right-0 top-0 h-screen w-full sm:w-[450px] max-w-full bg-white shadow-2xl z-50 animate-slideInFromRight overflow-y-auto">
+      <div className="fixed right-0 top-0 h-screen w-full sm:w-[450px] max-w-full bg-white shadow-2xl z-50 animate-slideInFromRight overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5 border-b bg-white">
           <button onClick={onClose} aria-label="Close calculator" className="flex items-center gap-2 text-slate-600 hover:text-slate-800">
@@ -210,7 +226,7 @@ export default function EMICalculatorModal({ open, onClose }) {
   )
 }
 
-function ResultRow({ label, color, value }) {
+function ResultRow({ label, color, value }: ResultRowProps) {
   return (
     <div className="flex items-center justify-between py-2 border-b border-slate-200 last:border-b-0">
       <div className="flex items-center gap-2 text-slate-700">

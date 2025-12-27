@@ -3,7 +3,15 @@
 import React, { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
-export default function Meta({ title = 'Loanzaar', description = 'Loanzaar - Loans & Insurance simplified' }) {
+interface MetaProps {
+  title?: string;
+  description?: string;
+}
+
+export default function Meta({ 
+  title = 'Loanzaar', 
+  description = 'Loanzaar - Loans & Insurance simplified' 
+}: MetaProps) {
   const pathname = usePathname();
 
   useEffect(() => {
@@ -11,7 +19,7 @@ export default function Meta({ title = 'Loanzaar', description = 'Loanzaar - Loa
     document.title = title;
     
     // Force update of meta description tag
-    let metaDescription = document.querySelector('meta[name="description"]');
+    let metaDescription = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
     if (!metaDescription) {
       metaDescription = document.createElement('meta');
       metaDescription.name = 'description';
@@ -20,7 +28,7 @@ export default function Meta({ title = 'Loanzaar', description = 'Loanzaar - Loa
     metaDescription.content = description;
     
     // Also update Open Graph tags for social sharing
-    let ogTitle = document.querySelector('meta[property="og:title"]');
+    let ogTitle = document.querySelector('meta[property="og:title"]') as HTMLMetaElement | null;
     if (!ogTitle) {
       ogTitle = document.createElement('meta');
       ogTitle.setAttribute('property', 'og:title');
@@ -28,7 +36,7 @@ export default function Meta({ title = 'Loanzaar', description = 'Loanzaar - Loa
     }
     ogTitle.content = title;
     
-    let ogDescription = document.querySelector('meta[property="og:description"]');
+    let ogDescription = document.querySelector('meta[property="og:description"]') as HTMLMetaElement | null;
     if (!ogDescription) {
       ogDescription = document.createElement('meta');
       ogDescription.setAttribute('property', 'og:description');

@@ -6,26 +6,38 @@ import {
   Facebook, Twitter, Linkedin, Instagram, 
   Mail, Phone, MapPin, ChevronDown, Send, ShieldCheck
 } from 'lucide-react';
-import Container from './Container'
+import Container from './Container';
+
+interface AccordionProps {
+  title: string;
+  id: keyof OpenSectionsState;
+  children: React.ReactNode;
+}
+
+interface OpenSectionsState {
+  products: boolean;
+  company: boolean;
+  contact: boolean;
+}
 
 export default function Footer() {
-  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterEmail, setNewsletterEmail] = useState<string>('');
   
   // State for mobile accordion sections
-  const [openSections, setOpenSections] = useState({
+  const [openSections, setOpenSections] = useState<OpenSectionsState>({
     products: false,
     company: false,
     contact: false
   });
 
-  const toggleSection = (section) => {
+  const toggleSection = (section: keyof OpenSectionsState) => {
     setOpenSections(prev => ({
       ...prev,
       [section]: !prev[section]
     }));
   };
 
-  const handleNewsletterSubmit = (e) => {
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setNewsletterEmail('');
     // In a real app, you would handle the submission logic here
@@ -33,7 +45,7 @@ export default function Footer() {
   };
 
   // Reusable Accordion Section Component
-  const FooterAccordion = ({ title, id, children }) => {
+  const FooterAccordion: React.FC<AccordionProps> = ({ title, id, children }) => {
     const isOpen = openSections[id];
     
     return (

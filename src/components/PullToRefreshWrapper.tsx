@@ -2,15 +2,26 @@
 
 import React, { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
+// @ts-ignore - react-simple-pull-to-refresh may not have type definitions available
 import PullToRefresh from 'react-simple-pull-to-refresh'
 import { motion, AnimatePresence } from 'framer-motion'
 import { RefreshCw } from 'lucide-react'
 
-export default function PullToRefreshWrapper({ children, pullThreshold = 60, onRefresh }) {
-  const router = useRouter()
-  const [refreshing, setRefreshing] = useState(false)
+interface PullToRefreshWrapperProps {
+  children: React.ReactNode
+  pullThreshold?: number
+  onRefresh?: () => Promise<void> | void
+}
 
-  const handleRefresh = useCallback(async () => {
+export default function PullToRefreshWrapper({ 
+  children, 
+  pullThreshold = 60, 
+  onRefresh 
+}: PullToRefreshWrapperProps) {
+  const router = useRouter()
+  const [refreshing, setRefreshing] = useState<boolean>(false)
+
+  const handleRefresh = useCallback(async (): Promise<boolean> => {
     setRefreshing(true)
     try {
       if (typeof onRefresh === 'function') {
