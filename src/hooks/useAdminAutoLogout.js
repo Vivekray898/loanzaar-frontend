@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '../config/supabase';
 import { useRouter } from 'next/navigation';
-import { useAdminAuth } from '../context/AdminAuthContext';
+import { useUserAuth } from '../context/UserAuthContext';
 
 /**
  * useAdminAutoLogout Hook - Token-Based Session Management for Admins with Supabase
@@ -25,7 +25,7 @@ export default function useAdminAutoLogout(options = {}) {
   } = options;
 
   const router = useRouter();
-  const { admin, logout: contextLogout } = useAdminAuth();
+  const { user, role, logout: contextLogout } = useUserAuth();
   
   const logoutTimerRef = useRef(null);
   const isLoggingOutRef = useRef(false);
@@ -34,8 +34,8 @@ export default function useAdminAutoLogout(options = {}) {
   // We'll schedule based on token expiration
 
   useEffect(() => {
-    // No admin logged in - clear timer and do nothing
-    if (!admin) {
+      // Only act for logged-in admins
+    if (!user || role !== 'admin') {
       currentAdminRef.current = null;
       if (logoutTimerRef.current) {
         clearTimeout(logoutTimerRef.current);
@@ -44,7 +44,7 @@ export default function useAdminAutoLogout(options = {}) {
       return;
     }
 
-    const adminId = admin.id || admin.email || admin.username;
+    const adminId = user.uid || user.email;
     if (!currentAdminRef.current || currentAdminRef.current !== adminId) {
       currentAdminRef.current = adminId;
       
@@ -62,7 +62,7 @@ export default function useAdminAutoLogout(options = {}) {
         const msUntilExp = expMs - now;
         const scheduleMs = msUntilExp > 0 ? msUntilExp : 0;
         
-        console.log(`✅ Admin session started for ${admin.email || admin.username} (Supabase)`);
+        console.log(`✅ Admin session started for ${user.email} (Supabase)`);
         console.log(`⏱️ Auto-logout scheduled in ${(scheduleMs / 60000).toFixed(2)} min (token expiration)`);
         
         logoutTimerRef.current = setTimeout(async () => {

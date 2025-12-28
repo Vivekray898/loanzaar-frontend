@@ -151,10 +151,18 @@ export default function Footer() {
           {/* Accordion Columns */}
           <FooterAccordion title="Products" id="products">
             <ul className="space-y-3">
-              {['Personal Loan', 'Home Loan', 'Business Loan', 'Credit Cards', 'Loan Against Property', 'Mutual Funds', 'Fixed Deposits'].map((item) => (
-                <li key={item}>
-                  <Link href={`/${item.toLowerCase().replace(/ /g, '-')}`} className="block text-slate-400 hover:text-blue-400 hover:translate-x-1 transition-all">
-                    {item}
+              {[
+                { label: 'Personal Loan', link: '/loans/personal-loan' },
+                { label: 'Home Loan', link: '/loans/home-loan' },
+                { label: 'Business Loan', link: '/loans/business-loan' },
+                { label: 'Credit Cards', link: '/credit-card' },
+                { label: 'Loan Against Property', link: '/loans/loan-against-property' },
+                { label: 'Gold Loan', link: '/loans/gold-loan' },
+                { label: 'Education Loan', link: '/loans/education-loan' }
+              ].map((item) => (
+                <li key={item.label}>
+                  <Link href={item.link} className="block text-slate-400 hover:text-blue-400 hover:translate-x-1 transition-all">
+                    {item.label}
                   </Link>
                 </li>
               ))}
@@ -164,21 +172,13 @@ export default function Footer() {
           <FooterAccordion title="Company" id="company">
             <ul className="space-y-3">
               {[
-                { label: 'About Us', link: '/about-us' },
-                { label: 'Careers', link: '/careers', badge: 'Hiring' },
-                { label: 'Partner with Us', link: '/partner' },
-                { label: 'Blog', link: '/blog' },
-                { label: 'Privacy Policy', link: '/privacy-policy' },
-                { label: 'Terms of Use', link: '/terms' },
+                { label: 'Apply', link: '/apply' },
+                { label: 'Contact Us', link: '/contact-us' },
+                { label: 'Privacy Policy', link: '/privacy-policy' }
               ].map((item) => (
                 <li key={item.label}>
                   <Link href={item.link} className="flex items-center gap-2 text-slate-400 hover:text-blue-400 hover:translate-x-1 transition-all">
                     {item.label}
-                    {item.badge && (
-                      <span className="text-[9px] font-bold bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20">
-                        {item.badge}
-                      </span>
-                    )}
                   </Link>
                 </li>
               ))}

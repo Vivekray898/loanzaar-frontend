@@ -1,77 +1,55 @@
 'use client'
 
-import { useUserAuth } from './UserAuthContext'
 import { supabase } from '../config/supabase'
 
-/**
- * Thin admin helper that consumes the shared UserAuthContext.
- * It does NOT register auth listeners. Role/user are read from UserAuthContext.
- */
-export function useAdminAuth() {
-  const { user, role } = useUserAuth()
+// Admin helpers (no React hook compatibility export)
+export async function adminLogin(email, password) {
+  return supabase.auth.signInWithPassword({ email, password })
+}
 
-  const isAdmin = role === 'admin'
+export async function adminSignup(email, password, fullName, phone, role = 'admin') {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: fullName } }
+  })
+  if (error) return { success: false, error }
 
-  const login = async (email, password) => {
-    return supabase.auth.signInWithPassword({ email, password })
-  }
-
-  const signup = async (email, password, fullName, phone, role = 'admin') => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } }
-    })
-    if (error) return { success: false, error }
-
-    // insert profile
-    const profile = {
-      user_id: data?.user?.id,
-      full_name: fullName,
-      email,
-      phone,
-      role,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-    const { error: insertErr } = await supabase.from('profiles').insert([profile])
-    if (insertErr) return { success: false, error: insertErr }
-    return { success: true, uid: data.user.id }
-  }
-
-  const logout = async () => {
-    await supabase.auth.signOut()
-  }
-
-  const getAdminToken = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      return session?.access_token || null
-    } catch (e) {
-      return null
-    }
-  }
-
-  const updateAdminProfile = async (newAdminData) => {
-    if (!user) return { success: false, error: 'Not authenticated' }
-    try {
-      const updatedData = { ...newAdminData, updated_at: new Date().toISOString() }
-      const { error } = await supabase.from('profiles').update(updatedData).eq('user_id', user.uid)
-      if (error) throw error
-      return { success: true }
-    } catch (e) {
-      return { success: false, error: e.message }
-    }
-  }
-
-  return {
-    isAdmin,
-    user,
+  const profile = {
+    user_id: data?.user?.id,
+    full_name: fullName,
+    email,
+    phone,
     role,
-    login,
-    signup,
-    logout,
-    getAdminToken,
-    updateAdminProfile
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+  const { error: insertErr } = await supabase.from('profiles').insert([profile])
+  if (insertErr) return { success: false, error: insertErr }
+  return { success: true, uid: data.user.id }
+}
+
+export async function adminLogout() {
+  await supabase.auth.signOut()
+}
+
+export async function getAdminToken() {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    return session?.access_token || null
+  } catch (e) {
+    return null
+  }
+}
+
+export async function updateAdminProfile(userId, newAdminData) {
+  if (!userId) return { success: false, error: 'No user id' }
+  try {
+    const updatedData = { ...newAdminData, updated_at: new Date().toISOString() }
+    const { error } = await supabase.from('profiles').update(updatedData).eq('user_id', userId)
+    if (error) throw error
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e.message }
   }
 }
