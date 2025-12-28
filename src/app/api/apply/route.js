@@ -29,7 +29,9 @@ export async function POST(req) {
       const verifyJson = await verifyRes.json();
       if (!verifyJson.success) {
         console.error('Turnstile verification failed:', verifyJson);
-        return new Response(JSON.stringify({ error: 'Captcha verification failed' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        // Include verification details in response when not in production to aid debugging
+        const body = process.env.NODE_ENV === 'production' ? { error: 'Captcha verification failed' } : { error: 'Captcha verification failed', verify: verifyJson };
+        return new Response(JSON.stringify(body), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
     }
 

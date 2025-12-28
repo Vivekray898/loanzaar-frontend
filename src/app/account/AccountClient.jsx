@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { 
-  User, Settings, BookOpen, Shield, ChevronRight, 
+  User, Settings, BookOpen, Shield, Briefcase, ChevronRight, 
   Clock, LogOut, LogIn, Mail, LifeBuoy
 } from 'lucide-react'
 import { useUserAuth } from '@/context/UserAuthContext'
@@ -16,6 +16,7 @@ export default function AccountMenu() {
   const [showSignIn, setShowSignIn] = useState(false)
   // null = unknown, true/false after check
   const [isAdmin, setIsAdmin] = useState(null)
+  const [isAgent, setIsAgent] = useState(null)
 
   useEffect(() => {
     if (isAuthenticated) setShowSignIn(false)
@@ -25,15 +26,17 @@ export default function AccountMenu() {
   useEffect(() => {
     // Reset to unknown on auth/user change
     setIsAdmin(null)
+    setIsAgent(null)
 
     if (!isAuthenticated || !user?.uid) {
-      // Explicitly mark as non-admin when not authenticated
+      // Explicitly mark as non-admin/agent when not authenticated
       setIsAdmin(false)
+      setIsAgent(false)
       return
     }
 
     let mounted = true
-    const checkAdmin = async () => {
+    const checkRole = async () => {
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -47,13 +50,17 @@ export default function AccountMenu() {
 
         if (!mounted) return
         setIsAdmin(Boolean(data?.role === 'admin'))
+        setIsAgent(Boolean(data?.role === 'agent'))
       } catch (e) {
-        console.error('Unexpected error checking admin role', e)
-        if (mounted) setIsAdmin(false)
+        console.error('Unexpected error checking role', e)
+        if (mounted) {
+          setIsAdmin(false)
+          setIsAgent(false)
+        }
       }
     }
 
-    checkAdmin()
+    checkRole()
     return () => { mounted = false }
   }, [isAuthenticated, user])
 
@@ -174,6 +181,20 @@ export default function AccountMenu() {
                     subtitle="App settings & Security"
                   />
 
+                  {/* Agent Panel - visible only to agents */}
+                  {isAgent && (
+                    <>
+                      <div className="h-px bg-slate-50 mx-4" />
+                      <MenuLink 
+                        href="/agent" 
+                        icon={Briefcase} 
+                        color="text-pink-600 bg-pink-50" 
+                        title="Agent Panel" 
+                        subtitle="Manage assigned applications"
+                      />
+                    </>
+                  )}
+
                   {/* Admin Panel - visible only to admins */}
                   {isAdmin && (
                     <>
@@ -256,7 +277,7 @@ function MenuLink({ href, icon: Icon, color, title, subtitle }) {
       {/* Chevron */}
       <div className="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 group-hover:text-slate-600 group-hover:bg-white group-hover:shadow-sm transition-all">
         <ChevronRight className="w-5 h-5" />
-              <BottomNav />
+        <BottomNav />
       </div>
     </Link>
   )

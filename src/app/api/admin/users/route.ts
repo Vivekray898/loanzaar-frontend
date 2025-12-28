@@ -66,7 +66,7 @@ export async function PUT(request: Request) {
     const body = await request.json()
     const { user_id, role } = body
 
-    if (!user_id || !role || !['user','admin'].includes(role)) {
+    if (!user_id || !role || !['user','agent','admin'].includes(role)) {
       return NextResponse.json({ success: false, error: 'Invalid payload' }, { status: 400 })
     }
 

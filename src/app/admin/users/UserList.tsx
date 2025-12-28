@@ -16,7 +16,7 @@ interface UserData {
   photo_url?: string;
   created_at: string;
   updated_at: string;
-  role?: 'user' | 'admin';
+  role?: 'user' | 'agent' | 'admin';
 }
 
 export default function UserList({ initialUsers }: { initialUsers: UserData[] }) {
@@ -24,7 +24,7 @@ export default function UserList({ initialUsers }: { initialUsers: UserData[] })
   const [users, setUsers] = useState<UserData[]>(initialUsers);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
-  const handleChangeRole = async (targetUser: UserData, newRole: 'user' | 'admin') => {
+  const handleChangeRole = async (targetUser: UserData, newRole: 'user' | 'agent' | 'admin') => {
     if (targetUser.role === newRole) return;
     if (!confirm(`Change role of ${targetUser.full_name || targetUser.email} to ${newRole}?`)) return;
 
@@ -145,7 +145,7 @@ export default function UserList({ initialUsers }: { initialUsers: UserData[] })
    SUB-COMPONENTS
    ========================================================================= */
 
-function MobileUserCard({ user, onChangeRole, busy }: { user: UserData, onChangeRole: (u: UserData, role: 'user'|'admin') => Promise<void>, busy?: boolean }) {
+function MobileUserCard({ user, onChangeRole, busy }: { user: UserData, onChangeRole: (u: UserData, role: 'user'|'agent'|'admin') => Promise<void>, busy?: boolean }) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-4">
@@ -185,7 +185,7 @@ function MobileUserCard({ user, onChangeRole, busy }: { user: UserData, onChange
   );
 }
 
-function DesktopUserRow({ user, onChangeRole, busy }: { user: UserData, onChangeRole: (u: UserData, role: 'user'|'admin') => Promise<void>, busy?: boolean }) {
+function DesktopUserRow({ user, onChangeRole, busy }: { user: UserData, onChangeRole: (u: UserData, role: 'user'|'agent'|'admin') => Promise<void>, busy?: boolean }) {
   return (
     <tr className="hover:bg-slate-50/80 transition-colors group">
       {/* Profile */}
@@ -287,10 +287,10 @@ function InfoItem({ icon, text }: { icon: React.ReactNode, text?: string }) {
   );
 }
 
-function RoleSelector({ user, onChange, busy }: { user: UserData, onChange: (u: UserData, role: 'user'|'admin') => Promise<void>, busy?: boolean }) {
+function RoleSelector({ user, onChange, busy }: { user: UserData, onChange: (u: UserData, role: 'user'|'agent'|'admin') => Promise<void>, busy?: boolean }) {
   const [loading, setLoading] = useState(false);
 
-  const handleChange = async (newRole: 'user'|'admin') => {
+  const handleChange = async (newRole: 'user'|'agent'|'admin') => {
     if (user.role === newRole) return;
     setLoading(true);
     try {
@@ -304,11 +304,12 @@ function RoleSelector({ user, onChange, busy }: { user: UserData, onChange: (u: 
     <div>
       <select
         value={user.role || 'user'}
-        onChange={(e) => handleChange(e.target.value as 'user' | 'admin')}
+        onChange={(e) => handleChange(e.target.value as 'user' | 'agent' | 'admin')}
         disabled={loading || busy}
         className="text-sm rounded-md border border-slate-200 px-2 py-1 bg-white"
       >
         <option value="user">User</option>
+        <option value="agent">Agent</option>
         <option value="admin">Admin</option>
       </select>
     </div>

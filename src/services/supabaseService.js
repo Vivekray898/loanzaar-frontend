@@ -74,7 +74,14 @@ export const submitToFirestore = async (type, formData, status = 'pending') => {
         body: JSON.stringify(payload),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Submission failed');
+      if (!res.ok) {
+        // Surface Turnstile verify details in dev to help debug mobile failures
+        if (json?.verify) {
+          const info = JSON.stringify(json.verify);
+          throw new Error(json.error + ' — verify: ' + info);
+        }
+        throw new Error(json.error || 'Submission failed');
+      }
       console.log(`✅ ${type} submitted successfully to ${collectionName}:`, json.id);
       return json.id;
     }

@@ -140,10 +140,25 @@ const Turnstile = forwardRef<TurnstileRef, TurnstileProps>((props, ref) => {
         const id = window.turnstile.render(containerRef.current, {
           sitekey: finalSiteKey,
           theme,
-          callback: (token: string) => callbacksRef.current.onVerify?.(token),
+          callback: (token: string) => {
+            // Debug: log token and client context to help diagnose mobile failures
+            try {
+              console.debug('Turnstile verify token:', token, { ua: navigator.userAgent, width: window.innerWidth, height: window.innerHeight });
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('turnstile-event', { detail: { type: 'verify', token: token?.slice(0,8) } }));
+              }
+            } catch (e) {}
+            callbacksRef.current.onVerify?.(token);
+          },
           'expired-callback': () => callbacksRef.current.onExpired?.(),
           'error-callback': (err: any) => {
             setFailed(true);
+            try {
+              console.debug('Turnstile error callback:', err, { ua: navigator.userAgent });
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('turnstile-event', { detail: { type: 'error', error: err } }));
+              }
+            } catch (e) {}
             callbacksRef.current.onError?.(err);
           },
           'before-interactive-callback': () => callbacksRef.current.onBeforeInteractive?.(),

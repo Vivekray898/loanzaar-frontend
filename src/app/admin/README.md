@@ -36,7 +36,7 @@ src/
 
 ## Where role is stored & DB details 💾
 - Role lives in the `profiles` table:
-  - `profiles.role` uses enum `user_role { user, admin }`.
+  - `profiles.role` uses enum `user_role { user, agent, admin }`.
   - File: `prisma/schema.prisma` (see `model profiles` and `enum user_role`).
 
 ---
@@ -61,7 +61,7 @@ src/
 
 3. **Admin API**: `src/app/api/admin/users/route.ts`
    - `GET` lists `profiles` using the **service role** key (bypasses RLS).
-   - `PUT` accepts `{ user_id, role }` and updates `profiles.role` (admin-only). Validates `role` is `'user'` or `'admin'`.
+   - `PUT` accepts `{ user_id, role }` and updates `profiles.role` (admin-only). Validates `role` is `'user'`, `'agent'` or `'admin'`.
 
 4. **Admin UI**:
    - `src/app/admin/users/page.tsx` (server-side) fetches the users list via `fetch(serverUrl('/api/admin/users'))` using `x-internal-secret` for server fetch.

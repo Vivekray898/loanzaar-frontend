@@ -38,7 +38,8 @@ export async function POST(req) {
     const verifyJson = await verifyRes.json();
     if (!verifyJson.success) {
       console.error('Turnstile verification failed:', verifyJson);
-      return new Response(JSON.stringify({ error: 'Turnstile verification failed' }), { 
+      const body = process.env.NODE_ENV === 'production' ? { error: 'Turnstile verification failed' } : { error: 'Turnstile verification failed', verify: verifyJson };
+      return new Response(JSON.stringify(body), { 
         status: 400, 
         headers: { 'Content-Type': 'application/json' } 
       });
