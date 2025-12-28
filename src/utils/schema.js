@@ -102,6 +102,7 @@ export function generateOrganizationSchema() {
 
 /**
  * Generate WebPage schema for specific pages
+ * @param {{ title: string, description: string, url: string, breadcrumbs?: Array<{name: string, url: string}> }} options
  */
 export function generateWebPageSchema({ title, description, url, breadcrumbs = [] }) {
   const schema = {

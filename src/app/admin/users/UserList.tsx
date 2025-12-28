@@ -16,19 +16,59 @@ interface UserData {
   photo_url?: string;
   created_at: string;
   updated_at: string;
+  role?: 'user' | 'admin';
 }
 
 export default function UserList({ initialUsers }: { initialUsers: UserData[] }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [users, setUsers] = useState<UserData[]>(initialUsers);
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+
+  const handleChangeRole = async (targetUser: UserData, newRole: 'user' | 'admin') => {
+    if (targetUser.role === newRole) return;
+    if (!confirm(`Change role of ${targetUser.full_name || targetUser.email} to ${newRole}?`)) return;
+
+    const oldRole = targetUser.role;
+    setUpdatingUserId(targetUser.id);
+
+    try {
+      // optimistic update
+      setUsers(prev => prev.map(u => u.user_id === targetUser.user_id ? { ...u, role: newRole } : u));
+
+      const { data } = await (await import('@/config/supabase')).supabase.auth.getSession();
+      const token = data?.session?.access_token;
+
+      const res = await fetch('/api/admin/users', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ user_id: targetUser.user_id, role: newRole })
+      });
+
+      if (!res.ok) throw new Error('Server error');
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Failed');
+
+      // update from server result
+      setUsers(prev => prev.map(u => u.user_id === targetUser.user_id ? { ...u, role: json.data.role } : u));
+    } catch (e) {
+      alert('Failed to change role. ' + (e as Error).message);
+      setUsers(prev => prev.map(u => u.user_id === targetUser.user_id ? { ...u, role: oldRole } : u));
+    } finally {
+      setUpdatingUserId(null);
+    }
+  };
 
   // Client-side filtering
   const filteredUsers = useMemo(() => {
-    return initialUsers.filter(user => 
+    return users.filter(user => 
       user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.phone?.includes(searchTerm)
     );
-  }, [initialUsers, searchTerm]);
+  }, [users, searchTerm]);
 
   // Empty State
   if (initialUsers.length === 0) {
@@ -72,7 +112,7 @@ export default function UserList({ initialUsers }: { initialUsers: UserData[] })
           {/* --- MOBILE VIEW: Grid of Cards (< 768px) --- */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
             {filteredUsers.map((user) => (
-              <MobileUserCard key={user.id} user={user} />
+              <MobileUserCard key={user.id} user={user} onChangeRole={handleChangeRole} busy={updatingUserId === user.id} />
             ))}
           </div>
 
@@ -90,7 +130,7 @@ export default function UserList({ initialUsers }: { initialUsers: UserData[] })
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredUsers.map((user) => (
-                  <DesktopUserRow key={user.id} user={user} />
+                  <DesktopUserRow key={user.id} user={user} onChangeRole={handleChangeRole} busy={updatingUserId === user.id} />
                 ))}
               </tbody>
             </table>
@@ -105,7 +145,7 @@ export default function UserList({ initialUsers }: { initialUsers: UserData[] })
    SUB-COMPONENTS
    ========================================================================= */
 
-function MobileUserCard({ user }: { user: UserData }) {
+function MobileUserCard({ user, onChangeRole, busy }: { user: UserData, onChangeRole: (u: UserData, role: 'user'|'admin') => Promise<void>, busy?: boolean }) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-4">
@@ -118,9 +158,12 @@ function MobileUserCard({ user }: { user: UserData }) {
             </span>
           </div>
         </div>
-        <button className="text-slate-400 p-1 hover:bg-slate-50 rounded">
-          <MoreHorizontal size={20} />
-        </button>
+        <div className="flex items-center gap-2">
+          <RoleSelector user={user} onChange={onChangeRole} busy={busy} />
+          <button className="text-slate-400 p-1 hover:bg-slate-50 rounded">
+            <MoreHorizontal size={20} />
+          </button>
+        </div>
       </div>
 
       <div className="space-y-2 mb-4">
@@ -142,7 +185,7 @@ function MobileUserCard({ user }: { user: UserData }) {
   );
 }
 
-function DesktopUserRow({ user }: { user: UserData }) {
+function DesktopUserRow({ user, onChangeRole, busy }: { user: UserData, onChangeRole: (u: UserData, role: 'user'|'admin') => Promise<void>, busy?: boolean }) {
   return (
     <tr className="hover:bg-slate-50/80 transition-colors group">
       {/* Profile */}
@@ -202,6 +245,7 @@ function DesktopUserRow({ user }: { user: UserData }) {
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-100">
                 Active
             </span>
+            <RoleSelector user={user} onChange={onChangeRole} busy={busy} />
             <button className="p-2 hover:bg-white hover:shadow-sm rounded-lg border border-transparent hover:border-slate-200 text-slate-400 hover:text-blue-600 transition-all">
                 <MoreHorizontal size={16} />
             </button>
@@ -239,6 +283,34 @@ function InfoItem({ icon, text }: { icon: React.ReactNode, text?: string }) {
     <div className="flex items-start gap-2 text-sm text-slate-600">
       <span className="mt-0.5 text-slate-400 shrink-0">{icon}</span>
       <span className="truncate w-full">{text}</span>
+    </div>
+  );
+}
+
+function RoleSelector({ user, onChange, busy }: { user: UserData, onChange: (u: UserData, role: 'user'|'admin') => Promise<void>, busy?: boolean }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = async (newRole: 'user'|'admin') => {
+    if (user.role === newRole) return;
+    setLoading(true);
+    try {
+      await onChange(user, newRole);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div>
+      <select
+        value={user.role || 'user'}
+        onChange={(e) => handleChange(e.target.value as 'user' | 'admin')}
+        disabled={loading || busy}
+        className="text-sm rounded-md border border-slate-200 px-2 py-1 bg-white"
+      >
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
     </div>
   );
 }

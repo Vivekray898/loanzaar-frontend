@@ -67,22 +67,57 @@ export const UserAuthProvider = ({ children }) => {
         photoURL: supaUser.user_metadata?.avatar_url ?? null
       })
 
-      // Query profile once to determine role
+      // Query profile once to determine role and create if missing
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('role')
+          .select('*')
           .eq('user_id', supaUser.id)
           .single()
 
-        if (error && error.code !== 'PGRST116') throw error
+        // If profile missing, create a minimal profile using available metadata
+        if (error && error.code === 'PGRST116') {
+          const newProfile = {
+            user_id: supaUser.id,
+            full_name: supaUser.user_metadata?.full_name || (supaUser.email ? supaUser.email.split('@')[0] : null),
+            email: supaUser.email || null,
+            phone: supaUser.user_metadata?.phone || null,
+            role: 'user',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
 
-        const resolved = data?.role === 'admin' ? 'admin' : 'user'
-        setRole(resolved)
+          try {
+            const { data: created, error: createErr } = await supabase
+              .from('profiles')
+              .insert([newProfile])
+              .select()
+              .single()
+
+            if (createErr) {
+              console.error('UserAuthProvider: failed to create profile', createErr)
+              setRole('user')
+            } else {
+              setRole(created.role || 'user')
+              setUser(prev => ({ ...prev, full_name: created.full_name, phone: created.phone }))
+            }
+          } catch (createEx) {
+            console.error('UserAuthProvider: profile creation exception', createEx)
+            setRole('user')
+          }
+        } else if (error && error.code !== 'PGRST116') {
+          throw error
+        } else if (data) {
+          setRole(data.role === 'admin' ? 'admin' : 'user')
+          setUser(prev => ({ ...prev, full_name: data.full_name ?? prev?.displayName ?? null, phone: data.phone ?? null }))
+        } else {
+          // Fallback
+          setRole('user')
+        }
       } catch (e) {
         // Default to 'user' on error
         setRole('user')
-        console.error('UserAuthProvider: role lookup failed', e)
+        console.error('UserAuthProvider: role/profile lookup failed', e)
       } finally {
         setLoading(false)
       }

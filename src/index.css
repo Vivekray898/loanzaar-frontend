@@ -11,7 +11,3 @@ html, body, #__next {
 	touch-action: pan-y;
 }
 
-/* Disable native pull-to-refresh */
-body {
-  overscroll-behavior-y: none; 
-}
