@@ -4,25 +4,14 @@ import { serverUrl } from '@/utils/serverUrl'
 export default async function AgentDashboard() {
   const internalSecret = process.env.INTERNAL_ADMIN_SECRET || ''
 
-  // Fetch agent stats
+  // Fetch agent stats using server helper (avoids internal HTTP fetch during build)
   let stats = { assigned: 0, pending: 0 }
 
-  if (internalSecret) {
-    try {
-      const res = await fetch(serverUrl('/api/agent/stats'), {
-        cache: 'no-store',
-        headers: { 'x-internal-secret': internalSecret }
-      })
-
-      if (res.ok) {
-        const json = await res.json()
-        if (json?.success) {
-          stats = json.data
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch stats:', err)
-    }
+  try {
+    const { getAgentStats } = await import('@/services/agentService.server')
+    stats = await getAgentStats()
+  } catch (err: any) {
+    console.error('Failed to fetch stats:', err?.message || err)
   }
 
   const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });

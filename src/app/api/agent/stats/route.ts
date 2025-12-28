@@ -18,29 +18,11 @@ export async function GET(request: Request) {
     }
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl || !supabaseServiceKey) {
-    return NextResponse.json({ success: false, error: 'Server config error' }, { status: 500 })
-  }
-
   try {
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+    const { getAgentStats } = await import('@/services/agentService.server')
+    const data = await getAgentStats()
 
-    // Count applications
-    const { count: appCount } = await supabaseAdmin
-      .from('application_assignments')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_active', true)
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        assigned: appCount || 0,
-        pending: Math.floor((appCount || 0) * 0.3) // Mock: 30% pending
-      }
-    })
+    return NextResponse.json({ success: true, data })
   } catch (error: any) {
     console.error('Fetch stats error:', error)
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })
