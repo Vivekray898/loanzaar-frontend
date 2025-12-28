@@ -16,7 +16,7 @@ import {
 const UsedCarLoanClient = () => {
   // UI State
   const [activeTab, setActiveTab] = useState('overview');
-  const [activeFaq, setActiveFaq] = useState(null);
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false); // ✅ Added state for form
   
   // Calculator State

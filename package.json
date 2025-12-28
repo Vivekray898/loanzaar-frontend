@@ -12,24 +12,22 @@
     "prepare": "simple-git-hooks"
   },
   "dependencies": {
+    "@marsidev/react-turnstile": "^1.4.0",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^4.16.2",
     "@sentry/nextjs": "^10.32.1",
     "@supabase/supabase-js": "^2.89.0",
     "@tailwindcss/postcss": "^4.1.15",
     "chart.js": "^4.4.4",
-    "dotenv": "^17.2.3",
     "framer-motion": "^12.23.26",
     "libphonenumber-js": "^1.12.31",
     "lucide-react": "^0.545.0",
     "next": "16.0.10",
-    "nextjs-progressbar": "^0.0.16",
     "nextjs-toploader": "^3.9.17",
     "pg": "^8.16.3",
     "react": "^19.1.1",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^19.1.1",
-    "react-toastify": "^11.0.5",
     "resend": "^6.6.0",
     "tailwindcss": "^4.1.14"
   },
@@ -44,14 +42,10 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.4.0",
+    "postcss": "^8.5.6",
     "prisma": "^4.16.2",
     "simple-git-hooks": "^2.13.1",
-    "typescript": "^5.4.2",
-    "vitest": "^1.0.0",
-    "@testing-library/react": "^14.0.0",
-    "@testing-library/jest-dom": "^5.17.0",
-    "jsdom": "^22.1.0",
-    "node-fetch": "^3.4.0"
+    "typescript": "^5.4.2"
   },
   "simple-git-hooks": {
     "pre-commit": "node scripts/hooks/prevent-pages-additions.js"

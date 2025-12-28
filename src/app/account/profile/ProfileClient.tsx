@@ -25,7 +25,8 @@ interface FormErrors {
 }
 
 export default function ProfileClient() {
-  const { user, isAuthenticated, loading } = useUserAuth()
+  interface AuthUser { uid?: string; email?: string | null; displayName?: string | null; photoURL?: string | null }
+  const { user, isAuthenticated, loading } = useUserAuth() as { user?: AuthUser | null, isAuthenticated: boolean, loading: boolean }
   const router = useRouter()
 
   const [form, setForm] = useState<ProfileForm>({
@@ -306,7 +307,7 @@ export default function ProfileClient() {
               <div className="pt-4 flex flex-col sm:flex-row gap-4">
                  <button 
                    type="button" 
-                   onClick={() => fetchProfile(user?.uid || '')} 
+                   onClick={() => user?.uid && fetchProfile(user.uid)} 
                    disabled={busy}
                    className="order-2 sm:order-1 sm:w-1/3 py-3.5 px-4 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all flex items-center justify-center gap-2"
                  >
