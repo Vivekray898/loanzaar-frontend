@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-import { AdminAuthProvider } from '@/context/AdminAuthContext'
 import { UserAuthProvider } from '@/context/UserAuthContext'
 import SessionManager from '@/components/SessionManager'
 import StructuredData from '@/components/StructuredData'
@@ -22,11 +21,11 @@ export default function RootLayoutClient({ children }) {
 
   if (isAdminRoute) {
     return (
-      <AdminAuthProvider>
+      <UserAuthProvider>
         <SessionManager userTimeoutMinutes={30} adminTimeoutMinutes={30}>
           {children}
         </SessionManager>
-      </AdminAuthProvider>
+      </UserAuthProvider>
     )
   }
 

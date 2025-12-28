@@ -7,16 +7,55 @@ import {
   Clock, LogOut, LogIn, Mail, LifeBuoy
 } from 'lucide-react'
 import { useUserAuth } from '@/context/UserAuthContext'
+import { supabase } from '@/config/supabase'
 import SignInSheet from '@/components/SignInSheet'
 import BottomNav from '@/components/BottomNav'
 
 export default function AccountMenu() {
   const { user, isAuthenticated, logout } = useUserAuth()
   const [showSignIn, setShowSignIn] = useState(false)
+  // null = unknown, true/false after check
+  const [isAdmin, setIsAdmin] = useState(null)
 
   useEffect(() => {
     if (isAuthenticated) setShowSignIn(false)
   }, [isAuthenticated])
+
+  // Fetch profile role to determine if user is admin
+  useEffect(() => {
+    // Reset to unknown on auth/user change
+    setIsAdmin(null)
+
+    if (!isAuthenticated || !user?.uid) {
+      // Explicitly mark as non-admin when not authenticated
+      setIsAdmin(false)
+      return
+    }
+
+    let mounted = true
+    const checkAdmin = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', user.uid)
+          .single()
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching profile role:', error)
+        }
+
+        if (!mounted) return
+        setIsAdmin(Boolean(data?.role === 'admin'))
+      } catch (e) {
+        console.error('Unexpected error checking admin role', e)
+        if (mounted) setIsAdmin(false)
+      }
+    }
+
+    checkAdmin()
+    return () => { mounted = false }
+  }, [isAuthenticated, user])
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-24 md:pb-12 pt-6 md:pt-12">
@@ -134,6 +173,20 @@ export default function AccountMenu() {
                     title="Preferences" 
                     subtitle="App settings & Security"
                   />
+
+                  {/* Admin Panel - visible only to admins */}
+                  {isAdmin && (
+                    <>
+                      <div className="h-px bg-slate-50 mx-4" />
+                      <MenuLink 
+                        href="/admin" 
+                        icon={Shield} 
+                        color="text-emerald-600 bg-emerald-50" 
+                        title="Admin Panel" 
+                        subtitle="Manage applications & users"
+                      />
+                    </>
+                  )}
                 </div>
               </div>
 

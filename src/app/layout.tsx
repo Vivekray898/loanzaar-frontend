@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import '../index.css'
 import '../App.css'
 
@@ -6,10 +7,14 @@ import NavBar from '@/components/NavBar'
 import Footer from '@/components/Footer'
 import Container from '@/components/Container'
 
+// System UI Imports
+import Preloader from '@/components/ui/Preloader'
+import NextTopLoader from 'nextjs-toploader'
+
 // Initialize Supabase config on app load
 import '../config/supabase'
 
-export const metadata = {
+export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: {
     default: 'Loanzaar - Smart Borrowing Platform',
@@ -17,7 +22,7 @@ export const metadata = {
   },
   description: 'Loanzaar - Compare loans, check CIBIL score, and apply for financial products online.',
   alternates: {
-    canonical: '/' // Per-page canonicals will resolve against metadataBase
+    canonical: '/' 
   },
   openGraph: {
     type: 'website',
@@ -42,10 +47,31 @@ export const metadata = {
   }
 }
 
-export default function RootLayout({ children }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
       <body className="bg-gray-50">
+        
+        {/* 1. System UI Elements (Loaders) */}
+        <Preloader />
+
+        <NextTopLoader 
+          color="#0ea5e9"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #0ea5e9,0 0 5px #0ea5e9"
+        />
+
+        {/* 2. Main Application Content (No Pull Refresh Wrapper) */}
         <Providers>
           <NavBar />
 
@@ -57,6 +83,7 @@ export default function RootLayout({ children }) {
 
           <Footer />
         </Providers>
+        
       </body>
     </html>
   )

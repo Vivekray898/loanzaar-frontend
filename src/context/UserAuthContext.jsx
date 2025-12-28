@@ -1,124 +1,143 @@
 'use client'
 
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '../config/supabase';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '../config/supabase'
 
-export const UserAuthContext = createContext();
+/**
+ * Single auth provider that exposes:
+ * - user (minimal object or null)
+ * - role: 'guest' | 'user' | 'admin'
+ * - loading
+ * - isAuthenticated
+ * - login / logout helpers
+ */
+export const UserAuthContext = createContext(null)
 
 export const useUserAuth = () => {
-  const context = useContext(UserAuthContext);
-  if (!context) {
-    throw new Error('useUserAuth must be used within UserAuthProvider');
-  }
-  return context;
-};
+  const ctx = useContext(UserAuthContext)
+  if (!ctx) throw new Error('useUserAuth must be used within UserAuthProvider')
+  return ctx
+}
 
 export const UserAuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  const router = useRouter()
+
+  const [user, setUser] = useState(null)
+  const [role, setRole] = useState('guest') // 'guest' | 'user' | 'admin'
+  const [loading, setLoading] = useState(true)
+
+  // Guard against duplicate profile queries per login
+  const lastCheckedUid = useRef(null)
+  const subscriptionRef = useRef(null)
+  let mounted = true
 
   useEffect(() => {
-    console.log('🔍 UserAuthProvider: Setting up Supabase auth listener...');
+    mounted = true
+    setLoading(true)
 
-    // Listen for Supabase Auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        console.log('✅ User authenticated via Supabase:', session.user.id);
+    const handleAuthChange = async (event, session) => {
+      if (!mounted) return
 
-        // Store token
-        localStorage.setItem('userToken', session.access_token);
-        localStorage.setItem('supabaseUID', session.user.id);
+      const supaUser = session?.user ?? null
 
-        // Try to get extended user data from localStorage
-        const storedUserData = localStorage.getItem('userData');
-        let parsedUserData = null;
-
-        if (storedUserData) {
-          try {
-            parsedUserData = JSON.parse(storedUserData);
-          } catch (e) {
-            console.error('Error parsing stored user data', e);
-          }
-        }
-
-        // Construct user object
-        const userObj = {
-          uid: session.user.id,
-          email: session.user.email,
-          emailVerified: session.user.email_confirmed_at !== null,
-          name: session.user.user_metadata?.full_name || (parsedUserData ? parsedUserData.name : 'User'),
-          displayName: session.user.user_metadata?.full_name || null,
-          photoURL: session.user.user_metadata?.avatar_url || null,
-          role: parsedUserData ? parsedUserData.role : 'user',
-          getIdToken: async () => session.access_token,
-          ...parsedUserData
-        };
-
-        setUser(userObj);
-
-        // Update localStorage if needed
-        if (!storedUserData) {
-          localStorage.setItem('userData', JSON.stringify(userObj));
-        }
-        } else {
-        console.log('❌ No authenticated user');
-        setUser(null);
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('userData');
-        localStorage.removeItem('supabaseUID');
+      if (!supaUser) {
+        // Guest state
+        lastCheckedUid.current = null
+        setUser(null)
+        setRole('guest')
+        setLoading(false)
+        return
       }
-      setLoading(false);
-    });
+
+      // If we've already handled this uid, skip redundant profile query
+      if (lastCheckedUid.current === supaUser.id) {
+        setUser(prev => prev ?? { uid: supaUser.id, email: supaUser.email })
+        setLoading(false)
+        return
+      }
+
+      lastCheckedUid.current = supaUser.id
+
+      // Minimal user object
+      setUser({
+        uid: supaUser.id,
+        email: supaUser.email,
+        displayName: supaUser.user_metadata?.full_name ?? null,
+        photoURL: supaUser.user_metadata?.avatar_url ?? null
+      })
+
+      // Query profile once to determine role
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', supaUser.id)
+          .single()
+
+        if (error && error.code !== 'PGRST116') throw error
+
+        const resolved = data?.role === 'admin' ? 'admin' : 'user'
+        setRole(resolved)
+      } catch (e) {
+        // Default to 'user' on error
+        setRole('user')
+        console.error('UserAuthProvider: role lookup failed', e)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange)
+    subscriptionRef.current = subscription
+
+    // Initialize immediately
+    ;(async () => {
+      try {
+        const { data } = await supabase.auth.getSession()
+        handleAuthChange('init', data.session)
+      } catch (e) {
+        setLoading(false)
+        console.error('UserAuthProvider: getSession failed', e)
+      }
+    })()
 
     return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const login = async (userData, token) => {
-    // This is now mostly a fallback or for setting initial local state
-    // The real work happens in onAuthStateChanged
-    console.log('🔐 Manual login trigger:', userData.name);
-    localStorage.setItem('userToken', token);
-    localStorage.setItem('userData', JSON.stringify(userData));
-    setUser(userData);
-  };
-
-  const logout = async (reason = 'user-action') => {
-    console.log(`🚪 Logging out user (reason: ${reason})`);
-    try {
-      // Clear local storage
-      localStorage.removeItem('userToken');
-      localStorage.removeItem('userData');
-      localStorage.removeItem('supabaseUID');
-      localStorage.removeItem('supabaseEmail');
-      
-      // Sign out from Supabase
-      await supabase.auth.signOut();
-      
-      // Reset state
-      setUser(null);
-      
-      // Redirect to login
-      router.push('/signin');
-    } catch (error) {
-      console.error('Error signing out:', error);
+      mounted = false
+      if (subscriptionRef.current?.unsubscribe) subscriptionRef.current.unsubscribe()
     }
-  };
+  }, [])
+
+  const login = async (credentials) => {
+    // credentials: { email, password } or other supabase signin payload
+    return supabase.auth.signInWithPassword(credentials)
+  }
+
+  const logout = async () => {
+    lastCheckedUid.current = null
+    setUser(null)
+    setRole('guest')
+    try {
+      await supabase.auth.signOut()
+      router.push('/signin')
+    } catch (e) {
+      console.error('UserAuthProvider: signOut failed', e)
+    }
+  }
 
   const value = {
     user,
-    login,
-    logout,
+    role, // 'guest' | 'user' | 'admin'
+    loading,
     isAuthenticated: !!user,
-    loading
-  };
+    login,
+    logout
+  }
 
   return (
     <UserAuthContext.Provider value={value}>
       {children}
     </UserAuthContext.Provider>
-  );
-};
+  )
+}
+

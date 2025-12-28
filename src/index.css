@@ -10,3 +10,8 @@ html, body, #__next {
 .pull-to-refresh-container {
 	touch-action: pan-y;
 }
+
+/* Disable native pull-to-refresh */
+body {
+  overscroll-behavior-y: none; 
+}

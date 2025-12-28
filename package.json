@@ -22,17 +22,14 @@
     "lucide-react": "^0.545.0",
     "next": "16.0.10",
     "nextjs-progressbar": "^0.0.16",
+    "nextjs-toploader": "^3.9.17",
     "pg": "^8.16.3",
     "react": "^19.1.1",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^19.1.1",
-    "react-hook-form": "^7.68.0",
-    "react-loading-skeleton": "^3.5.0",
     "react-toastify": "^11.0.5",
-    "recharts": "^3.2.1",
     "resend": "^6.6.0",
-    "tailwindcss": "^4.1.14",
-    "vaul": "^1.1.2"
+    "tailwindcss": "^4.1.14"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
