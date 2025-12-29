@@ -18,21 +18,29 @@ export const POST = async (request: Request) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
-    const payload = {
+    // Build payload but avoid overwriting existing fields with null when not provided
+    const payload: any = {
       user_id,
       full_name: full_name || null,
       email,
-      phone: phone || null,
       role: 'admin',
       updated_at: new Date().toISOString(),
       created_at: new Date().toISOString()
     }
 
+    if (typeof phone !== 'undefined' && phone !== null) {
+      payload.phone = phone
+    }
+
+    console.debug('ensure-admin: upsert payload', payload)
+
     const { data, error } = await supabaseAdmin
       .from('profiles')
       .upsert(payload, { onConflict: 'user_id' })
-      .select()
+      .select('id,user_id,full_name,email,phone,role,created_at,updated_at')
       .single()
+
+    console.debug('ensure-admin: upsert result', { data, error })
 
     if (error) {
       console.error('ensure-admin upsert error', error)
