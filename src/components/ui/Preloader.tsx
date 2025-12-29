@@ -1,25 +1,41 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react"; // Assuming you have lucide-react, or use standard svg
 
 export default function Preloader() {
   const [show, setShow] = useState(true);
   const [fade, setFade] = useState(false);
+  const [isFirstVisit, setIsFirstVisit] = useState(true);
 
   useEffect(() => {
-    // 1. Lock body scroll
+    // 1. Check if we have shown the intro in this session
+    const hasVisited = sessionStorage.getItem("loanzaar_intro_shown");
+    
+    // Determine durations based on visit type
+    // First visit: 1300ms total, Subsequent: 800ms total (quicker)
+    const fadeDelay = hasVisited ? 500 : 800; 
+    const removeDelay = hasVisited ? 800 : 1300; 
+
+    if (hasVisited) {
+      setIsFirstVisit(false);
+    } else {
+      // Mark as visited for next time (persists until tab is closed)
+      sessionStorage.setItem("loanzaar_intro_shown", "true");
+    }
+
+    // 2. Lock body scroll
     document.body.style.overflow = "hidden";
 
+    // 3. Start Fade Out animation
     const timer = setTimeout(() => {
       setFade(true);
-    }, 800); // Wait 800ms
+    }, fadeDelay);
 
+    // 4. Remove component from DOM
     const removeTimer = setTimeout(() => {
       setShow(false);
-      // 2. Unlock body scroll
       document.body.style.overflow = "unset";
-    }, 1300); // 800ms + 500ms fade duration
+    }, removeDelay);
 
     return () => {
       clearTimeout(timer);
@@ -40,14 +56,17 @@ export default function Preloader() {
       `}
     >
       <div className="relative flex flex-col items-center justify-center">
-        {/* Animated Brand Name */}
-        <div className="overflow-hidden mb-4">
-          <h1 className="text-3xl md:text-4xl font-black tracking-[0.2em] text-slate-900 animate-slideUp">
-            LOANZAAR
-          </h1>
-        </div>
+        
+        {/* Animated Brand Name - Only show on first visit */}
+        {isFirstVisit && (
+          <div className="overflow-hidden mb-4">
+            <h1 className="text-3xl md:text-4xl font-black tracking-[0.2em] text-slate-900 animate-slideUp">
+              LOANZAAR
+            </h1>
+          </div>
+        )}
 
-        {/* Sleek Progress Line */}
+        {/* Sleek Progress Line - Always show */}
         <div className="w-32 h-1 bg-slate-100 rounded-full overflow-hidden">
           <div className="h-full bg-blue-600 rounded-full animate-loading-bar"></div>
         </div>

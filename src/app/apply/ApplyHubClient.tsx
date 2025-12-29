@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from "react"
+import React, { useState, Suspense } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import BottomNav from "@/components/BottomNav"
 import { 
   Banknote, Home, Car, Briefcase, HeartPulse, ShieldCheck, 
@@ -23,8 +24,13 @@ interface ProductItem {
 
 interface HubCardProps extends ProductItem {}
 
-export default function ApplyHubClient() {
-  const [activeTab, setActiveTab] = useState<'loans' | 'insurance'>('loans');
+// --- Main Content Component ---
+function ApplyHubContent() {
+  const searchParams = useSearchParams()
+  // Check URL for ?tab=insurance, default to 'loans'
+  const initialTab = searchParams.get('tab') === 'insurance' ? 'insurance' : 'loans'
+  
+  const [activeTab, setActiveTab] = useState<'loans' | 'insurance'>(initialTab);
   const [query, setQuery] = useState<string>('')
 
   // Full List of Loan Products
@@ -269,7 +275,7 @@ export default function ApplyHubClient() {
               </div>
             </div>
 
-            {/* SEO RICH CONTENT SECTION - REDESIGNED */}
+            {/* SEO RICH CONTENT SECTION */}
             <section className="mt-12">
               <div className="bg-white rounded-[2rem] p-8 md:p-12 border border-slate-200 shadow-sm relative overflow-hidden">
                 {/* Decorative Background */}
@@ -436,8 +442,6 @@ export default function ApplyHubClient() {
   )
 }
 
-// --- Optimized Components ---
-
 function HubCard({ href, icon: Icon, color, bg, title, hint, promo }: HubCardProps) {
   return (
     <Link 
@@ -491,5 +495,21 @@ function HubListCard({ href, icon: Icon, color, bg, title, hint, promo }: HubCar
         <ChevronRight size={16} className="md:w-5 md:h-5" />
       </div>
     </Link>
+  )
+}
+
+// Wrap in default export to prevent Suspense errors in Next.js
+export default function ApplyHubClient() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="h-12 w-12 bg-slate-200 rounded-full mb-4"></div>
+          <div className="h-4 w-32 bg-slate-200 rounded"></div>
+        </div>
+      </div>
+    }>
+      <ApplyHubContent />
+    </Suspense>
   )
 }

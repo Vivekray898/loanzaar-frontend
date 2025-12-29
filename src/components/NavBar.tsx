@@ -159,7 +159,7 @@ export default function NavBar() {
     setMobileNestedExpanded(mobileNestedExpanded === label ? null : label);
   };
 
-  const getDashboardLink = () => (user?.role === 'admin' ? '/admin/account' : '/account');
+  const getDashboardLink = () => (user?.role === 'admin' ? '/admin' : '/account');
 
   return (
     <>

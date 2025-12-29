@@ -107,7 +107,7 @@ function SignInPage({ onShowSignup, onShowForgot, isModal = false }) {
             localStorage.setItem('userData', JSON.stringify(userData));
 
             if (profile.data.role === 'admin') {
-              router.push('/admin/account');
+              router.push('/admin');
             } else {
               router.push('/account');
             }

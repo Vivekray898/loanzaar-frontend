@@ -5,15 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import BottomNav from '@/components/BottomNav'
 import { 
-  FileText, 
-  HelpCircle, 
-  ChevronRight,
-  ChevronLeft,
-  Activity,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  ArrowLeft
+  FileText, HelpCircle, ChevronRight, Activity, Clock, 
+  CheckCircle2, AlertCircle, ArrowLeft, MoreHorizontal, Filter
 } from 'lucide-react'
 import ProtectedUserRoute from '@/components/ProtectedUserRoute'
 
@@ -22,208 +15,175 @@ export default function TrackPage() {
 
   return (
     <ProtectedUserRoute>
-      <div className="min-h-screen bg-slate-50 font-sans pb-14 md:pb-12 pt-0 md:pt-8">
+      <div className="min-h-screen bg-slate-50/50 font-sans pb-24 md:pb-12 pt-4 md:pt-10">
       
-        {/* Desktop Container */}
-        <div className="max-w-6xl mx-auto md:px-6">
+        {/* Mobile Header */}
+        <div className="md:hidden sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 h-14 flex items-center gap-3 mb-6">
+          <button onClick={() => router.back()} className="p-1.5 -ml-1 text-slate-600 hover:bg-slate-100 rounded-full">
+             <ArrowLeft className="w-5 h-5" />
+          </button>
+          <span className="font-bold text-slate-800">Track Activity</span>
+        </div>
+
+        <div className="max-w-6xl mx-auto px-4 md:px-8">
           
-          {/* Desktop Header Navigation */}
-          <div className="hidden md:flex items-center gap-2 mb-6">
-            <button 
-              onClick={() => router.back()} 
-              className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors text-sm font-semibold px-2 py-1 -ml-2 rounded-lg hover:bg-slate-100"
-            >
-              <ArrowLeft className="w-4 h-4" /> Back
-            </button>
+          {/* Desktop Breadcrumb */}
+          <div className="hidden md:flex items-center gap-3 mb-8 text-sm text-slate-500">
+            <button onClick={() => router.push('/account')} className="hover:text-blue-600 transition-colors">Account</button>
             <span className="text-slate-300">/</span>
-            <span className="text-slate-900 font-semibold text-sm">Track Application</span>
+            <span className="font-semibold text-slate-900">Track Application</span>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
             {/* =========================================================
-                LEFT COLUMN: Overview & Navigation (lg:col-span-7)
+                LEFT COLUMN: Dashboard & Metrics (lg:col-span-8)
                ========================================================= */}
-            <div className="lg:col-span-7 space-y-6">
+            <div className="lg:col-span-8 space-y-6">
 
-              {/* 1. Dashboard Header Card */}
-              <div className="bg-white pt-8 pb-6 px-6 md:p-8 rounded-b-[2rem] md:rounded-3xl shadow-sm border-b md:border border-slate-100">
-                {/* Mobile Back Button */}
-                <button 
-                  onClick={() => router.back()} 
-                  className="md:hidden flex items-center gap-1 text-slate-500 mb-4 -ml-2 px-2 py-1"
-                >
-                  <ChevronLeft className="w-5 h-5" /> <span className="text-sm font-semibold">Back</span>
-                </button>
+              {/* 1. Hero Status Card */}
+              <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-sm border border-slate-100 relative overflow-hidden">
+                {/* Decorative BG */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
-                <div className="flex justify-between items-start mb-6 md:mb-8">
-                  <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Track Activity</h1>
-                    <p className="text-sm md:text-base text-slate-500 font-medium mt-1">
-                      Monitor your financial journey & application status
-                    </p>
+                <div className="relative z-10">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="relative flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                        </span>
+                        <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">System Live</span>
+                      </div>
+                      <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Activity Monitor</h1>
+                      <p className="text-slate-500 mt-1">Real-time updates on your applications and requests.</p>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                       <Link 
+                         href="/account/applications"
+                         className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl shadow-lg hover:bg-slate-800 transition-all active:scale-95"
+                       >
+                         <FileText className="w-4 h-4" /> View Apps
+                       </Link>
+                       <Link 
+                         href="/account/enquiries"
+                         className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl hover:bg-slate-50 transition-all active:scale-95"
+                       >
+                         <HelpCircle className="w-4 h-4" /> Support
+                       </Link>
+                    </div>
                   </div>
-                  {/* Activity Pulse Icon */}
-                  <div className="relative h-12 w-12 md:h-14 md:w-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
-                     <Activity className="w-6 h-6 md:w-7 md:h-7" />
-                     <span className="absolute top-3 right-3 w-2 h-2 md:w-2.5 md:h-2.5 bg-indigo-500 rounded-full animate-ping"></span>
-                     <span className="absolute top-3 right-3 w-2 h-2 md:w-2.5 md:h-2.5 bg-indigo-500 rounded-full"></span>
-                  </div>
-                </div>
 
-                {/* Quick Stats Grid */}
-                <div className="grid grid-cols-3 gap-3 md:gap-6">
-                   <div className="bg-emerald-50 hover:bg-emerald-100 transition-colors rounded-2xl p-3 md:p-5 border border-emerald-100 text-center flex flex-col items-center justify-center group cursor-default">
-                     <p className="text-xl md:text-3xl font-bold text-emerald-700 group-hover:scale-110 transition-transform">2</p>
-                     <p className="text-[10px] md:text-xs uppercase font-bold text-emerald-600/80 tracking-wider mt-1 md:mt-2">Active</p>
-                   </div>
-                   <div className="bg-amber-50 hover:bg-amber-100 transition-colors rounded-2xl p-3 md:p-5 border border-amber-100 text-center flex flex-col items-center justify-center group cursor-default">
-                     <p className="text-xl md:text-3xl font-bold text-amber-700 group-hover:scale-110 transition-transform">1</p>
-                     <p className="text-[10px] md:text-xs uppercase font-bold text-amber-600/80 tracking-wider mt-1 md:mt-2">Pending</p>
-                   </div>
-                   <div className="bg-blue-50 hover:bg-blue-100 transition-colors rounded-2xl p-3 md:p-5 border border-blue-100 text-center flex flex-col items-center justify-center group cursor-default">
-                     <p className="text-xl md:text-3xl font-bold text-blue-700 group-hover:scale-110 transition-transform">0</p>
-                     <p className="text-[10px] md:text-xs uppercase font-bold text-blue-600/80 tracking-wider mt-1 md:mt-2">Action</p>
-                   </div>
+                  {/* Metrics Row */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <MetricCard label="Active" value="2" color="emerald" icon={Activity} />
+                    <MetricCard label="Pending" value="1" color="amber" icon={Clock} />
+                    <MetricCard label="Action" value="0" color="rose" icon={AlertCircle} />
+                  </div>
                 </div>
               </div>
 
-              {/* 2. Navigation Cards */}
-              <div className="px-6 md:px-0 -mt-2 md:mt-0 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 2. Recent Timeline (Mobile: Vertical Stack, Desktop: Clean List) */}
+              <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                <div className="px-6 py-5 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+                  <h3 className="font-bold text-slate-900 text-lg">Recent History</h3>
+                  <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-lg transition-colors">
+                    <Filter className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="p-0">
+                  {/* Timeline Item 1 */}
+                  <TimelineItem 
+                    title="Home Loan Application"
+                    id="#HL-2049"
+                    status="Verification"
+                    time="10:30 AM"
+                    icon={Clock}
+                    color="amber"
+                    isLast={false}
+                  />
+                  {/* Timeline Item 2 */}
+                  <TimelineItem 
+                    title="Document Uploaded"
+                    id="Income Proof"
+                    status="Received"
+                    time="Yesterday"
+                    icon={FileText}
+                    color="blue"
+                    isLast={false}
+                  />
+                  {/* Timeline Item 3 */}
+                  <TimelineItem 
+                    title="Profile Updated"
+                    id="Address Change"
+                    status="Completed"
+                    time="2 days ago"
+                    icon={CheckCircle2}
+                    color="slate"
+                    isLast={true}
+                  />
+                </div>
                 
-                {/* Applications Card */}
-                <Link 
-                  href="/account/applications" 
-                  className="group bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-blue-200 active:scale-[0.98] transition-all relative overflow-hidden flex flex-col justify-between h-full"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                      <FileText className="w-6 h-6" />
-                    </div>
-                    {/* Badge */}
-                    <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-                        <span className="text-[10px] font-bold tracking-wide">2 Updates</span>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-base md:text-lg group-hover:text-blue-700 transition-colors">My Applications</h3>
-                    <p className="text-xs md:text-sm text-slate-500 mt-1">Track Loans & Insurance status</p>
-                    
-                    <div className="mt-4 flex items-center text-xs font-bold text-blue-600 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all">
-                       View Details <ChevronRight className="w-4 h-4 ml-1" />
-                    </div>
-                  </div>
-                </Link>
-
-                {/* Support Enquiries Card */}
-                <Link 
-                  href="/account/enquiries" 
-                  className="group bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-orange-200 active:scale-[0.98] transition-all relative overflow-hidden flex flex-col justify-between h-full"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="h-12 w-12 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                      <HelpCircle className="w-6 h-6" />
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full">
-                        <CheckCircle2 className="w-3 h-3" />
-                        <span className="text-[10px] font-bold tracking-wide">All Solved</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-base md:text-lg group-hover:text-orange-700 transition-colors">My Requests</h3>
-                    <p className="text-xs md:text-sm text-slate-500 mt-1">Support tickets & queries</p>
-                    
-                    <div className="mt-4 flex items-center text-xs font-bold text-orange-600 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all">
-                       View History <ChevronRight className="w-4 h-4 ml-1" />
-                    </div>
-                  </div>
-                </Link>
+                <div className="p-4 border-t border-slate-50 text-center">
+                  <button className="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase tracking-widest flex items-center justify-center gap-2 transition-colors">
+                    Load More History <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
 
             </div>
 
             {/* =========================================================
-                RIGHT COLUMN: Activity Feed (lg:col-span-5)
+                RIGHT COLUMN: Quick Links / Ads (lg:col-span-4)
                ========================================================= */}
-            <div className="lg:col-span-5 px-6 md:px-0 mt-4 lg:mt-0">
-              <div className="lg:sticky lg:top-8 bg-white lg:bg-transparent rounded-3xl lg:rounded-none p-6 lg:p-0 shadow-sm lg:shadow-none border border-slate-100 lg:border-none">
-                
-                <div className="flex items-center justify-between mb-6">
-                   <h2 className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Recent Activity</h2>
-                   <button className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline">View All History</button>
-                </div>
-                
-                <div className="space-y-4 relative">
-                   {/* Vertical Connector Line (Desktop Only visual aid) */}
-                   <div className="hidden lg:block absolute left-[19px] top-4 bottom-4 w-0.5 bg-slate-100 -z-10"></div>
-
-                   {/* Activity Item 1 */}
-                   <div className="bg-white p-4 md:p-5 rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-md transition-shadow flex gap-4 relative overflow-hidden group">
-                      {/* Status Indicator Line */}
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-400 group-hover:w-1.5 transition-all"></div>
-                      
-                      <div className="mt-0.5">
-                        <div className="h-9 w-9 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 relative">
-                          <Clock className="w-4 h-4" />
-                        </div>
+            <div className="lg:col-span-4 space-y-6">
+              
+              {/* Quick Actions Card */}
+              <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Quick Links</h3>
+                <div className="space-y-3">
+                  <Link href="/loans/personal-loan" className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <FileText className="w-5 h-5" />
                       </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start w-full">
-                           <p className="text-sm md:text-base font-bold text-slate-800">Home Loan Application</p>
-                           <span className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap bg-slate-50 px-2 py-0.5 rounded-md">10:30 AM</span>
-                        </div>
-                        <p className="text-xs md:text-sm text-slate-500 mt-1.5 leading-relaxed">
-                           Your application <span className="font-medium text-slate-700 bg-slate-100 px-1 rounded">#HL-2049</span> is currently under 
-                           <span className="font-medium text-amber-600"> Verification</span>.
-                        </p>
+                      <span className="font-semibold text-slate-700 group-hover:text-slate-900">New Loan</span>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500" />
+                  </Link>
+                  <Link href="/account/support" className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                        <HelpCircle className="w-5 h-5" />
                       </div>
-                   </div>
-
-                   {/* Activity Item 2 */}
-                   <div className="bg-white p-4 md:p-5 rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-md transition-shadow flex gap-4 relative overflow-hidden group">
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 group-hover:w-1.5 transition-all"></div>
-                      
-                      <div className="mt-0.5">
-                        <div className="h-9 w-9 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 relative">
-                          <FileText className="w-4 h-4" />
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                         <div className="flex justify-between items-start w-full">
-                           <p className="text-sm md:text-base font-bold text-slate-800">Document Uploaded</p>
-                           <span className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap bg-slate-50 px-2 py-0.5 rounded-md">Yesterday</span>
-                         </div>
-                         <p className="text-xs md:text-sm text-slate-500 mt-1.5 leading-relaxed">
-                            You successfully uploaded <span className="font-medium text-slate-700">Income Proof</span> for Personal Loan.
-                         </p>
-                      </div>
-                   </div>
-
-                   {/* Activity Item 3 */}
-                   <div className="bg-white p-4 md:p-5 rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-md transition-shadow flex gap-4 relative overflow-hidden group opacity-75 hover:opacity-100">
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-300 group-hover:w-1.5 transition-all"></div>
-                      
-                      <div className="mt-0.5">
-                        <div className="h-9 w-9 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10 relative">
-                          <AlertCircle className="w-4 h-4" />
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                         <div className="flex justify-between items-start w-full">
-                           <p className="text-sm md:text-base font-bold text-slate-700">Profile Updated</p>
-                           <span className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap bg-slate-50 px-2 py-0.5 rounded-md">2 days ago</span>
-                         </div>
-                         <p className="text-xs md:text-sm text-slate-500 mt-1.5 leading-relaxed">
-                            Changed contact address in profile settings.
-                         </p>
-                      </div>
-                   </div>
-
+                      <span className="font-semibold text-slate-700 group-hover:text-slate-900">Help Center</span>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500" />
+                  </Link>
                 </div>
               </div>
+
+              {/* Agent Tip / Promo */}
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2rem] p-6 text-white relative overflow-hidden">
+                <div className="relative z-10">
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-4 backdrop-blur-sm">
+                    <Activity className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <h3 className="font-bold text-lg mb-2">Did you know?</h3>
+                  <p className="text-sm text-slate-300 leading-relaxed mb-4">
+                    Completing your profile verification increases your loan approval chances by 40%.
+                  </p>
+                  <Link href="/account/profile" className="text-xs font-bold bg-white text-slate-900 px-4 py-2 rounded-lg inline-block hover:bg-slate-100 transition-colors">
+                    Verify Profile
+                  </Link>
+                </div>
+                <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl"></div>
+              </div>
+
             </div>
 
           </div>
@@ -231,5 +191,66 @@ export default function TrackPage() {
         <BottomNav />
       </div>
     </ProtectedUserRoute>
+  )
+}
+
+// --- SUB-COMPONENTS ---
+
+function MetricCard({ label, value, color, icon: Icon }) {
+  const colors = {
+    emerald: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    amber: 'bg-amber-50 text-amber-700 border-amber-100',
+    rose: 'bg-rose-50 text-rose-700 border-rose-100',
+  }
+  
+  return (
+    <div className={`p-4 rounded-2xl border ${colors[color]} flex flex-col items-center justify-center text-center transition-transform hover:scale-[1.02]`}>
+      <div className="mb-2 opacity-80">
+        <Icon className="w-5 h-5" />
+      </div>
+      <span className="text-2xl md:text-3xl font-bold block leading-none mb-1">{value}</span>
+      <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">{label}</span>
+    </div>
+  )
+}
+
+function TimelineItem({ title, id, status, time, icon: Icon, color, isLast }) {
+  const colorMap = {
+    amber: 'bg-amber-100 text-amber-700',
+    blue: 'bg-blue-100 text-blue-700',
+    slate: 'bg-slate-100 text-slate-700',
+  }
+
+  return (
+    <div className="relative pl-6 md:pl-8 pr-6 py-6 group hover:bg-slate-50 transition-colors">
+      {/* Connector Line */}
+      {!isLast && (
+        <div className="absolute left-[34px] md:left-[42px] top-12 bottom-0 w-0.5 bg-slate-100 group-hover:bg-slate-200 transition-colors"></div>
+      )}
+      
+      <div className="flex gap-4 md:gap-5">
+        {/* Icon Node */}
+        <div className={`relative z-10 w-10 h-10 md:w-12 md:h-12 rounded-full ${colorMap[color]} flex items-center justify-center shrink-0 shadow-sm border-2 border-white`}>
+          <Icon className="w-5 h-5" />
+        </div>
+
+        <div className="flex-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+            <h4 className="font-bold text-slate-900 text-sm md:text-base">{title}</h4>
+            <span className="text-[10px] font-medium text-slate-400 whitespace-nowrap">{time}</span>
+          </div>
+          
+          <p className="text-sm text-slate-600 mb-2">
+            <span className="font-medium text-slate-800 bg-white border border-slate-200 px-1.5 py-0.5 rounded text-xs mr-1.5">{id}</span>
+            Status is <span className={`font-semibold ${color === 'amber' ? 'text-amber-600' : 'text-slate-700'}`}>{status}</span>.
+          </p>
+        </div>
+        
+        {/* Desktop Arrow */}
+        <div className="hidden sm:flex items-center text-slate-300">
+           <MoreHorizontal className="w-5 h-5" />
+        </div>
+      </div>
+    </div>
   )
 }

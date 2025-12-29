@@ -2,19 +2,18 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { 
-  User, Settings, BookOpen, Shield, Briefcase, ChevronRight, 
-  Clock, LogOut, LogIn, Mail, LifeBuoy
+import {
+  User, Settings, BookOpen, Shield, Briefcase, ChevronRight,
+  Clock, LogOut, LogIn, Mail, LifeBuoy, CheckCircle2, LayoutDashboard
 } from 'lucide-react'
 import { useUserAuth } from '@/context/UserAuthContext'
 import { supabase } from '@/config/supabase'
 import SignInSheet from '@/components/SignInSheet'
 import BottomNav from '@/components/BottomNav'
 
-export default function AccountMenu() {
+export default function AccountClient() {
   const { user, isAuthenticated, logout } = useUserAuth()
   const [showSignIn, setShowSignIn] = useState(false)
-  // null = unknown, true/false after check
   const [isAdmin, setIsAdmin] = useState(null)
   const [isAgent, setIsAgent] = useState(null)
 
@@ -22,262 +21,171 @@ export default function AccountMenu() {
     if (isAuthenticated) setShowSignIn(false)
   }, [isAuthenticated])
 
-  // Fetch profile role to determine if user is admin
   useEffect(() => {
-    // Reset to unknown on auth/user change
     setIsAdmin(null)
     setIsAgent(null)
-
     if (!isAuthenticated || !user?.uid) {
-      // Explicitly mark as non-admin/agent when not authenticated
       setIsAdmin(false)
       setIsAgent(false)
       return
     }
-
     let mounted = true
     const checkRole = async () => {
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('profiles')
           .select('role')
           .eq('user_id', user.uid)
           .single()
-
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error fetching profile role:', error)
-        }
-
         if (!mounted) return
         setIsAdmin(Boolean(data?.role === 'admin'))
         setIsAgent(Boolean(data?.role === 'agent'))
       } catch (e) {
-        console.error('Unexpected error checking role', e)
-        if (mounted) {
-          setIsAdmin(false)
-          setIsAgent(false)
-        }
+        if (mounted) { setIsAdmin(false); setIsAgent(false) }
       }
     }
-
     checkRole()
     return () => { mounted = false }
   }, [isAuthenticated, user])
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-24 md:pb-12 pt-6 md:pt-12">
-      
-      {/* Main Container */}
-      <div className="max-w-6xl mx-auto px-4 md:px-8">
-        
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
+    <div className="min-h-screen bg-slate-50/50 font-sans pb-24 md:pb-12 pt-4 md:pt-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6">
 
-          {/* =========================================================
-              LEFT SIDEBAR: Profile & Actions (Sticky)
-             ========================================================= */}
-          <div className="lg:col-span-4 xl:col-span-3">
-            <div className="bg-white rounded-3xl p-6 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.08)] border border-slate-100 lg:sticky lg:top-8">
-              
-              {/* Profile Info */}
-              <div className="flex flex-row lg:flex-col items-center gap-5 lg:gap-4 lg:text-center">
+        {/* 1. Profile Hero Section */}
+        <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-sm border border-slate-100 relative overflow-hidden mb-8 md:mb-10">
+           {/* Decorative bg */}
+           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+           <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start justify-between gap-6 text-center md:text-left">
+              <div className="flex flex-col md:flex-row items-center gap-6">
                 {/* Avatar */}
-                <div className="relative shrink-0">
-                  <div className="h-16 w-16 lg:h-28 lg:w-28 bg-slate-50 rounded-full border-4 border-white shadow-sm flex items-center justify-center text-3xl lg:text-5xl overflow-hidden ring-1 ring-slate-100">
-                     {isAuthenticated && user?.photoURL ? (
-                        <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
-                     ) : (
-                        <span>{isAuthenticated ? '😎' : '👤'}</span>
-                     )}
+                <div className="relative">
+                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-slate-100 border-4 border-white shadow-md flex items-center justify-center text-3xl overflow-hidden">
+                    {isAuthenticated && user?.photoURL ? (
+                      <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-slate-400">👤</span>
+                    )}
                   </div>
                   {isAuthenticated && (
-                    <div className="absolute bottom-1 right-0 lg:bottom-2 lg:right-2 w-4 h-4 lg:w-6 lg:h-6 bg-green-500 border-2 lg:border-4 border-white rounded-full"></div>
+                    <div className="absolute bottom-1 right-1 bg-green-500 w-5 h-5 border-2 border-white rounded-full" title="Online" />
                   )}
                 </div>
-                
-                {/* Text Details */}
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-xl lg:text-2xl font-bold text-slate-900 tracking-tight truncate">
-                    {isAuthenticated ? (user?.displayName || user?.name || 'Hello User') : 'Guest User'}
+
+                {/* Info */}
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
+                    {isAuthenticated ? (user?.displayName || 'Welcome back') : 'Guest User'}
                   </h1>
-                  <p className="text-xs lg:text-sm font-medium text-slate-500 mt-0.5 lg:mt-2 truncate flex lg:justify-center items-center gap-1.5">
-                    <Mail className="w-3 h-3 lg:w-4 lg:h-4" />
-                    {isAuthenticated ? (user?.email || 'member@loanzaar.in') : 'Sign in to access'}
+                  <p className="text-slate-500 font-medium mt-1 flex items-center justify-center md:justify-start gap-2">
+                    {isAuthenticated ? user?.email : 'Sign in to manage your account'}
+                    {isAuthenticated && <CheckCircle2 size={16} className="text-blue-500" />}
                   </p>
+                  <div className="flex items-center justify-center md:justify-start gap-2 mt-3">
+                    {isAdmin && <span className="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-bold uppercase tracking-wider">Admin</span>}
+                    {isAgent && <span className="px-2.5 py-0.5 rounded-full bg-pink-100 text-pink-700 text-xs font-bold uppercase tracking-wider">Agent</span>}
+                  </div>
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="h-px bg-slate-100 w-full my-6 hidden lg:block" />
-
-              {/* Desktop Action Button */}
-              <div className="mt-0 lg:mt-6 w-full hidden lg:block">
-                 {isAuthenticated ? (
-                   <button 
-                     onClick={logout}
-                     className="w-full flex items-center justify-center gap-2 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-sm border border-red-100 transition-all"
-                   >
-                     <LogOut className="w-4 h-4" /> Log Out
-                   </button>
-                 ) : (
-                   <button 
-                     onClick={() => setShowSignIn(true)}
-                     className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-200 hover:shadow-blue-300 transition-all"
-                   >
-                     <LogIn className="w-4 h-4" /> Sign In
-                   </button>
-                 )}
-              </div>
-
-              {/* Mobile Only Sign In/Out (appears next to name) */}
-              <div className="mt-6 lg:hidden">
+              {/* Action */}
+              <div className="flex shrink-0">
                 {isAuthenticated ? (
-                   <button onClick={logout} className="w-full py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl text-sm">Sign Out</button>
+                  <button onClick={logout} className="px-6 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 font-semibold rounded-xl text-sm transition-colors border border-slate-200">
+                    Sign Out
+                  </button>
                 ) : (
-                   <button onClick={() => setShowSignIn(true)} className="w-full py-2.5 bg-blue-600 text-white font-semibold rounded-xl text-sm shadow-md shadow-blue-200">Sign In Now</button>
+                  <button onClick={() => setShowSignIn(true)} className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-lg shadow-blue-200">
+                    Sign In / Register
+                  </button>
+                )}
+              </div>
+           </div>
+        </div>
+
+        {/* 2. Main Grid Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          {/* Section: Account Management */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider px-2">Account</h3>
+            <div className="grid gap-3">
+              <NavCard href="/account/profile" icon={User} title="Personal Profile" subtitle="Manage details & KYC" color="blue" />
+              <NavCard href="/account/track" icon={Clock} title="Track Applications" subtitle="View status updates" color="indigo" />
+              <NavCard href="/settings" icon={Settings} title="Settings" subtitle="Preferences & Security" color="slate" />
+            </div>
+          </div>
+
+          {/* Section: Support & Legal */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider px-2">Support</h3>
+            <div className="grid gap-3">
+              <NavCard href="/learn" icon={BookOpen} title="Help Center" subtitle="FAQs & Guides" color="orange" />
+              <NavCard href="/account/support" icon={LifeBuoy} title="Customer Support" subtitle="Get help 24/7" color="rose" />
+              <NavCard href="/privacy-policy" icon={Shield} title="Legal & Privacy" subtitle="Terms & Conditions" color="emerald" />
+            </div>
+          </div>
+
+          {/* Section: Workspaces (Conditional) */}
+          {(isAdmin || isAgent) && (
+            <div className="space-y-4 md:col-span-2 lg:col-span-1">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider px-2">Workspace</h3>
+              <div className="grid gap-3">
+                {isAgent && (
+                  <NavCard href="/agent" icon={Briefcase} title="Agent Portal" subtitle="Manage assignments" color="pink" />
+                )}
+                {isAdmin && (
+                  <NavCard href="/admin" icon={LayoutDashboard} title="Admin Dashboard" subtitle="System controls" color="purple" />
                 )}
               </div>
             </div>
+          )}
 
-            {/* Desktop Version Info */}
-            <div className="hidden lg:block mt-6 text-center">
-               <p className="text-xs text-slate-400 font-medium">v2.4.0 • Loanzaar App</p>
-            </div>
-          </div>
-
-
-          {/* =========================================================
-              RIGHT CONTENT: Dashboard Grid
-             ========================================================= */}
-          <div className="lg:col-span-8 xl:col-span-9">
-            
-            {/* Menu Grid: Two Columns on Desktop */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-              
-              {/* Column A: My Account */}
-              <div className="space-y-3">
-                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">My Account</h2>
-                <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] overflow-hidden">
-                  <MenuLink 
-                    href="/account/profile" 
-                    icon={User} 
-                    color="text-blue-600 bg-blue-50" 
-                    title="Personal Details" 
-                    subtitle="KYC & Contact Info"
-                  />
-                  <div className="h-px bg-slate-50 mx-4" />
-                  <MenuLink 
-                    href="/account/track" 
-                    icon={Clock} 
-                    color="text-indigo-600 bg-indigo-50" 
-                    title="Track Application" 
-                    subtitle="Live status updates"
-                  />
-                  <div className="h-px bg-slate-50 mx-4" />
-                  <MenuLink 
-                    href="/settings" 
-                    icon={Settings} 
-                    color="text-slate-600 bg-slate-100" 
-                    title="Preferences" 
-                    subtitle="App settings & Security"
-                  />
-
-                  {/* Agent Panel - visible only to agents */}
-                  {isAgent && (
-                    <>
-                      <div className="h-px bg-slate-50 mx-4" />
-                      <MenuLink 
-                        href="/agent" 
-                        icon={Briefcase} 
-                        color="text-pink-600 bg-pink-50" 
-                        title="Agent Panel" 
-                        subtitle="Manage assigned applications"
-                      />
-                    </>
-                  )}
-
-                  {/* Admin Panel - visible only to admins */}
-                  {isAdmin && (
-                    <>
-                      <div className="h-px bg-slate-50 mx-4" />
-                      <MenuLink 
-                        href="/admin" 
-                        icon={Shield} 
-                        color="text-emerald-600 bg-emerald-50" 
-                        title="Admin Panel" 
-                        subtitle="Manage applications & users"
-                      />
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Column B: Support & Legal */}
-              <div className="space-y-3">
-                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Support</h2>
-                <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] overflow-hidden">
-                  <MenuLink 
-                    href="/learn" 
-                    icon={BookOpen} 
-                    color="text-orange-600 bg-orange-50" 
-                    title="Help Center" 
-                    subtitle="Guides & FAQs"
-                  />
-                  <div className="h-px bg-slate-50 mx-4" />
-                  <MenuLink 
-                    href="/account/support" 
-                    icon={LifeBuoy} 
-                    color="text-purple-600 bg-purple-50" 
-                    title="Contact Support" 
-                    subtitle="Chat with us 24/7"
-                  />
-                  <div className="h-px bg-slate-50 mx-4" />
-                  <MenuLink 
-                    href="/privacy-policy" 
-                    icon={Shield} 
-                    color="text-emerald-600 bg-emerald-50" 
-                    title="Legal & Privacy" 
-                    subtitle="Terms of service"
-                  />
-                </div>
-              </div>
-
-            </div>
-          </div>
         </div>
 
-        {/* Mobile Footer Info */}
-        <div className="md:hidden mt-8 text-center pb-4">
-          <p className="text-[10px] text-slate-300 font-mono">v2.4.0 • Made with ❤️ in India</p>
+        {/* 3. Footer / App Info */}
+        <div className="mt-16 text-center border-t border-slate-200 pt-8 mb-8">
+          <p className="text-xs font-semibold text-slate-400">Loanzaar App v2.4.0</p>
+          <div className="flex justify-center gap-4 mt-2">
+            <Link href="/terms" className="text-[10px] text-slate-400 hover:text-slate-600">Terms of Service</Link>
+            <Link href="/privacy" className="text-[10px] text-slate-400 hover:text-slate-600">Privacy Policy</Link>
+          </div>
         </div>
 
         <SignInSheet open={showSignIn} onClose={() => setShowSignIn(false)} />
+        <BottomNav />
       </div>
     </div>
   )
 }
 
-// Optimized Link Component
-function MenuLink({ href, icon: Icon, color, title, subtitle }) {
-  return (
-    <Link 
-      href={href} 
-      className="flex items-center gap-4 p-5 hover:bg-slate-50 active:bg-slate-100 transition-colors group"
-    >
-      {/* Icon */}
-      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 group-hover:rotate-3 ${color}`}>
-        <Icon className="w-5 h-5" strokeWidth={2} />
-      </div>
-      
-      {/* Text */}
-      <div className="flex-1 min-w-0">
-        <h3 className="font-bold text-slate-900 text-[15px] group-hover:text-blue-600 transition-colors">{title}</h3>
-        <p className="text-xs text-slate-500 mt-0.5 font-medium">{subtitle}</p>
-      </div>
+function NavCard({ href, icon: Icon, title, subtitle, color }) {
+  // Map colors to tailwind classes for hover effects
+  const colors = {
+    blue: 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white',
+    indigo: 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white',
+    slate: 'bg-slate-100 text-slate-600 group-hover:bg-slate-800 group-hover:text-white',
+    orange: 'bg-orange-50 text-orange-600 group-hover:bg-orange-600 group-hover:text-white',
+    rose: 'bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white',
+    emerald: 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white',
+    pink: 'bg-pink-50 text-pink-600 group-hover:bg-pink-600 group-hover:text-white',
+    purple: 'bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white',
+  }
 
-      {/* Chevron */}
-      <div className="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 group-hover:text-slate-600 group-hover:bg-white group-hover:shadow-sm transition-all">
-        <ChevronRight className="w-5 h-5" />
-        <BottomNav />
+  const activeColor = colors[color] || colors.slate
+
+  return (
+    <Link href={href} className="group flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all duration-200 active:scale-[0.99]">
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors duration-300 ${activeColor}`}>
+        <Icon size={22} strokeWidth={2} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <h4 className="text-sm font-bold text-slate-900 group-hover:text-slate-800">{title}</h4>
+        <p className="text-xs text-slate-500 font-medium">{subtitle}</p>
+      </div>
+      <div className="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 group-hover:text-slate-600 group-hover:translate-x-1 transition-all">
+        <ChevronRight size={18} />
       </div>
     </Link>
   )

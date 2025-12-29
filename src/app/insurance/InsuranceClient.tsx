@@ -1,32 +1,73 @@
-"use client"
+'use client'
 
 import React, { useState } from 'react'
 import Link from 'next/link'
 import {
   ShieldCheck, Umbrella, HeartPulse, Layers,
-  Calculator, BookOpen, FileText, Sparkles,
+  Calculator, BookOpen, Sparkles,
   ChevronRight, CheckCircle2, TrendingUp, AlertCircle,
-  Banknote, Clock, Phone, ChevronDown, ArrowRight
+  Banknote, Clock, Phone, ChevronDown, ArrowRight,
+  LucideIcon
 } from 'lucide-react'
  
 import BottomNav from '@/components/BottomNav'
 
+// --- Interfaces ---
+
+interface InsuranceItem {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+  color: string;
+  bg: string;
+  hint: string;
+  promo?: string;
+}
+
+interface ToolItem {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+  desc: string;
+}
+
+interface FAQItem {
+  q: string;
+  a: string;
+}
+
 // --- Data Configuration ---
-const insuranceOptions = [
-  { title: 'Life Insurance', url: '/insurance/life-insurance', icon: Umbrella, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'group-hover:border-cyan-200', desc: 'Term plans & savings' },
-  { title: 'Health Insurance', url: '/insurance/health-insurance', icon: HeartPulse, color: 'text-rose-600', bg: 'bg-rose-50', border: 'group-hover:border-rose-200', desc: 'Medical & critical illness' },
-  { title: 'General Insurance', url: '/insurance/general-insurance', icon: ShieldCheck, color: 'text-slate-600', bg: 'bg-slate-100', border: 'group-hover:border-slate-300', desc: 'Car, bike & travel' },
-  { title: 'All Insurance', url: '/insurance/all-insurance', icon: Layers, color: 'text-blue-600', bg: 'bg-blue-50', border: 'group-hover:border-blue-200', desc: 'Explore all categories' },
+const insuranceOptions: InsuranceItem[] = [
+  { 
+    title: 'Life Insurance', url: '/insurance/life-insurance', icon: Umbrella, 
+    color: 'text-cyan-600', bg: 'bg-cyan-50', 
+    hint: 'Term plans & savings', promo: '✅ Tax Saver' 
+  },
+  { 
+    title: 'Health Insurance', url: '/insurance/health-insurance', icon: HeartPulse, 
+    color: 'text-rose-600', bg: 'bg-rose-50', 
+    hint: 'Medical & critical illness', promo: '🛡️ Cashless' 
+  },
+  { 
+    title: 'General Insurance', url: '/insurance/general-insurance', icon: ShieldCheck, 
+    color: 'text-slate-600', bg: 'bg-slate-100', 
+    hint: 'Car, bike & travel', promo: '⚡ Instant' 
+  },
+  { 
+    title: 'All Insurance', url: '/insurance/all-insurance', icon: Layers, 
+    color: 'text-blue-600', bg: 'bg-blue-50', 
+    hint: 'Explore all categories' 
+  },
 ]
 
-const toolOptions = [
+const toolOptions: ToolItem[] = [
   { title: 'Premium Calc', url: '/calculators', icon: Calculator, desc: 'Estimate cost' },
   { title: 'Compare Plans', url: '/compare', icon: Layers, desc: 'Side-by-side' },
   { title: 'Claim Support', url: '/support', icon: Phone, desc: '24/7 Assistance' },
   { title: 'Insurance Guide', url: '/blogs', icon: BookOpen, desc: 'Expert tips' },
 ]
 
-const faqs = [
+const faqs: FAQItem[] = [
   { q: 'Which insurance plan offers tax benefits?', a: 'Life insurance premiums qualify for deductions under Section 80C (up to ₹1.5 Lakh). Health insurance premiums allow deductions under Section 80D (up to ₹25,000 for individuals).' },
   { q: 'What is Claim Settlement Ratio (CSR)?', a: 'CSR indicates the percentage of claims settled by an insurer. A higher CSR (above 95%) implies the insurer is reliable.' },
   { q: 'Can I apply for insurance online?', a: 'Yes, applying online via Loanzaar is faster, cheaper, and requires minimal paperwork with instant policy issuance.' },
@@ -43,17 +84,10 @@ export default function InsuranceClient() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-24 md:pb-12 text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
       
-      {/* Hidden SEO Heading */}
       <h1 className="sr-only">
         Compare & Buy Insurance Plans Online in India - Life, Health, Car & Bike Insurance
       </h1>
 
-      {/* 
-        Container Logic:
-        - max-w-7xl: Limits width on ultra-wide screens for readability.
-        - mx-auto: Centers content.
-        - w-full: Ensures it takes available space.
-      */}
       <div className="max-w-7xl mx-auto w-full">
 
         {/* --- Header Section --- */}
@@ -84,7 +118,7 @@ export default function InsuranceClient() {
               </p>
             </div>
 
-            {/* CTA Card - Adapts from full width mobile to compact card desktop */}
+            {/* CTA Card */}
             <div className="w-full lg:w-auto lg:min-w-[380px]">
               <div className="bg-gradient-to-br from-emerald-900 to-emerald-800 rounded-2xl p-1 shadow-2xl shadow-emerald-200/50 group cursor-pointer transform transition-all hover:-translate-y-1">
                 <div className="bg-emerald-900/50 backdrop-blur-sm rounded-xl p-5 flex items-center gap-5 relative overflow-hidden">
@@ -111,45 +145,42 @@ export default function InsuranceClient() {
         </header>
 
         {/* --- Main Content --- */}
-        <main className="px-5 md:px-10 mt-10 space-y-16 lg:space-y-24">
+        <main className="px-4 md:px-10 mt-8 md:mt-10 space-y-16 lg:space-y-24">
 
-          {/* 1. Category Grid - Responsive Columns */}
+          {/* 1. Category Grid - 2 Cols Mobile */}
           <section>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 px-1 gap-2">
               <h2 className="text-xl md:text-2xl font-bold text-slate-900">Explore Plans</h2>
-              <Link href="/insurance/all" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+              {/* UPDATED LINK: Now passes tab=insurance query parameter */}
+              <Link href="/apply?tab=insurance" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
                 View all categories <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
 
-            {/* 
-              GRID MAGIC:
-              - grid-cols-1: Mobile (Vertical Stack)
-              - sm:grid-cols-2: Large Phones/Tablets (2x2)
-              - lg:grid-cols-4: Laptop/Desktop (4x1)
-            */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 xl:gap-6">
               {insuranceOptions.map((opt, i) => (
                 <Link 
                   key={i} 
                   href={opt.url} 
-                  className={`group relative flex flex-col p-6 rounded-[1.5rem] bg-white border border-slate-100 shadow-sm hover:shadow-xl ${opt.border} transition-all duration-300 hover:-translate-y-1 overflow-hidden`}
+                  className={`group relative flex flex-col p-4 md:p-6 rounded-2xl md:rounded-[1.5rem] bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:border-emerald-100 transition-all duration-300 hover:-translate-y-1 overflow-hidden`}
                 >
                   {/* Hover Gradient Background */}
                   <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 ${opt.color.replace('text', 'bg')}`} />
 
-                  <div className="flex items-start justify-between mb-6 z-10">
-                    <div className={`w-14 h-14 rounded-2xl ${opt.bg} ${opt.color} flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-sm`}>
-                      <opt.icon className="w-7 h-7" />
+                  <div className="flex items-start justify-between mb-4 md:mb-6 z-10">
+                    <div className={`w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl ${opt.bg} ${opt.color} flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-sm`}>
+                      <opt.icon className="w-5 h-5 md:w-7 md:h-7" />
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-slate-100 transition-colors">
-                      <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-600" />
-                    </div>
+                    {opt.promo && (
+                      <span className="text-[9px] md:text-[10px] font-bold bg-slate-900 text-white px-1.5 py-0.5 md:px-2 md:py-1 rounded-md shadow-sm whitespace-nowrap">
+                        {opt.promo}
+                      </span>
+                    )}
                   </div>
                   
                   <div className="z-10 mt-auto">
-                    <h3 className="font-bold text-slate-900 text-lg group-hover:text-emerald-700 transition-colors">{opt.title}</h3>
-                    <p className="text-sm text-slate-500 mt-1 font-medium">{opt.desc}</p>
+                    <h3 className="font-bold text-slate-900 text-sm md:text-lg leading-tight group-hover:text-emerald-700 transition-colors">{opt.title}</h3>
+                    <p className="text-[10px] md:text-sm text-slate-500 mt-1 font-medium leading-tight">{opt.hint}</p>
                   </div>
                 </Link>
               ))}
@@ -160,7 +191,6 @@ export default function InsuranceClient() {
           <section>
             <h2 className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-widest mb-5 pl-1">Tools & Resources</h2>
             
-            {/* Mobile: 2 cols | Tablet/Desktop: 4 cols */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
               {toolOptions.map((tool, i) => (
                 <Link 
@@ -180,18 +210,13 @@ export default function InsuranceClient() {
             </div>
           </section>
 
-          {/* 
-            3. SEO & Content Section 
-            - Split layout on Large screens (lg:grid-cols-12)
-            - Sticky Sidebar for FAQs
-          */}
+          {/* 3. SEO & Content Section */}
           <article className="border-t border-slate-200 pt-10 md:pt-16">
             <div className="grid lg:grid-cols-12 gap-10 xl:gap-16">
               
-              {/* Left Column: Semantic Content (Span 7 or 8) */}
+              {/* Left Column: Semantic Content */}
               <div className="lg:col-span-7 xl:col-span-8 space-y-12">
                 
-                {/* Intro */}
                 <section>
                   <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-5">
                     Why is Insurance Important?
@@ -202,7 +227,6 @@ export default function InsuranceClient() {
                     <strong className="text-slate-900"> Health Insurance</strong>, the right coverage prevents savings erosion during emergencies.
                   </p>
                   
-                  {/* Tag Cloud */}
                   <div className="flex flex-wrap gap-2 text-xs md:text-sm font-medium text-slate-500">
                     {['#FinancialSafety', '#TaxSaving', '#FamilyProtection', '#AssetCover'].map(tag => (
                       <span key={tag} className="bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">{tag}</span>
@@ -210,7 +234,6 @@ export default function InsuranceClient() {
                   </div>
                 </section>
 
-                {/* Benefits Grid */}
                 <section>
                   <h3 className="text-xl font-bold text-slate-900 mb-6">Key Benefits of Buying Online</h3>
                   <div className="grid sm:grid-cols-2 gap-4">
@@ -234,7 +257,7 @@ export default function InsuranceClient() {
                 </section>
               </div>
 
-              {/* Right Column: Sticky FAQ Sidebar (Span 5 or 4) */}
+              {/* Right Column: Sticky FAQ Sidebar */}
               <div className="lg:col-span-5 xl:col-span-4">
                 <div className="lg:sticky lg:top-8 bg-slate-50/50 rounded-3xl lg:p-6 lg:border border-slate-200">
                   <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
@@ -285,8 +308,7 @@ export default function InsuranceClient() {
         </main>
       </div>
 
-      {/* Bottom Nav - Hidden on Desktop typically handled inside the component with media queries, 
-          but wrapper ensures structure remains cleaner */}
+      {/* Bottom Nav */}
       <div>
         <BottomNav />
       </div>

@@ -35,7 +35,7 @@ export default function sitemap() {
     '/account/support',
     '/admin/login',
     '/admin/signup',
-    '/admin/account',
+    '/admin',
     '/admin/settings',
     '/admin/forgot-password'
   ]

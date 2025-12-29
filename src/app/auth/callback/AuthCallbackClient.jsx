@@ -49,7 +49,7 @@ export default function AuthCallbackClient() {
         if (next) {
           router.replace(next)
         } else if (isAdmin) {
-          router.replace('/admin/account')
+          router.replace('/admin')
         } else {
           router.replace('/account')
         }
