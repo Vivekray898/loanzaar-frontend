@@ -133,7 +133,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <div className="p-4 border-t border-slate-800">
           <button 
-            onClick={async () => { await supabase.auth.signOut(); router.push('/signin'); }}
+            onClick={async () => { await supabase.auth.signOut(); try { document.cookie = 'userToken=; Path=/; Max-Age=0; Secure; SameSite=None'; } catch(e){}; router.push('/signin'); }}
             className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-red-400 hover:bg-red-950/30 hover:text-red-300 transition-all"
           >
             <LogOut size={20} /> 

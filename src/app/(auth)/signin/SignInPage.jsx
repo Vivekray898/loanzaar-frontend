@@ -107,20 +107,34 @@ function SignInPage({ onShowSignup, onShowForgot, isModal = false }) {
           };
           localStorage.setItem('userData', JSON.stringify(userData));
 
-          if (profile.data.role === 'admin') {
-            router.replace('/admin');
+            // Set cookie used by middleware for server-side admin check
+            try {
+              const maxAge = 60 * 60 * 24 * 7; // 7 days as fallback
+              document.cookie = `userToken=${supabaseResult.token}; Path=/; Max-Age=${maxAge}; Secure; SameSite=None`;
+            } catch (e) {
+              console.warn('SignInPage: unable to set cookie userToken', e);
+            }
+
+            if (profile.data.role === 'admin') {
+              router.replace('/admin');
+            } else {
+              router.replace('/account');
+            }
           } else {
-            router.replace('/account');
+            // Profile missing or incomplete — handle gracefully
+            console.warn('SignInPage: profile missing or incomplete', { uid: supabaseResult.uid, profile });
+            localStorage.setItem('userToken', supabaseResult.token);
+            localStorage.setItem('supabaseUID', supabaseResult.uid);
+            localStorage.setItem('supabaseEmail', supabaseResult.email);
+            try {
+              const maxAge = 60 * 60 * 24 * 7;
+              document.cookie = `userToken=${supabaseResult.token}; Path=/; Max-Age=${maxAge}; Secure; SameSite=None`;
+            } catch (e) {
+              console.warn('SignInPage: unable to set cookie userToken', e);
+            }
+            setMessage({ type: 'warning', text: 'Profile incomplete or not found. Redirecting to profile...' });
+            router.replace('/account/profile');
           }
-        } else {
-          // Profile missing or incomplete — handle gracefully
-          console.warn('SignInPage: profile missing or incomplete', { uid: supabaseResult.uid, profile });
-          localStorage.setItem('userToken', supabaseResult.token);
-          localStorage.setItem('supabaseUID', supabaseResult.uid);
-          localStorage.setItem('supabaseEmail', supabaseResult.email);
-          setMessage({ type: 'warning', text: 'Profile incomplete or not found. Redirecting to profile...' });
-          router.replace('/account/profile');
-        }
       }
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'Authentication failed' });

@@ -157,6 +157,12 @@ export const UserAuthProvider = ({ children }) => {
     setRole('guest')
     try {
       await supabase.auth.signOut()
+      // Clear middleware cookie
+      try {
+        document.cookie = 'userToken=; Path=/; Max-Age=0; Secure; SameSite=None';
+      } catch (e) {
+        console.warn('UserAuthProvider: could not clear userToken cookie', e)
+      }
       router.push('/signin')
     } catch (e) {
       console.error('UserAuthProvider: signOut failed', e)
