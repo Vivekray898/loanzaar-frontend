@@ -1,18 +1,28 @@
 'use client'
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { submitApplication } from '../../../services/supabaseService';
-import { X, User, Sun, Check, Loader2, MapPin, Zap, ArrowRight, IndianRupee } from 'lucide-react';
-import Turnstile from '@/components/Turnstile'; // ✅ Added Import
+import { submitApplication } from '@/services/supabaseService';
+import { 
+  X, User, Sun, Check, Loader2, MapPin, Zap, ArrowRight, 
+  ArrowLeft, Building, Home, IndianRupee 
+} from 'lucide-react';
+import Turnstile from '@/components/Turnstile';
 
-interface SolarFormData {
+interface FormData {
   fullName: string;
   mobile: string;
-  pincode: string;
+  email?: string;
+  // Solar Fields
   monthlyBill: string;
   installationSize: string;
   panelsType: string;
   roofType: string;
+  // Address Fields
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  state: string;
+  pincode: string;
 }
 
 interface SolarApplicationFormProps {
@@ -31,90 +41,116 @@ export default function SolarApplicationForm({
   
   const [step, setStep] = useState<number>(1);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [formData, setFormData] = useState<SolarFormData>({
+  const [formData, setFormData] = useState<FormData>({
     fullName: '',
     mobile: '',
-    pincode: '',
+    email: '',
     monthlyBill: '',
     installationSize: '',
     panelsType: 'Monocrystalline',
-    roofType: 'Concrete'
+    roofType: 'Concrete',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    pincode: ''
   });
 
-  // ✅ Added Captcha State
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
 
   // Reset state on open/close
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const prevOverflow = document.body.style.overflow;
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      timer = setTimeout(() => {
+    if (!isOpen) {
+      const t = setTimeout(() => {
         setStep(1);
-        setCaptchaToken(null); // ✅ Reset captcha
+        setCaptchaToken(null);
       }, 300);
+      return () => clearTimeout(t);
     }
-    return () => {
-      if (timer) clearTimeout(timer);
-      document.body.style.overflow = prevOverflow || '';
-    };
   }, [isOpen]);
 
-  const handleInput = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  // Lock scroll
+  useEffect(() => {
+    if (isOpen) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = 'unset';
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isOpen]);
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Step 1 Validation
-  const handleNextStep = () => {
-    if (!formData.fullName.trim() || formData.mobile.length < 10) {
-      alert('Please enter a valid Name and 10-digit Mobile Number.');
-      return;
+  const nextStep = () => {
+    // Step 1 Validation
+    if (step === 1) {
+      if (!formData.fullName.trim() || formData.mobile.length < 10) {
+        alert('Please enter a valid Name and 10-digit Mobile Number.');
+        return;
+      }
     }
-    setStep(2);
+    // Step 2 Validation
+    if (step === 2) {
+      if (!formData.monthlyBill) {
+        alert('Please enter your average monthly electricity bill.');
+        return;
+      }
+    }
+    setStep(prev => prev + 1);
   };
 
-  // Step 2 Validation & Submit
+  const prevStep = () => {
+    setStep(prev => prev - 1);
+  };
+
   const handleFinalSubmit = async () => {
-    if (!formData.pincode || !formData.monthlyBill) {
-      alert('Please fill in your location and electricity bill details.');
+    // Step 3 Validation (Address)
+    if (!formData.addressLine1 || !formData.city || !formData.state || !formData.pincode) {
+      alert('Please fill in your complete address details.');
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
       const payload = {
-        fullName: formData.fullName,
-        mobile: formData.mobile,
+        full_name: formData.fullName,
+        mobile_number: formData.mobile,
+        email: formData.email || null,
+        
+        // Address Mapping
+        address_line_1: formData.addressLine1,
+        address_line_2: formData.addressLine2,
+        city: formData.city,
+        state: formData.state,
         pincode: formData.pincode,
-        loanType: 'solar-loan',
+
+        product_category: 'Green Loan',
+        product_type: loanType,
+        source: 'website',
         metadata: {
           monthlyBill: formData.monthlyBill,
           installationSize: formData.installationSize,
           panelsType: formData.panelsType,
-          roofType: formData.roofType,
-          loanCategory
+          roofType: formData.roofType
         }
       };
 
-      // ✅ Include Captcha Token
       const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;
 
+      console.log('📤 Submitting solar application...', payload);
+
       const res = await submitApplication(submitPayload);
-      
+
       if (res && res.success) {
-        setStep(3); // Move to Success Screen
-        setCaptchaToken(null); // ✅ Clear token on success
+        setStep(4); // Success Step
+        setCaptchaToken(null);
       } else {
-        alert(res?.message || 'Submission failed. Please try again.');
+        alert(res?.message || 'Failed to submit application. Please try again.');
       }
-    } catch (err: any) {
-      console.error(err);
-      alert('An unexpected error occurred.');
+    } catch (error) {
+      console.error('❌ Error submitting solar loan:', error);
+      alert((error as any)?.message || 'An error occurred while submitting.');
     } finally {
       setIsLoading(false);
     }
@@ -129,44 +165,38 @@ export default function SolarApplicationForm({
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
           <div>
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              {loanType}
-              <span className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-bold border border-green-100">
-                Subsidy Available
-              </span>
-            </h3>
-            <p className="text-xs text-slate-500">Go green with easy EMIs</p>
+            <h3 className="text-lg font-bold text-slate-900">{loanType}</h3>
+            <p className="text-xs text-slate-500">
+              {step === 4 ? 'Application Status' : `Step ${step} of 3`}
+            </p>
           </div>
-          <button 
-            onClick={onClose} 
-            className="p-2 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors text-slate-500"
-          >
+          <button onClick={onClose} className="p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-colors text-slate-500">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Progress Bar */}
-        {step < 3 && (
+        {step < 4 && (
           <div className="h-1 w-full bg-slate-100">
             <div 
               className="h-full bg-green-600 transition-all duration-500 ease-out" 
-              style={{ width: step === 1 ? '50%' : '100%' }} 
+              style={{ width: `${(step / 3) * 100}%` }} 
             />
           </div>
         )}
 
         {/* Body */}
-        <div className="p-6 overflow-y-auto">
+        <div className="p-6 overflow-y-auto custom-scrollbar">
           
-          {/* STEP 1: Contact Information */}
+          {/* --- STEP 1: IDENTITY --- */}
           {step === 1 && (
-            <div className="space-y-5">
+            <div className="space-y-5 animate-in slide-in-from-right-4 duration-300">
               <div className="text-center mb-6">
-                <div className="w-14 h-14 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-green-100">
+                <div className="w-14 h-14 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3 border border-green-100 shadow-sm">
                   <User className="w-7 h-7" />
                 </div>
-                <h4 className="text-xl font-bold text-slate-900">Contact Details</h4>
-                <p className="text-sm text-slate-500">We need this to generate your solar quote.</p>
+                <h4 className="text-xl font-bold text-slate-900">Contact Information</h4>
+                <p className="text-sm text-slate-500">We will get in touch regarding your installation.</p>
               </div>
 
               <div>
@@ -174,12 +204,12 @@ export default function SolarApplicationForm({
                 <input 
                   name="fullName" 
                   value={formData.fullName} 
-                  onChange={handleInput} 
-                  placeholder="e.g. Rajesh Kumar" 
-                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium text-slate-900 placeholder:text-slate-400"
+                  onChange={handleInputChange} 
+                  placeholder="As per Electricity Bill" 
+                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium" 
                 />
               </div>
-              
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Mobile Number</label>
                 <div className="relative">
@@ -189,15 +219,27 @@ export default function SolarApplicationForm({
                     type="tel" 
                     maxLength={10} 
                     value={formData.mobile} 
-                    onChange={handleInput} 
+                    onChange={handleInputChange} 
                     placeholder="99999 00000" 
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium text-slate-900 placeholder:text-slate-400"
+                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium" 
                   />
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Email (optional)</label>
+                <input 
+                  name="email" 
+                  type="email" 
+                  value={formData.email} 
+                  onChange={handleInputChange} 
+                  placeholder="you@example.com" 
+                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium" 
+                />
+              </div>
+
               <button 
-                onClick={handleNextStep} 
+                onClick={nextStep} 
                 className="w-full mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >
                 Next Step <ArrowRight className="w-5 h-5" />
@@ -205,122 +247,140 @@ export default function SolarApplicationForm({
             </div>
           )}
 
-          {/* STEP 2: Solar & Roof Details */}
+          {/* --- STEP 2: SOLAR DETAILS --- */}
           {step === 2 && (
-            <div className="space-y-5">
+            <div className="space-y-5 animate-in slide-in-from-right-4 duration-300">
               <div className="text-center mb-6">
-                <div className="w-14 h-14 bg-yellow-50 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-yellow-100">
+                <div className="w-14 h-14 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3 border border-green-100 shadow-sm">
                   <Sun className="w-7 h-7" />
                 </div>
-                <h4 className="text-xl font-bold text-slate-900">Installation Details</h4>
-                <p className="text-sm text-slate-500">Tell us about your energy needs.</p>
+                <h4 className="text-xl font-bold text-slate-900">Power Requirement</h4>
+                <p className="text-sm text-slate-500">Help us estimate your savings.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Avg. Monthly Bill</label>
+                <div className="relative">
+                  <IndianRupee className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+                  <input 
+                    name="monthlyBill" 
+                    type="number" 
+                    value={formData.monthlyBill} 
+                    onChange={handleInputChange} 
+                    placeholder="e.g. 3500" 
+                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium" 
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Monthly Bill</label>
-                  <div className="relative">
-                    <IndianRupee className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
-                    <input 
-                      name="monthlyBill" 
-                      type="number" 
-                      value={formData.monthlyBill} 
-                      onChange={handleInput} 
-                      placeholder="e.g. 3500" 
-                      className="w-full pl-9 pr-3 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium"
-                    />
-                  </div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Roof Type</label>
+                  <select name="roofType" value={formData.roofType} onChange={handleInputChange} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium text-slate-700">
+                    <option value="Concrete">Concrete</option>
+                    <option value="Tin Shed">Tin Shed</option>
+                    <option value="Open Ground">Open Ground</option>
+                  </select>
                 </div>
-                
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Pincode</label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
-                    <input 
-                      name="pincode" 
-                      maxLength={6} 
-                      value={formData.pincode} 
-                      onChange={handleInput} 
-                      placeholder="e.g. 400001" 
-                      className="w-full pl-9 pr-3 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium"
-                    />
-                  </div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Panel Type</label>
+                  <select name="panelsType" value={formData.panelsType} onChange={handleInputChange} className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium text-slate-700">
+                    <option value="Monocrystalline">Mono Perc</option>
+                    <option value="Polycrystalline">Poly</option>
+                    <option value="Bifacial">Bifacial</option>
+                  </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Panel Preference</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {['Monocrystalline', 'Polycrystalline'].map((type) => (
-                    <label key={type} className={`cursor-pointer border rounded-xl p-3 flex items-center justify-center text-sm font-bold transition-all ${formData.panelsType === type ? 'border-green-500 bg-green-50 text-green-700' : 'border-slate-200 hover:bg-slate-50 text-slate-600'}`}>
-                      <input 
-                        type="radio" 
-                        name="panelsType" 
-                        value={type} 
-                        checked={formData.panelsType === type} 
-                        onChange={handleInput} 
-                        className="hidden" 
-                      />
-                      {type === 'Monocrystalline' ? 'Mono (High Eff.)' : 'Poly (Standard)'}
-                    </label>
-                  ))}
-                </div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Desired Capacity (kW)</label>
+                <input 
+                  name="installationSize" 
+                  value={formData.installationSize} 
+                  onChange={handleInputChange} 
+                  placeholder="e.g. 3 kW (Optional)" 
+                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium" 
+                />
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                 <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Roof Type</label>
-                    <select 
-                      name="roofType" 
-                      value={formData.roofType} 
-                      onChange={handleInput} 
-                      className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium text-slate-700"
-                    >
-                      <option value="Concrete">Concrete</option>
-                      <option value="Metal Shed">Metal Shed</option>
-                      <option value="Tiles">Tiles</option>
-                    </select>
-                 </div>
-                 <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Size (Optional)</label>
-                    <input 
-                      name="installationSize" 
-                      value={formData.installationSize} 
-                      onChange={handleInput} 
-                      placeholder="e.g. 5 kW" 
-                      className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium"
-                    />
-                 </div>
-              </div>
-
-              {/* ✅ Captcha Widget */}
-              {TURNSTILE_SITE_KEY && (
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                  <p className="text-xs font-semibold text-slate-600 mb-3">Security Check</p>
-                  <Turnstile sitekey={TURNSTILE_SITE_KEY} onVerify={(token) => setCaptchaToken(token)} />
-                </div>
-              )}
 
               <div className="flex gap-3 pt-2">
-                <button 
-                  onClick={() => setStep(1)} 
-                  className="flex-1 bg-white border border-slate-200 text-slate-700 font-bold py-4 rounded-xl hover:bg-slate-50 transition-colors"
-                >
-                  Back
+                <button onClick={prevStep} className="px-5 bg-slate-100 text-slate-600 font-bold py-4 rounded-xl hover:bg-slate-200 transition-colors">
+                  <ArrowLeft className="w-5 h-5" />
                 </button>
-                <button 
-                  onClick={handleFinalSubmit} 
-                  disabled={isLoading || (!!TURNSTILE_SITE_KEY && !captchaToken)} 
-                  className="flex-[2] bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (!!TURNSTILE_SITE_KEY && !captchaToken ? 'Complete Security Check' : 'Get Free Quote')}
+                <button onClick={nextStep} className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                  Next Step <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
             </div>
           )}
 
-          {/* STEP 3: Success Screen */}
+          {/* --- STEP 3: ADDRESS --- */}
           {step === 3 && (
+            <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
+              <div className="text-center mb-6">
+                <div className="w-14 h-14 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3 border border-green-100 shadow-sm">
+                  <MapPin className="w-7 h-7" />
+                </div>
+                <h4 className="text-xl font-bold text-slate-900">Installation Site</h4>
+                <p className="text-sm text-slate-500">We need this to check solar feasibility.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Address Line 1</label>
+                <input name="addressLine1" value={formData.addressLine1} onChange={handleInputChange} placeholder="House No, Building, Street" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Address Line 2 (Optional)</label>
+                <input name="addressLine2" value={formData.addressLine2} onChange={handleInputChange} placeholder="Area, Landmark" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">City</label>
+                  <div className="relative">
+                    <Building className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
+                    <input name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className="w-full pl-9 pr-3 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Pincode</label>
+                  <input name="pincode" type="number" maxLength={6} value={formData.pincode} onChange={handleInputChange} placeholder="000000" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">State</label>
+                <div className="relative">
+                  <Home className="absolute left-3 top-3.5 w-4 h-4 text-slate-400" />
+                  <input name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className="w-full pl-9 pr-3 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-medium" />
+                </div>
+              </div>
+
+              {/* Captcha */}
+              {TURNSTILE_SITE_KEY && (
+                <div className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl flex justify-center">
+                  <Turnstile sitekey={TURNSTILE_SITE_KEY} onVerify={(token) => setCaptchaToken(token)} />
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button onClick={prevStep} className="px-5 bg-slate-100 text-slate-600 font-bold py-4 rounded-xl hover:bg-slate-200 transition-colors">
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={handleFinalSubmit} 
+                  disabled={isLoading || (!!TURNSTILE_SITE_KEY && !captchaToken)} 
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Request Quote'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* --- STEP 4: SUCCESS --- */}
+          {step === 4 && (
             <div className="text-center py-10 animate-in zoom-in duration-300">
               <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ring-4 ring-green-50">
                 <Check className="w-12 h-12 text-green-600" strokeWidth={3} />
@@ -340,11 +400,10 @@ export default function SolarApplicationForm({
         </div>
 
         {/* Footer Note */}
-        {step < 3 && (
+        {step < 4 && (
           <div className="p-4 bg-slate-50 border-t border-slate-200 text-center">
-            <p className="text-[10px] text-slate-400 font-medium">
-              <Zap className="w-3 h-3 inline mr-1 text-yellow-500" />
-              100% Free Consultation & Site Visit
+            <p className="text-[10px] text-slate-400">
+              By submitting, you agree to our Terms & Privacy Policy.
             </p>
           </div>
         )}

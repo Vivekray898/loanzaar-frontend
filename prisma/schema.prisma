@@ -16,7 +16,15 @@ model applications {
   full_name         String
   mobile_number     String
   email             String?
+  
+  // --- Updated Address Fields ---
+  address_line_1    String?
+  address_line_2    String?
   city              String?
+  state             String?
+  pincode           String?
+  // -----------------------------
+
   product_category  String
   product_type      String
   application_stage String   @default("started")
@@ -25,6 +33,9 @@ model applications {
   metadata          Json?    @default("{}")
   ip                String?  @db.VarChar(64)
   user_agent        String?  @db.VarChar(512)
+  
+  // Relations (if any)
+  assigned_to       String?  @db.Uuid
 
   @@schema("public")
 }
@@ -87,7 +98,6 @@ model application_assignments {
   @@schema("public")
 }
 
-
 model application_remarks {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   application_id  String   @db.Uuid
@@ -100,7 +110,6 @@ model application_remarks {
   @@index([agent_user_id])
   @@schema("public")
 }
-
 
 enum user_role {
   user

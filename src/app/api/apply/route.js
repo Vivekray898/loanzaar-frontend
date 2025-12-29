@@ -2,24 +2,45 @@ export const runtime = 'nodejs';
 import { createServerSupabase } from '@/config/supabaseServer';
 import { Resend } from 'resend';
 
-// Initialize Resend outside the handler (if the key exists) to reuse the instance
+// Initialize Resend (Email Service)
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function POST(req) {
   try {
     const body = await req.json();
 
-    // Basic validation
-    const { fullName, mobile, email, city, loanType, product_type, source, metadata, captchaToken } = body || {};
-    if (!fullName || !mobile) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    // 1. Destructure fields matching the Client Payload (snake_case)
+    // We also support camelCase fallbacks just in case old forms still hit this route.
+    const { 
+      full_name, fullName,
+      mobile_number, mobile,
+      email,
+      address_line_1, address_line_2, city, state, pincode,
+      product_category, loanType, product_type,
+      source,
+      metadata,
+      captchaToken 
+    } = body || {};
+
+    // 2. Normalize Data
+    const nameToSave = full_name || fullName;
+    const mobileToSave = mobile_number || mobile;
+    const productToSave = product_type || loanType || 'Personal Loan';
+    const categoryToSave = product_category || 'Loan';
+
+    // 3. Validation
+    if (!nameToSave || !mobileToSave) {
+      return new Response(JSON.stringify({ error: 'Missing Name or Mobile Number' }), { 
+        status: 400, 
+        headers: { 'Content-Type': 'application/json' } 
+      });
     }
 
-    // If captcha verification is desired, validate it here (Turnstile / reCAPTCHA)
+    // 4. Captcha Verification (Turnstile / reCAPTCHA)
     const secret = process.env.TURNSTILE_SECRET_KEY || process.env.RECAPTCHA_SECRET_KEY;
     if (secret) {
       if (!captchaToken) {
-        return new Response(JSON.stringify({ error: 'Missing captcha token' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: 'Missing captcha token' }), { status: 400 });
       }
       const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
         method: 'POST',
@@ -28,103 +49,97 @@ export async function POST(req) {
       });
       const verifyJson = await verifyRes.json();
       if (!verifyJson.success) {
-        console.error('Turnstile verification failed:', verifyJson);
-        // Include verification details in response when not in production to aid debugging
-        const body = process.env.NODE_ENV === 'production' ? { error: 'Captcha verification failed' } : { error: 'Captcha verification failed', verify: verifyJson };
-        return new Response(JSON.stringify(body), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        console.error('Captcha failed:', verifyJson);
+        return new Response(JSON.stringify({ error: 'Security check failed. Please try again.' }), { status: 400 });
       }
     }
 
-    // Setup Supabase server client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-    const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !serviceKey) {
-      console.error('Supabase credentials missing for /api/apply');
-      return new Response(JSON.stringify({ error: 'Server misconfiguration: Supabase credentials missing' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    // 5. Initialize Supabase
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseServiceKey) {
+      return new Response(JSON.stringify({ error: 'Server Error: Database configuration missing' }), { status: 500 });
     }
+    const supabase = createServerSupabase(supabaseServiceKey);
 
-    if (publishableKey && serviceKey === publishableKey) {
-      console.error('Supabase service key appears to match publishable key');
-      return new Response(JSON.stringify({ error: 'Server misconfiguration: using publishable key as service role' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-    }
-
-    const supabase = createServerSupabase(serviceKey);
-
-    // Prepare insert payload matching client mapping
-    const insertPayload = {
-      full_name: String(fullName).trim(),
-      mobile_number: String(mobile).trim(),
+    // 6. Prepare Database Payload (Matches 'applications' table structure)
+    const dbPayload = {
+      full_name: String(nameToSave).trim(),
+      mobile_number: String(mobileToSave).trim(),
       email: email ? String(email).trim() : null,
+      
+      // New Address Fields
+      address_line_1: address_line_1 ? String(address_line_1).trim() : null,
+      address_line_2: address_line_2 ? String(address_line_2).trim() : null,
       city: city ? String(city).trim() : null,
-      product_category: 'loan',
-      product_type: product_type || loanType || 'personal',
-      application_stage: 'started',
+      state: state ? String(state).trim() : null,
+      pincode: pincode ? String(pincode).trim() : null,
+
+      product_category: categoryToSave,
+      product_type: productToSave,
+      
+      application_stage: 'submitted', // Updated stage
       status: 'new',
       source: source || 'website',
       metadata: metadata || {},
-      ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || null,
-      user_agent: req.headers.get('user-agent') || null,
+      
+      // Audit Metadata
+      ip: req.headers.get('x-forwarded-for') || 'unknown',
+      user_agent: req.headers.get('user-agent') || 'unknown',
     };
 
+    // 7. Insert into Supabase
     const { data, error } = await supabase
       .from('applications')
-      .insert([insertPayload])
+      .insert([dbPayload])
       .select()
       .single();
 
     if (error) {
-      console.error('Supabase insert error (/api/apply):', error);
-      if (error.code === '42501' || (error.message && /permission denied/i.test(String(error.message)))) {
-        return new Response(JSON.stringify({ error: 'Database permission denied - check SUPABASE_SERVICE_ROLE key and RLS/policies' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-      }
-      return new Response(JSON.stringify({ error: 'Failed to save application' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      console.error('Supabase Insert Error:', error);
+      return new Response(JSON.stringify({ error: 'Failed to save application' }), { status: 500 });
     }
 
-    // Send admin email via Resend (best-effort)
+    // 8. Send Admin Notification Email (Optional)
     const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
-    const fromEmail = process.env.RESEND_FROM_EMAIL || process.env.FROM_EMAIL || 'no-reply@resend.dev';
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'no-reply@loanzaar.in';
 
-    if (resend && adminEmail && fromEmail) {
-      try {
-        const recordId = data?.id ? String(data.id) : 'N/A';
-        const html = `
-          <p><strong>New application received</strong></p>
-          <ul>
-            <li><strong>Name:</strong> ${escapeHtml(insertPayload.full_name)}</li>
-            <li><strong>Mobile:</strong> ${escapeHtml(insertPayload.mobile_number)}</li>
-            <li><strong>Email:</strong> ${escapeHtml(insertPayload.email)}</li>
-            <li><strong>Product:</strong> ${escapeHtml(insertPayload.product_type)}</li>
-            <li><strong>ID:</strong> ${recordId}</li>
-          </ul>
-        `;
-
-        await Promise.allSettled([
-          resend.emails.send({ from: fromEmail, to: adminEmail, subject: `New Lead: ${escapeHtml(insertPayload.full_name)}`, html, reply_to: insertPayload.email })
-        ]);
-      } catch (emailErr) {
-        console.error('Resend error (/api/apply):', emailErr);
-      }
-    } else {
-      console.warn('Skipping admin email: Resend or admin email not configured');
+    if (resend && adminEmail) {
+      // Don't await email to keep response fast
+      const emailHtml = `
+        <h2>New ${escapeHtml(dbPayload.product_type)} Application</h2>
+        <ul>
+          <li><strong>Name:</strong> ${escapeHtml(dbPayload.full_name)}</li>
+          <li><strong>Phone:</strong> ${escapeHtml(dbPayload.mobile_number)}</li>
+          <li><strong>Location:</strong> ${escapeHtml(dbPayload.city)}, ${escapeHtml(dbPayload.state)}</li>
+          <li><strong>Income:</strong> ₹${metadata?.monthlyIncome || 'N/A'}</li>
+        </ul>
+        <p>View full details in your admin dashboard.</p>
+      `;
+      
+      resend.emails.send({
+        from: fromEmail,
+        to: adminEmail,
+        subject: `New Lead: ${escapeHtml(dbPayload.full_name)}`,
+        html: emailHtml
+      }).catch(err => console.error('Email failed:', err));
     }
 
-    return new Response(JSON.stringify({ success: true, id: data?.id, data }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    // 9. Success Response
+    return new Response(JSON.stringify({ success: true, id: data?.id }), { 
+      status: 200, 
+      headers: { 'Content-Type': 'application/json' } 
+    });
 
   } catch (err) {
-    console.error('Route handler error (/api/apply):', err);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    console.error('API Route Error:', err);
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
   }
 }
 
-// Basic HTML escape helper
+// Helper to prevent XSS in emails
 function escapeHtml(str) {
-  if (str === null || str === undefined) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, (m) => ({ 
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' 
+  })[m]);
 }

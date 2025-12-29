@@ -4,16 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Meta from '@/components/Meta';
 import BackButton from '@/components/BackButton';
 import BottomNav from '@/components/BottomNav';
-import StructuredData from '@/components/StructuredData';
-import { generateLoanSchema, generateWebPageSchema } from '@/utils/schema';
+// @ts-ignore
 import BusinessApplicationFrom from '@/components/forms/loans/BusinessApplicationFrom';
 import { 
   ChevronDown, Check, Star, Calculator, FileText, Info, HelpCircle, 
-  ArrowRight, Briefcase, TrendingUp, ShieldCheck, Zap
+  ArrowRight, Briefcase, TrendingUp, ShieldCheck, Zap, IndianRupee, Percent, Calendar
 } from 'lucide-react';
-
-
-
 
 const BusinessLoanClient = () => {
   // UI State
@@ -25,20 +21,27 @@ const BusinessLoanClient = () => {
   
   // Calculator State
   const [loanAmount, setLoanAmount] = useState(500000);
-  const [interestRate, setInterestRate] = useState(11.99);
-  const [tenure, setTenure] = useState(36);
+  const [interestRate, setInterestRate] = useState(12);
+  const [tenure, setTenure] = useState(36); // In Months
   const [emi, setEmi] = useState(0);
 
   // --- EMI Calculation Logic ---
   useEffect(() => {
-    const r = interestRate / 12 / 100;
-    const n = tenure;
-    const e = loanAmount * r * (Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1));
-    setEmi(Math.round(e));
+    // P x R x (1+R)^N / [(1+R)^N-1]
+    const P = loanAmount;
+    const R = interestRate / 12 / 100; // Monthly Interest
+    const N = tenure; // Tenure in Months
+    
+    if (P > 0 && R > 0 && N > 0) {
+      const emiValue = P * R * (Math.pow(1 + R, N) / (Math.pow(1 + R, N) - 1));
+      setEmi(Math.round(emiValue));
+    } else {
+      setEmi(0);
+    }
   }, [loanAmount, interestRate, tenure]);
 
   const handleApplyClick = () => {
-    setIsModalOpen(true); // Open the modal
+    setIsModalOpen(true);
   };
 
   // Smooth Scroll Handler
@@ -53,9 +56,9 @@ const BusinessLoanClient = () => {
       const offsetPosition = elementPosition - offset;
       window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
     }
-  };
+  }; 
 
-  // --- Data ---
+  // --- Data Constants ---
   const highlights = [
     { title: 'High Amount', val: '₹50 Lakhs', sub: 'Max limit', icon: Briefcase },
     { title: 'Low Interest', val: '11.99%', sub: 'Starting p.a.', icon: TrendingUp },
@@ -84,80 +87,69 @@ const BusinessLoanClient = () => {
     { q: "Minimum turnover required?", a: "Your business should have an annual turnover of at least ₹10 Lakhs." }
   ];
 
-  // --- Reusable Calculator Widget ---
-  const CalculatorWidget = () => (
-    <div className="space-y-6 md:space-y-8">
-      <div className="bg-slate-900 text-white p-6 rounded-2xl text-center shadow-lg">
-        <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Monthly Installment</p>
-        <p className="text-4xl font-bold">₹{emi.toLocaleString()}</p>
-        <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-800">
-            <div>
-              <p className="text-[10px] text-slate-400">Total Interest</p>
-              <p className="text-sm font-bold text-yellow-400">₹{(emi * tenure - loanAmount).toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400">Total Amount</p>
-              <p className="text-sm font-bold text-blue-400">₹{(emi * tenure).toLocaleString()}</p>
-            </div>
-        </div>
-      </div>
+  // --- Calculator Input Handlers ---
+  const handleAmountChange = (e) => {
+    const val = Number(e.target.value);
+    setLoanAmount(val);
+  };
 
-      <div className="space-y-6 bg-white md:bg-transparent p-4 md:p-0 rounded-xl border md:border-none border-slate-200">
-        <div>
-          <div className="flex justify-between text-sm font-semibold mb-2">
-            <span className="text-slate-500">Loan Amount</span>
-            <span className="text-slate-900">₹{(loanAmount/100000).toFixed(1)}L</span>
-          </div>
-          <input 
-            type="range" min="100000" max="5000000" step="10000" 
-            value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-          />
-        </div>
+  const handleTenureChange = (e) => {
+    const val = Number(e.target.value);
+    setTenure(val);
+  };
 
-        <div>
-          <div className="flex justify-between text-sm font-semibold mb-2">
-            <span className="text-slate-500">Tenure</span>
-            <span className="text-slate-900">{tenure} Months</span>
-          </div>
-          <input 
-            type="range" min="12" max="60" step="6" 
-            value={tenure} onChange={(e) => setTenure(Number(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-          />
-        </div>
-
-        <div>
-          <div className="flex justify-between text-sm font-semibold mb-2">
-            <span className="text-slate-500">Interest Rate</span>
-            <span className="text-slate-900">{interestRate}%</span>
-          </div>
-          <input 
-            type="range" min="8" max="24" step="0.5" 
-            value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-          />
-        </div>
-      </div>
-
-      {/* Desktop Only Apply Button */}
-      <div className="hidden lg:block pt-2">
-        <button 
-          onClick={handleApplyClick}
-          className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-white px-6 py-4 rounded-xl font-bold text-base shadow-xl shadow-blue-200"
-        >
-          Apply Now <ArrowRight className="w-5 h-5" />
-        </button>
-        <p className="text-center text-xs text-slate-400 mt-3">No collateral required</p>
-      </div>
-    </div>
-  );
+  const handleRateChange = (e) => {
+    const val = Number(e.target.value);
+    setInterestRate(val);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-20 lg:pb-0 text-slate-900">
+      {/* Custom CSS for Smooth Slider 
+        - Removes default styling
+        - Creates a larger touch target for the thumb
+      */}
+      <style jsx global>{`
+        .custom-range {
+          -webkit-appearance: none; /* Hides the slider so that custom slider can be made */
+          width: 100%; /* Specific width is required for Firefox. */
+          background: transparent; /* Otherwise white in Chrome */
+        }
+        .custom-range::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          height: 24px;
+          width: 24px;
+          border-radius: 50%;
+          background: #2563EB; /* Blue-600 */
+          cursor: pointer;
+          margin-top: -10px; /* You need to specify a margin in Chrome, but in Firefox and IE it is automatic */
+          box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+          border: 2px solid white;
+        }
+        .custom-range::-moz-range-thumb {
+          height: 24px;
+          width: 24px;
+          border-radius: 50%;
+          background: #2563EB;
+          cursor: pointer;
+          box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+          border: 2px solid white;
+        }
+        .custom-range::-webkit-slider-runnable-track {
+          width: 100%;
+          height: 6px;
+          cursor: pointer;
+          background: #E2E8F0; /* Slate-200 */
+          border-radius: 999px;
+        }
+        .custom-range:focus {
+          outline: none;
+        }
+      `}</style>
+
       <Meta title="Business Loan | Loanzaar" description="Fast business loans for growth." />
       
-      {/* 1. Header (Universal) */}
+      {/* 1. Header */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 h-16 flex items-center justify-between">
         <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
           <BackButton className="text-sm font-semibold text-slate-500 flex items-center gap-1 hover:text-slate-900 transition-colors">
@@ -168,7 +160,7 @@ const BusinessLoanClient = () => {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pt-6">
+      <main className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pt-6 scroll-smooth">
 
         {/* 2. Hero Section */}
         <section id="overview" className="mb-8">
@@ -202,7 +194,7 @@ const BusinessLoanClient = () => {
 
         {/* 3. Sticky Navigation Anchor Bar */}
         <div className="sticky top-16 z-40 bg-slate-50/95 backdrop-blur-sm pt-2 pb-4 border-b border-slate-200 mb-8">
-          <div className="flex overflow-x-auto gap-2 md:gap-4 pb-2 scrollbar-hide">
+          <div className="flex overflow-x-auto gap-2 md:gap-4 pb-2 scrollbar-hide scroll-smooth" style={{ WebkitOverflowScrolling: 'touch' }}>
             {[
               { id: 'overview', label: 'Overview', icon: Info },
               { id: 'calculator', label: 'Calculator', icon: Calculator },
@@ -242,10 +234,10 @@ const BusinessLoanClient = () => {
                   {highlights.map((stat, i) => (
                     <div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
                       <div className="flex items-center gap-2 mb-2">
-                         <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600">
-                           <stat.icon className="w-4 h-4" />
-                         </div>
-                         <p className="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">{stat.title}</p>
+                          <div className="p-1.5 bg-blue-50 rounded-lg text-blue-600">
+                            <stat.icon className="w-4 h-4" />
+                          </div>
+                          <p className="text-[10px] md:text-xs text-slate-400 uppercase font-bold tracking-wider">{stat.title}</p>
                       </div>
                       <p className="text-lg md:text-xl font-bold text-slate-900">{stat.val}</p>
                       <p className="text-xs text-slate-500">{stat.sub}</p>
@@ -273,11 +265,115 @@ const BusinessLoanClient = () => {
             </div>
 
             {/* CALCULATOR SECTION (Mobile Only - Hidden on LG) */}
-            <div id="calculator" className="lg:hidden scroll-mt-32 border-t border-slate-200 pt-8">
+            <div id="calculator" className="lg:hidden scroll-mt-32 border-t border-slate-200 pt-8 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
                <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                   <Calculator className="w-5 h-5 text-blue-600" /> EMI Calculator
                </h3>
-               <CalculatorWidget />
+               {/* Mobile Calculator Markup */}
+               <div className="space-y-6">
+                  <div className="bg-slate-900 text-white p-6 rounded-2xl text-center shadow-lg">
+                    <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Monthly Installment</p>
+                    <p className="text-4xl font-bold">₹{emi.toLocaleString()}</p>
+                    <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-800">
+                        <div>
+                          <p className="text-[10px] text-slate-400">Total Interest</p>
+                          <p className="text-sm font-bold text-yellow-400">₹{(emi * tenure - loanAmount).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-slate-400">Total Amount</p>
+                          <p className="text-sm font-bold text-blue-400">₹{(emi * tenure).toLocaleString()}</p>
+                        </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6 bg-white p-4 rounded-xl border border-slate-200">
+                    {/* Loan Amount */}
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <label className="text-sm font-semibold text-slate-700">Loan Amount</label>
+                        <div className="flex items-center bg-slate-100 rounded-lg px-3 py-1.5">
+                          <IndianRupee className="w-3 h-3 text-slate-500" />
+                          <input 
+                            type="number"
+                            value={loanAmount}
+                            onChange={handleAmountChange}
+                            className="w-24 bg-transparent text-right text-sm font-bold text-slate-900 outline-none"
+                          />
+                        </div>
+                      </div>
+                      <div className="px-1">
+                        <input 
+                          type="range" min="100000" max="5000000" step="10000" 
+                          value={loanAmount} onChange={handleAmountChange}
+                          // TOUCH ACTION NONE is the key fix
+                          style={{ touchAction: 'none' }}
+                          className="custom-range"
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-slate-400 mt-2 font-medium">
+                        <span>₹1 Lakh</span>
+                        <span>₹50 Lakhs</span>
+                      </div>
+                    </div>
+
+                    {/* Tenure */}
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <label className="text-sm font-semibold text-slate-700">Tenure (Months)</label>
+                        <div className="flex items-center bg-slate-100 rounded-lg px-3 py-1.5">
+                          <Calendar className="w-3 h-3 text-slate-500 mr-1" />
+                          <input 
+                            type="number"
+                            value={tenure}
+                            onChange={handleTenureChange}
+                            className="w-16 bg-transparent text-right text-sm font-bold text-slate-900 outline-none"
+                          />
+                          <span className="text-xs text-slate-500 ml-1">mo</span>
+                        </div>
+                      </div>
+                      <div className="px-1">
+                        <input 
+                          type="range" min="12" max="60" step="1" 
+                          value={tenure} onChange={handleTenureChange}
+                          style={{ touchAction: 'none' }}
+                          className="custom-range"
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-slate-400 mt-2 font-medium">
+                        <span>12 Mo</span>
+                        <span>60 Mo</span>
+                      </div>
+                    </div>
+
+                    {/* Interest */}
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <label className="text-sm font-semibold text-slate-700">Interest Rate</label>
+                        <div className="flex items-center bg-slate-100 rounded-lg px-3 py-1.5">
+                          <input 
+                            type="number"
+                            value={interestRate}
+                            onChange={handleRateChange}
+                            className="w-16 bg-transparent text-right text-sm font-bold text-slate-900 outline-none"
+                          />
+                          <Percent className="w-3 h-3 text-slate-500 ml-1" />
+                        </div>
+                      </div>
+                      <div className="px-1">
+                        <input 
+                          type="range" min="8" max="24" step="0.25" 
+                          value={interestRate} onChange={handleRateChange}
+                          style={{ touchAction: 'none' }}
+                          className="custom-range"
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-slate-400 mt-2 font-medium">
+                        <span>8%</span>
+                        <span>24%</span>
+                      </div>
+                    </div>
+                  </div>
+               </div>
             </div>
 
             {/* DOCUMENTS SECTION */}
@@ -340,22 +436,102 @@ const BusinessLoanClient = () => {
                    <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
                       <Calculator className="w-5 h-5 text-blue-600" /> EMI Calculator
                    </h3>
-                   <CalculatorWidget />
-                </div>
-                
-                {/* Trust Badge Widget */}
-                <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 flex items-center gap-4">
-                   <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-green-600">
-                      <ShieldCheck className="w-5 h-5" />
-                   </div>
-                   <div>
-                      <p className="text-sm font-bold text-slate-900">Secure Application</p>
-                      <p className="text-xs text-slate-500">256-bit SSL Encryption</p>
+                   {/* Desktop Calculator Markup (Inline) */}
+                   <div className="space-y-6">
+                      <div className="bg-slate-900 text-white p-6 rounded-2xl text-center shadow-lg">
+                        <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Monthly Installment</p>
+                        <p className="text-4xl font-bold">₹{emi.toLocaleString()}</p>
+                        <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-800">
+                            <div>
+                              <p className="text-[10px] text-slate-400">Total Interest</p>
+                              <p className="text-sm font-bold text-yellow-400">₹{(emi * tenure - loanAmount).toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-slate-400">Total Amount</p>
+                              <p className="text-sm font-bold text-blue-400">₹{(emi * tenure).toLocaleString()}</p>
+                            </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-5">
+                        {/* Loan Amount */}
+                        <div>
+                          <div className="flex justify-between items-center mb-3">
+                            <label className="text-sm font-bold text-slate-600">Loan Amount</label>
+                            <div className="flex items-center border border-slate-200 rounded-lg px-2 py-1 focus-within:ring-2 ring-blue-500/20">
+                              <IndianRupee className="w-3 h-3 text-slate-400" />
+                              <input 
+                                type="number" value={loanAmount} onChange={handleAmountChange}
+                                className="w-24 text-right text-sm font-bold text-slate-800 outline-none bg-transparent"
+                              />
+                            </div>
+                          </div>
+                          <div className="px-1">
+                            <input 
+                              type="range" min="100000" max="5000000" step="10000" 
+                              value={loanAmount} onChange={handleAmountChange}
+                              className="custom-range"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Tenure */}
+                        <div>
+                          <div className="flex justify-between items-center mb-3">
+                            <label className="text-sm font-bold text-slate-600">Tenure (Months)</label>
+                            <div className="flex items-center border border-slate-200 rounded-lg px-2 py-1 focus-within:ring-2 ring-blue-500/20">
+                              <input 
+                                type="number" value={tenure} onChange={handleTenureChange}
+                                className="w-12 text-right text-sm font-bold text-slate-800 outline-none bg-transparent"
+                              />
+                              <span className="text-xs text-slate-400 ml-1">mo</span>
+                            </div>
+                          </div>
+                          <div className="px-1">
+                            <input 
+                              type="range" min="12" max="60" step="1" 
+                              value={tenure} onChange={handleTenureChange}
+                              className="custom-range"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Interest */}
+                        <div>
+                          <div className="flex justify-between items-center mb-3">
+                            <label className="text-sm font-bold text-slate-600">Interest Rate</label>
+                            <div className="flex items-center border border-slate-200 rounded-lg px-2 py-1 focus-within:ring-2 ring-blue-500/20">
+                              <input 
+                                type="number" value={interestRate} onChange={handleRateChange}
+                                className="w-12 text-right text-sm font-bold text-slate-800 outline-none bg-transparent"
+                              />
+                              <Percent className="w-3 h-3 text-slate-400 ml-1" />
+                            </div>
+                          </div>
+                          <div className="px-1">
+                            <input 
+                              type="range" min="8" max="24" step="0.25" 
+                              value={interestRate} onChange={handleRateChange}
+                              className="custom-range"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Desktop Apply Button */}
+                      <div className="pt-2">
+                        <button 
+                          onClick={handleApplyClick}
+                          className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-white px-6 py-4 rounded-xl font-bold text-base shadow-xl shadow-blue-200"
+                        >
+                          Apply Now <ArrowRight className="w-5 h-5" />
+                        </button>
+                        <p className="text-center text-[10px] text-slate-400 mt-2 font-medium uppercase tracking-wide">100% Collateral Free</p>
+                      </div>
                    </div>
                 </div>
              </div>
           </div>
-
         </div>
       </main>
 
@@ -375,10 +551,7 @@ const BusinessLoanClient = () => {
         </div>
       </div>
 
-      {/* 
-         The Dynamic Modal
-         Important: Pass `loanCategory="business"` so the modal shows business fields (Turnover, Vintage) 
-         instead of personal employment fields.
+      {/* The Dynamic Modal
       */}
       {isModalOpen && (
         <BusinessApplicationFrom 
@@ -394,6 +567,5 @@ const BusinessLoanClient = () => {
     </div>
   );
 };
-
 
 export default BusinessLoanClient;

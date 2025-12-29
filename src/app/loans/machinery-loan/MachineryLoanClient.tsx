@@ -1,23 +1,150 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Meta from '@/components/Meta';
 import BackButton from '@/components/BackButton';
 import BottomNav from '@/components/BottomNav';
 import StructuredData from '@/components/StructuredData';
 import { generateLoanSchema, generateWebPageSchema } from '@/utils/schema';
+// @ts-ignore
 import MachineryApplicationFrom from '@/components/forms/loans/MachineryApplicationFrom';
 import { 
   ChevronDown, Check, Star, Calculator, FileText, Info, HelpCircle, 
-  ArrowRight, Settings, TrendingUp, IndianRupee, Layers, Shield, Zap, RefreshCw
+  ArrowRight, Settings, TrendingUp, IndianRupee, Layers, Shield, Zap, RefreshCw,
+  Minus, Plus, Percent, Calendar
 } from 'lucide-react';
 
+// --- 1. Extracted Calculator Component (Fixes Lag & Enhances UI) ---
+const MachineryLoanCalculator = ({ 
+  loanAmount, setLoanAmount, 
+  interestRate, setInterestRate, 
+  tenure, setTenure, 
+  emi, totalInterest, totalAmount 
+}: any) => {
+  return (
+    <div className="space-y-6 md:space-y-8">
+      {/* Results Card */}
+      <div className="bg-slate-900 text-white p-6 rounded-2xl text-center shadow-lg">
+        <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Monthly Installment</p>
+        <p className="text-4xl font-bold">₹{emi.toLocaleString()}</p>
+        <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-800">
+            <div>
+              <p className="text-[10px] text-slate-400">Total Interest</p>
+              <p className="text-sm font-bold text-yellow-400">₹{totalInterest.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400">Total Amount</p>
+              <p className="text-sm font-bold text-orange-400">₹{totalAmount.toLocaleString()}</p>
+            </div>
+        </div>
+      </div>
 
+      {/* Inputs */}
+      <div className="space-y-6 bg-white md:bg-transparent p-4 md:p-0 rounded-xl border md:border-none border-slate-200">
+        
+        {/* Loan Amount */}
+        <div>
+          <div className="flex justify-between items-center mb-3">
+            <label className="text-sm font-bold text-slate-700">Loan Amount</label>
+            <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden">
+               <button onClick={() => setLoanAmount((prev: number) => Math.max(500000, prev - 50000))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Minus className="w-3 h-3"/></button>
+               <div className="px-2 py-1 flex items-center border-x border-slate-100 bg-slate-50 min-w-[80px] justify-center">
+                  <IndianRupee className="w-3 h-3 text-slate-400 mr-1" />
+                  <input 
+                    type="number" 
+                    value={loanAmount} 
+                    onChange={(e) => setLoanAmount(Number(e.target.value))}
+                    className="w-24 text-center text-sm font-bold text-slate-800 outline-none bg-transparent"
+                  />
+               </div>
+               <button onClick={() => setLoanAmount((prev: number) => Math.min(50000000, prev + 50000))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Plus className="w-3 h-3"/></button>
+            </div>
+          </div>
+          <input 
+            type="range" min="500000" max="50000000" step="50000" 
+            value={loanAmount} 
+            onChange={(e) => setLoanAmount(Number(e.target.value))}
+            style={{ touchAction: 'none' }}
+            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-orange-600 hover:accent-orange-700 transition-all"
+          />
+          {/* Quick Select Chips */}
+          <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-hide">
+             {[1000000, 2500000, 5000000, 10000000].map(val => (
+               <button 
+                 key={val}
+                 onClick={() => setLoanAmount(val)}
+                 className={`px-3 py-1 text-xs font-medium rounded-full border transition-all whitespace-nowrap ${loanAmount === val ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-white border-slate-200 text-slate-600 hover:border-orange-200'}`}
+               >
+                 ₹{(val/100000).toFixed(1)}L
+               </button>
+             ))}
+          </div>
+        </div>
+
+        {/* Tenure */}
+        <div>
+          <div className="flex justify-between items-center mb-3">
+            <label className="text-sm font-bold text-slate-700">Tenure (Months)</label>
+            <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden">
+               <button onClick={() => setTenure((prev: number) => Math.max(12, prev - 6))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Minus className="w-3 h-3"/></button>
+               <div className="px-2 py-1 flex items-center border-x border-slate-100 bg-slate-50 min-w-[60px] justify-center">
+                  <Calendar className="w-3 h-3 text-slate-400 mr-1" />
+                  <span className="text-sm font-bold text-slate-800">{tenure}</span>
+                  <span className="text-xs text-slate-400 ml-1">mo</span>
+               </div>
+               <button onClick={() => setTenure((prev: number) => Math.min(60, prev + 6))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Plus className="w-3 h-3"/></button>
+            </div>
+          </div>
+          <input 
+            type="range" min="12" max="60" step="6" 
+            value={tenure} 
+            onChange={(e) => setTenure(Number(e.target.value))}
+            style={{ touchAction: 'none' }}
+            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-orange-600 hover:accent-orange-700 transition-all"
+          />
+          <div className="flex justify-between text-[10px] text-slate-400 mt-2 font-medium">
+            <span>12 Mo</span>
+            <span>60 Mo</span>
+          </div>
+        </div>
+
+        {/* Interest */}
+        <div>
+          <div className="flex justify-between items-center mb-3">
+            <label className="text-sm font-bold text-slate-700">Interest Rate</label>
+            <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden">
+               <button onClick={() => setInterestRate((prev: number) => Math.max(8, +(prev - 0.5).toFixed(2)))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Minus className="w-3 h-3"/></button>
+               <div className="px-2 py-1 flex items-center border-x border-slate-100 bg-slate-50 min-w-[60px] justify-center">
+                  <input 
+                    type="number" value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))}
+                    className="w-12 text-center text-sm font-bold text-slate-800 outline-none bg-transparent"
+                  />
+                  <span className="text-xs text-slate-400 ml-1">%</span>
+               </div>
+               <button onClick={() => setInterestRate((prev: number) => Math.min(20, +(prev + 0.5).toFixed(2)))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Plus className="w-3 h-3"/></button>
+            </div>
+          </div>
+          <input 
+            type="range" min="8" max="20" step="0.5" 
+            value={interestRate} 
+            onChange={(e) => setInterestRate(Number(e.target.value))}
+            style={{ touchAction: 'none' }}
+            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-orange-600 hover:accent-orange-700 transition-all"
+          />
+          <div className="flex justify-between text-[10px] text-slate-400 mt-2 font-medium">
+            <span>8%</span>
+            <span>20%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const MachineryLoanClient = () => {
   // UI State
   const [activeTab, setActiveTab] = useState('overview');
-  const [activeFaq, setActiveFaq] = useState(null);
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,37 +152,42 @@ const MachineryLoanClient = () => {
   // Calculator State
   const [loanAmount, setLoanAmount] = useState(2500000);
   const [interestRate, setInterestRate] = useState(12);
-  const [tenure, setTenure] = useState(60);
-  const [emi, setEmi] = useState(0);
+  const [tenure, setTenure] = useState(60); // In Months
 
-  // --- EMI Calculation Logic ---
-  useEffect(() => {
+  // --- Optimized EMI Calculation ---
+  const emi = useMemo(() => {
     const r = interestRate / 12 / 100;
     const n = tenure;
-    const e = loanAmount * r * (Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1));
-    setEmi(Math.round(e));
+    
+    if (loanAmount > 0 && r > 0 && n > 0) {
+      const e = loanAmount * r * (Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1));
+      return Math.round(e);
+    }
+    return 0;
   }, [loanAmount, interestRate, tenure]);
+
+  const totalAmount = useMemo(() => emi * tenure, [emi, tenure]);
+  const totalInterest = useMemo(() => totalAmount - loanAmount, [totalAmount, loanAmount]);
 
   const handleApplyClick = () => {
     setIsModalOpen(true);
   };
 
-  // Smooth Scroll Handler
-  const scrollToSection = (id) => {
+  const scrollToSection = (id: string) => {
     setActiveTab(id);
     const element = document.getElementById(id);
     if (element) {
-      const offset = 120; // Height of sticky headers
+      const offset = 120;
       const bodyRect = document.body.getBoundingClientRect().top;
       const elementRect = element.getBoundingClientRect().top;
       const elementPosition = elementRect - bodyRect;
       const offsetPosition = elementPosition - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
     }
+  };
+
+  const toggleFaq = (index: number) => {
+    setActiveFaq(activeFaq === index ? null : index);
   };
 
   // Data
@@ -98,80 +230,47 @@ const MachineryLoanClient = () => {
     { q: 'Secured or Unsecured?', a: 'Can be both, depends on lender.' }
   ];
 
-  // --- Reusable Calculator Widget ---
-  const CalculatorWidget = () => (
-    <div className="space-y-6 md:space-y-8">
-      <div className="bg-slate-900 text-white p-6 rounded-2xl text-center shadow-lg">
-        <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Monthly Installment</p>
-        <p className="text-4xl font-bold">₹{emi.toLocaleString()}</p>
-        <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-800">
-            <div>
-              <p className="text-[10px] text-slate-400">Total Interest</p>
-              <p className="text-sm font-bold text-yellow-400">₹{(emi * tenure - loanAmount).toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400">Total Amount</p>
-              <p className="text-sm font-bold text-orange-400">₹{(emi * tenure).toLocaleString()}</p>
-            </div>
-        </div>
-      </div>
-
-      <div className="space-y-6 bg-white md:bg-transparent p-4 md:p-0 rounded-xl border md:border-none border-slate-200">
-        <div>
-          <div className="flex justify-between text-sm font-semibold mb-2">
-            <span className="text-slate-500">Loan Amount</span>
-            <span className="text-slate-900">₹{(loanAmount/100000).toFixed(1)}L</span>
-          </div>
-          <input 
-            type="range" min="500000" max="50000000" step="100000" 
-            value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
-          />
-        </div>
-
-        <div>
-          <div className="flex justify-between text-sm font-semibold mb-2">
-            <span className="text-slate-500">Tenure</span>
-            <span className="text-slate-900">{tenure} Months</span>
-          </div>
-          <input 
-            type="range" min="12" max="60" step="6" 
-            value={tenure} onChange={(e) => setTenure(Number(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
-          />
-        </div>
-
-        <div>
-          <div className="flex justify-between text-sm font-semibold mb-2">
-            <span className="text-slate-500">Interest Rate</span>
-            <span className="text-slate-900">{interestRate}%</span>
-          </div>
-          <input 
-            type="range" min="8" max="20" step="0.5" 
-            value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
-          />
-        </div>
-      </div>
-
-      {/* Desktop Only Apply Button */}
-      <div className="hidden lg:block pt-2">
-        <button 
-          onClick={handleApplyClick}
-          className="w-full flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 active:scale-95 transition-all text-white px-6 py-4 rounded-xl font-bold text-base shadow-xl shadow-orange-200"
-        >
-          Apply Now <ArrowRight className="w-5 h-5" />
-        </button>
-        <p className="text-center text-xs text-slate-400 mt-3">Up to 100% Financing Available</p>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-20 lg:pb-0 text-slate-900">
+      
+      {/* Slider Styles */}
+      <style jsx global>{`
+        input[type="range"] {
+          -webkit-appearance: none;
+          width: 100%;
+          background: transparent;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          height: 18px;
+          width: 18px;
+          border-radius: 50%;
+          background: #ea580c; /* orange-600 */
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 2px 6px rgba(234, 88, 12, 0.35);
+          transition: transform 120ms cubic-bezier(.2,.8,.2,1), box-shadow 120ms ease;
+          -webkit-tap-highlight-color: transparent;
+        }
+        input[type="range"]::-moz-range-thumb {
+          height: 18px;
+          width: 18px;
+          border-radius: 50%;
+          background: #ea580c;
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 2px 6px rgba(234, 88, 12, 0.35);
+          transition: transform 120ms cubic-bezier(.2,.8,.2,1), box-shadow 120ms ease;
+        }
+        input[type="range"]:active::-webkit-slider-thumb {
+          transform: scale(1.06);
+          box-shadow: 0 6px 16px rgba(234, 88, 12, 0.35);
+        }
+      `}</style>
+
       <Meta title="Machinery Loan | Loanzaar" description="Finance industrial equipment." />
       
-      {/* 1. Header (Universal) */}
+      {/* 1. Header */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 h-16 flex items-center justify-between">
         <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
           <BackButton className="text-sm font-semibold text-slate-500 flex items-center gap-1 hover:text-slate-900 transition-colors">
@@ -244,7 +343,7 @@ const MachineryLoanClient = () => {
         {/* 4. Main Layout Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 pb-12">
           
-          {/* LEFT COLUMN: Content Sections (col-span-8) */}
+          {/* LEFT COLUMN */}
           <div className="lg:col-span-7 xl:col-span-8 space-y-16">
             
             {/* OVERVIEW CONTENT */}
@@ -260,21 +359,21 @@ const MachineryLoanClient = () => {
 
               {/* Key Benefits Box */}
               <div className="bg-orange-50/80 p-6 rounded-2xl border border-orange-100">
-                 <h3 className="text-sm font-bold text-orange-900 mb-4 uppercase tracking-wide">Key Benefits</h3>
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <h3 className="text-sm font-bold text-orange-900 mb-4 uppercase tracking-wide">Key Benefits</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
-                     { title: 'Financing', val: '100%', sub: 'of Equip. Cost' },
-                     { title: 'Amount', val: '₹5 Cr', sub: 'Maximum' },
-                     { title: 'Tenure', val: '5 Years', sub: 'Flexible' },
-                     { title: 'Collateral', val: 'None*', sub: 'On select loans' },
-                   ].map((stat, i) => (
-                     <div key={i} className="bg-white p-4 rounded-xl border border-orange-50 shadow-sm flex flex-col justify-center">
+                      { title: 'Financing', val: '100%', sub: 'of Equip. Cost' },
+                      { title: 'Amount', val: '₹5 Cr', sub: 'Maximum' },
+                      { title: 'Tenure', val: '5 Years', sub: 'Flexible' },
+                      { title: 'Collateral', val: 'None*', sub: 'On select loans' },
+                    ].map((stat, i) => (
+                      <div key={i} className="bg-white p-4 rounded-xl border border-orange-50 shadow-sm flex flex-col justify-center">
                         <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase">{stat.title}</p>
                         <p className="text-sm md:text-base font-bold text-orange-700 mt-1">{stat.val}</p>
                         <p className="text-[10px] md:text-xs text-slate-500 mt-0.5">{stat.sub}</p>
-                     </div>
-                   ))}
-                </div>
+                      </div>
+                    ))}
+                  </div>
               </div>
 
               {/* Financing Options */}
@@ -294,12 +393,18 @@ const MachineryLoanClient = () => {
               </div>
             </div>
 
-            {/* CALCULATOR SECTION (Mobile Only - Hidden on LG) */}
+            {/* CALCULATOR SECTION (Mobile) */}
             <div id="calculator" className="lg:hidden scroll-mt-32 border-t border-slate-200 pt-8">
                <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                   <Calculator className="w-5 h-5 text-orange-600" /> EMI Calculator
                </h3>
-               <CalculatorWidget />
+               {/* Use the new component */}
+               <MachineryLoanCalculator 
+                 loanAmount={loanAmount} setLoanAmount={setLoanAmount}
+                 interestRate={interestRate} setInterestRate={setInterestRate}
+                 tenure={tenure} setTenure={setTenure}
+                 emi={emi} totalInterest={totalInterest} totalAmount={totalAmount}
+               />
             </div>
 
             {/* FEATURES SECTION */}
@@ -327,8 +432,7 @@ const MachineryLoanClient = () => {
               <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <FileText className="w-6 h-6 text-slate-700" /> Required Documents
               </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
                 {documents.map((section, idx) => (
                   <div key={idx} className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                     <div className="bg-slate-100 px-5 py-3 text-xs font-bold text-slate-700 uppercase tracking-wide border-b border-slate-200">
@@ -356,7 +460,7 @@ const MachineryLoanClient = () => {
                 {faqs.map((item, i) => (
                   <div key={i} className="border border-slate-100 rounded-xl overflow-hidden bg-white hover:border-orange-300 transition-colors">
                     <button 
-                      onClick={() => setActiveFaq(activeFaq === i ? null : i)}
+                      onClick={() => toggleFaq(i)}
                       className="w-full flex justify-between items-center p-5 text-left"
                     >
                       <span className="text-sm md:text-base font-semibold text-slate-800 pr-4">{item.q}</span>
@@ -375,17 +479,22 @@ const MachineryLoanClient = () => {
             
           </div>
 
-          {/* RIGHT COLUMN: Sticky Sidebar (Calculator) (lg:col-span-4) */}
+          {/* RIGHT COLUMN: Sticky Sidebar (Calculator) */}
           <div className="hidden lg:block lg:col-span-5 xl:col-span-4">
              <div className="sticky top-32 space-y-6">
                 <div id="calculator" className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
                    <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
                       <Calculator className="w-5 h-5 text-orange-600" /> EMI Calculator
                    </h3>
-                   <CalculatorWidget />
+                   {/* Use extracted component */}
+                   <MachineryLoanCalculator 
+                     loanAmount={loanAmount} setLoanAmount={setLoanAmount}
+                     interestRate={interestRate} setInterestRate={setInterestRate}
+                     tenure={tenure} setTenure={setTenure}
+                     emi={emi} totalInterest={totalInterest} totalAmount={totalAmount}
+                   />
                 </div>
                 
-                {/* Trust Badge Widget */}
                 <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 flex items-center gap-4">
                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-orange-600">
                       <Shield className="w-5 h-5" />
@@ -401,7 +510,7 @@ const MachineryLoanClient = () => {
         </div>
       </main>
 
-      {/* 5. Sticky Bottom Action Bar (Mobile/Tablet Only) */}
+      {/* 5. Sticky Bottom Action Bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 pb-safe z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         <div className="flex items-center gap-4 max-w-md mx-auto">
           <div className="flex-1">
@@ -417,11 +526,6 @@ const MachineryLoanClient = () => {
         </div>
       </div>
 
-      {/* 
-         The Dynamic Modal
-         Important: Pass `loanCategory="business"` so the modal shows business fields (Turnover, Vintage) 
-         instead of personal employment fields.
-      */}
       {isModalOpen && (
         <MachineryApplicationFrom 
           isOpen={isModalOpen} 
@@ -431,8 +535,7 @@ const MachineryLoanClient = () => {
         />
       )}
 
-      {/* Bottom navigation */}
-        <BottomNav />
+      <BottomNav />
     </div>
   );
 };

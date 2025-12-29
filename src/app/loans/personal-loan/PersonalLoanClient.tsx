@@ -1,16 +1,17 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Meta from '@/components/Meta';
 import BackButton from '@/components/BackButton';
 import BottomNav from '@/components/BottomNav';
 import StructuredData from '@/components/StructuredData';
-import PersonalLoanForm from '@/components/forms/loans/PersonalLoanForm'; // Ensure this path is correct
+// @ts-ignore
+import PersonalLoanForm from '@/components/forms/loans/PersonalLoanForm'; 
 import { generateLoanSchema, generateWebPageSchema } from '@/utils/schema';
 import { 
   ChevronDown, Check, Star, Calculator, FileText, Info, HelpCircle, 
   ArrowRight, Shield, Clock, Gift, Layers, Eye, Wallet, 
-  Briefcase
+  Briefcase, Minus, Plus, IndianRupee, Calendar, Percent
 } from 'lucide-react';
 
 // --- Interfaces for Type Safety ---
@@ -23,7 +24,7 @@ interface FeatureItem {
 }
 
 interface CriteriaItem {
-  icon: string; // we map strings to icons later or use ElementType if passing direct component
+  icon: string; 
   text: string;
   highlight: boolean;
 }
@@ -38,6 +39,133 @@ interface FaqItem {
   a: string;
 }
 
+// --- 1. Extracted Calculator Component (Fixes Lag & Enhances UI) ---
+const PersonalLoanCalculator = ({ 
+  loanAmount, setLoanAmount, 
+  interestRate, setInterestRate, 
+  tenure, setTenure, 
+  emi, totalInterest, totalAmount 
+}: any) => {
+  return (
+    <div className="space-y-6 md:space-y-8">
+      {/* Results Card */}
+      <div className="bg-slate-900 text-white p-6 rounded-2xl text-center shadow-lg">
+        <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Estimated Monthly EMI</p>
+        <p className="text-4xl font-bold">₹{emi.toLocaleString()}</p>
+        <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-800">
+            <div>
+              <p className="text-[10px] text-slate-400">Total Interest</p>
+              <p className="text-sm font-bold text-yellow-400">₹{totalInterest.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400">Total Amount</p>
+              <p className="text-sm font-bold text-blue-400">₹{totalAmount.toLocaleString()}</p>
+            </div>
+        </div>
+      </div>
+
+      {/* Inputs */}
+      <div className="space-y-6 bg-white md:bg-transparent p-4 md:p-0 rounded-xl border md:border-none border-slate-200">
+        
+        {/* Loan Amount */}
+        <div>
+          <div className="flex justify-between items-center mb-3">
+            <label className="text-sm font-bold text-slate-700">Loan Amount</label>
+            <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden">
+               <button onClick={() => setLoanAmount((prev: number) => Math.max(50000, prev - 10000))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Minus className="w-3 h-3"/></button>
+               <div className="px-2 py-1 flex items-center border-x border-slate-100 bg-slate-50 min-w-[80px] justify-center">
+                  <IndianRupee className="w-3 h-3 text-slate-400 mr-1" />
+                  <input 
+                    type="number" 
+                    value={loanAmount} 
+                    onChange={(e) => setLoanAmount(Number(e.target.value))}
+                    className="w-20 text-center text-sm font-bold text-slate-800 outline-none bg-transparent"
+                  />
+               </div>
+               <button onClick={() => setLoanAmount((prev: number) => Math.min(4000000, prev + 10000))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Plus className="w-3 h-3"/></button>
+            </div>
+          </div>
+          <input 
+            type="range" min="50000" max="4000000" step="10000" 
+            value={loanAmount} 
+            onChange={(e) => setLoanAmount(Number(e.target.value))}
+            style={{ touchAction: 'none' }}
+            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 hover:accent-blue-700 transition-all"
+          />
+          {/* Quick Select Chips */}
+          <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-hide">
+             {[100000, 500000, 1000000, 2000000].map(val => (
+               <button 
+                 key={val}
+                 onClick={() => setLoanAmount(val)}
+                 className={`px-3 py-1 text-xs font-medium rounded-full border transition-all whitespace-nowrap ${loanAmount === val ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-200'}`}
+               >
+                 ₹{(val/100000).toFixed(1)}L
+               </button>
+             ))}
+          </div>
+        </div>
+
+        {/* Tenure */}
+        <div>
+          <div className="flex justify-between items-center mb-3">
+            <label className="text-sm font-bold text-slate-700">Tenure (Months)</label>
+            <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden">
+               <button onClick={() => setTenure((prev: number) => Math.max(12, prev - 6))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Minus className="w-3 h-3"/></button>
+               <div className="px-2 py-1 flex items-center border-x border-slate-100 bg-slate-50 min-w-[60px] justify-center">
+                  <Calendar className="w-3 h-3 text-slate-400 mr-1" />
+                  <span className="text-sm font-bold text-slate-800">{tenure}</span>
+                  <span className="text-xs text-slate-400 ml-1">mo</span>
+               </div>
+               <button onClick={() => setTenure((prev: number) => Math.min(84, prev + 6))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Plus className="w-3 h-3"/></button>
+            </div>
+          </div>
+          <input 
+            type="range" min="12" max="84" step="6" 
+            value={tenure} 
+            onChange={(e) => setTenure(Number(e.target.value))}
+            style={{ touchAction: 'none' }}
+            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 hover:accent-blue-700 transition-all"
+          />
+          <div className="flex justify-between text-[10px] text-slate-400 mt-2 font-medium">
+            <span>12 Mo</span>
+            <span>84 Mo</span>
+          </div>
+        </div>
+
+        {/* Interest */}
+        <div>
+          <div className="flex justify-between items-center mb-3">
+            <label className="text-sm font-bold text-slate-700">Interest Rate</label>
+            <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden">
+               <button onClick={() => setInterestRate((prev: number) => Math.max(10, +(prev - 0.5).toFixed(2)))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Minus className="w-3 h-3"/></button>
+               <div className="px-2 py-1 flex items-center border-x border-slate-100 bg-slate-50 min-w-[60px] justify-center">
+                  <input 
+                    type="number" value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))}
+                    className="w-12 text-center text-sm font-bold text-slate-800 outline-none bg-transparent"
+                  />
+                  <span className="text-xs text-slate-400 ml-1">%</span>
+               </div>
+               <button onClick={() => setInterestRate((prev: number) => Math.min(24, +(prev + 0.5).toFixed(2)))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Plus className="w-3 h-3"/></button>
+            </div>
+          </div>
+          <input 
+            type="range" min="10" max="24" step="0.5" 
+            value={interestRate} 
+            onChange={(e) => setInterestRate(Number(e.target.value))}
+            style={{ touchAction: 'none' }}
+            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 hover:accent-blue-700 transition-all"
+          />
+          <div className="flex justify-between text-[10px] text-slate-400 mt-2 font-medium">
+            <span>10%</span>
+            <span>24%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const PersonalLoanClient = () => {
   // UI State
   const [activeTab, setActiveTab] = useState<string>('overview');
@@ -50,37 +178,41 @@ const PersonalLoanClient = () => {
   const [loanAmount, setLoanAmount] = useState<number>(500000);
   const [interestRate, setInterestRate] = useState<number>(12);
   const [tenure, setTenure] = useState<number>(36);
-  const [emi, setEmi] = useState<number>(0);
 
   // --- EMI Calculation Logic ---
-  useEffect(() => {
-    const r = interestRate / 12 / 100;
-    const n = tenure;
-    // Standard EMI Formula: E = P * r * (1+r)^n / ((1+r)^n - 1)
-    const e = loanAmount * r * (Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1));
-    setEmi(Math.round(e));
+  const emi = useMemo(() => {
+    const P = loanAmount;
+    const R = interestRate / 12 / 100; // Monthly Interest
+    const N = tenure; // Tenure in Months
+    
+    if (P > 0 && R > 0 && N > 0) {
+      return Math.round(P * R * (Math.pow(1 + R, N) / (Math.pow(1 + R, N) - 1)));
+    }
+    return 0;
   }, [loanAmount, interestRate, tenure]);
+
+  const totalAmount = useMemo(() => emi * tenure, [emi, tenure]);
+  const totalInterest = useMemo(() => totalAmount - loanAmount, [totalAmount, loanAmount]);
 
   const handleApplyClick = () => {
     setIsModalOpen(true);
   };
 
-  // Smooth Scroll Handler
   const scrollToSection = (id: string) => {
     setActiveTab(id);
     const element = document.getElementById(id);
     if (element) {
-      const offset = 120; // Height of sticky headers
+      const offset = 120;
       const bodyRect = document.body.getBoundingClientRect().top;
       const elementRect = element.getBoundingClientRect().top;
       const elementPosition = elementRect - bodyRect;
       const offsetPosition = elementPosition - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
     }
+  };
+
+  const toggleFaq = (index: number) => {
+    setActiveFaq(activeFaq === index ? null : index);
   };
 
   // --- Data ---
@@ -116,76 +248,44 @@ const PersonalLoanClient = () => {
     { q: 'How long does disbursal take?', a: 'Once approved, the amount is credited to your bank account within 24 to 48 hours.' }
   ];
 
-  // --- Component: EMI Calculator Widget ---
-  const CalculatorWidget = () => (
-    <div className="space-y-6 md:space-y-8">
-      <div className="bg-slate-900 text-white p-6 rounded-2xl text-center shadow-lg">
-        <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Estimated Monthly EMI</p>
-        <p className="text-4xl font-bold">₹{emi.toLocaleString()}</p>
-        <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-800">
-            <div>
-              <p className="text-[10px] text-slate-400">Total Interest</p>
-              <p className="text-sm font-bold text-yellow-400">₹{(emi * tenure - loanAmount).toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400">Total Amount</p>
-              <p className="text-sm font-bold text-blue-400">₹{(emi * tenure).toLocaleString()}</p>
-            </div>
-        </div>
-      </div>
-
-      <div className="space-y-6 bg-white md:bg-transparent p-4 md:p-0 rounded-xl border md:border-none border-slate-200">
-        <div>
-          <div className="flex justify-between text-sm font-semibold mb-2">
-            <span className="text-slate-500">Loan Amount</span>
-            <span className="text-slate-900">₹{(loanAmount/1000).toFixed(0)}k</span>
-          </div>
-          <input 
-            type="range" min="50000" max="4000000" step="10000" 
-            value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-          />
-        </div>
-
-        <div>
-          <div className="flex justify-between text-sm font-semibold mb-2">
-            <span className="text-slate-500">Tenure</span>
-            <span className="text-slate-900">{tenure} Months</span>
-          </div>
-          <input 
-            type="range" min="12" max="84" step="6" 
-            value={tenure} onChange={(e) => setTenure(Number(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-          />
-        </div>
-
-        <div>
-          <div className="flex justify-between text-sm font-semibold mb-2">
-            <span className="text-slate-500">Interest Rate</span>
-            <span className="text-slate-900">{interestRate}%</span>
-          </div>
-          <input 
-            type="range" min="10" max="24" step="0.5" 
-            value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-          />
-        </div>
-      </div>
-
-      <div className="hidden lg:block pt-2">
-        <button 
-          onClick={handleApplyClick}
-          className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-white px-6 py-4 rounded-xl font-bold text-base shadow-xl shadow-blue-200"
-        >
-          Apply Now <ArrowRight className="w-5 h-5" />
-        </button>
-        <p className="text-center text-xs text-slate-400 mt-3">No impact on credit score to check</p>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-20 lg:pb-0 text-slate-900">
+      
+      {/* Slider Styles */}
+      <style jsx global>{`
+        input[type="range"] {
+          -webkit-appearance: none;
+          width: 100%;
+          background: transparent;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          height: 18px;
+          width: 18px;
+          border-radius: 50%;
+          background: #2563EB; /* blue-600 */
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+          transition: transform 120ms cubic-bezier(.2,.8,.2,1), box-shadow 120ms ease;
+          -webkit-tap-highlight-color: transparent;
+        }
+        input[type="range"]::-moz-range-thumb {
+          height: 18px;
+          width: 18px;
+          border-radius: 50%;
+          background: #2563EB;
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+          transition: transform 120ms cubic-bezier(.2,.8,.2,1), box-shadow 120ms ease;
+        }
+        input[type="range"]:active::-webkit-slider-thumb {
+          transform: scale(1.06);
+          box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+        }
+      `}</style>
+
       <Meta title="Personal Loan | Loanzaar" description="Instant personal loans up to ₹40L." />
       
       {/* 1. Universal Header */}
@@ -233,7 +333,7 @@ const PersonalLoanClient = () => {
 
         {/* 3. Sticky Navigation */}
         <div className="sticky top-16 z-40 bg-slate-50/95 backdrop-blur-sm pt-2 pb-4 border-b border-slate-200 mb-8">
-          <div className="flex overflow-x-auto gap-2 md:gap-4 pb-2 scrollbar-hide">
+          <div className="flex overflow-x-auto gap-2 md:gap-4 pb-2 scrollbar-hide scroll-smooth" style={{ WebkitOverflowScrolling: 'touch' }}>
             {[
               { id: 'overview', label: 'Overview', icon: Info },
               { id: 'calculator', label: 'Calculator', icon: Calculator },
@@ -295,19 +395,19 @@ const PersonalLoanClient = () => {
               <div>
                 <h3 className="text-lg font-bold text-slate-900 mb-4">Popular Uses</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                   {[
-                     { title: 'Debt Consolidation', icon: Layers },
-                     { title: 'Home Renovation', icon: Wallet },
-                     { title: 'Medical Emergency', icon: FileText },
-                     { title: 'Travel & Wedding', icon: Gift }
-                   ].map((use, i) => (
-                     <div key={i} className="group bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex flex-col items-center text-center gap-3">
+                    {[
+                      { title: 'Debt Consolidation', icon: Layers },
+                      { title: 'Home Renovation', icon: Wallet },
+                      { title: 'Medical Emergency', icon: FileText },
+                      { title: 'Travel & Wedding', icon: Gift }
+                    ].map((use, i) => (
+                      <div key={i} className="group bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex flex-col items-center text-center gap-3">
                         <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center group-hover:bg-blue-50 transition-colors">
                           <use.icon className="w-5 h-5 text-blue-500" />
                         </div>
                         <span className="text-xs md:text-sm font-bold text-slate-700">{use.title}</span>
-                     </div>
-                   ))}
+                      </div>
+                    ))}
                 </div>
               </div>
             </div>
@@ -317,7 +417,13 @@ const PersonalLoanClient = () => {
                <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                   <Calculator className="w-5 h-5 text-blue-600" /> EMI Calculator
                </h3>
-               <CalculatorWidget />
+               {/* Use the new Component */}
+               <PersonalLoanCalculator 
+                 loanAmount={loanAmount} setLoanAmount={setLoanAmount}
+                 interestRate={interestRate} setInterestRate={setInterestRate}
+                 tenure={tenure} setTenure={setTenure}
+                 emi={emi} totalInterest={totalInterest} totalAmount={totalAmount}
+               />
             </div>
 
             {/* Features */}
@@ -384,7 +490,7 @@ const PersonalLoanClient = () => {
                 {faqs.map((item, i) => (
                   <div key={i} className="border border-slate-200 rounded-xl overflow-hidden bg-white hover:border-blue-300 transition-colors">
                     <button 
-                      onClick={() => setActiveFaq(activeFaq === i ? null : i)}
+                      onClick={() => toggleFaq(i)}
                       className="w-full flex justify-between items-center p-5 text-left"
                     >
                       <span className="text-sm md:text-base font-semibold text-slate-800 pr-4">{item.q}</span>
@@ -400,21 +506,28 @@ const PersonalLoanClient = () => {
                 ))}
               </div>
             </div>
-
+            
           </div>
 
           {/* RIGHT COLUMN: Sticky Calculator */}
           <div className="hidden lg:block lg:col-span-5 xl:col-span-4">
              <div className="sticky top-32 space-y-6">
-                <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
+                <div id="calculator" className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
                    <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
                       <Calculator className="w-5 h-5 text-blue-600" /> EMI Calculator
                    </h3>
-                   <CalculatorWidget />
+                   {/* Use the new Component */}
+                   <PersonalLoanCalculator 
+                     loanAmount={loanAmount} setLoanAmount={setLoanAmount}
+                     interestRate={interestRate} setInterestRate={setInterestRate}
+                     tenure={tenure} setTenure={setTenure}
+                     emi={emi} totalInterest={totalInterest} totalAmount={totalAmount}
+                   />
                 </div>
                 
+                {/* Trust Badge */}
                 <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 flex items-center gap-4">
-                   <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-green-600">
+                   <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-blue-600">
                       <Shield className="w-5 h-5" />
                    </div>
                    <div>
@@ -445,14 +558,16 @@ const PersonalLoanClient = () => {
       </div>
 
       {/* The Loan Form Modal */}
-      <PersonalLoanForm 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        loanType="Personal Loan"
-      />
+      {isModalOpen && (
+        <PersonalLoanForm 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          loanType="Personal Loan"
+        />
+      )}
 
-        {/* Bottom navigation */}
-        <BottomNav />
+      {/* Bottom navigation */}
+      <BottomNav />
     </div>
   );
 };

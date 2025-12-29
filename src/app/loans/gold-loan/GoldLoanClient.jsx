@@ -1,16 +1,144 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import Meta from '@/components/Meta';
+// @ts-ignore
 import GoldLoanForm from '@/components/forms/loans/GoldLoanForm'
 import BackButton from '@/components/BackButton';
-import BottomNav from '@/components/BottomNav'
-import StructuredData from '@/components/StructuredData';
-import { generateLoanSchema, generateWebPageSchema } from '@/utils/schema';
+import BottomNav from '@/components/BottomNav';
 import { 
   ChevronDown, Check, Star, Calculator, FileText, Info, HelpCircle, 
-  ArrowRight, Crown, Zap, IndianRupee, RefreshCw, TrendingDown, Target, Shield
+  ArrowRight, Crown, Zap, IndianRupee, RefreshCw, TrendingDown, Target, Shield,
+  Minus, Plus, Percent
 } from 'lucide-react';
+
+// --- 1. Extracted Calculator Component (Fixes Lag) ---
+const GoldLoanCalculator = ({ 
+  loanAmount, setLoanAmount, 
+  interestRate, setInterestRate, 
+  tenure, setTenure, 
+  emi, totalInterest, totalAmount 
+}) => {
+  return (
+    <div className="space-y-6 md:space-y-8">
+      {/* Result Display */}
+      <div className="bg-slate-900 text-white p-6 rounded-2xl text-center shadow-lg transition-all duration-300">
+        <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Monthly Installment</p>
+        <p className="text-4xl font-bold">₹{emi.toLocaleString()}</p>
+        <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-800">
+            <div>
+              <p className="text-[10px] text-slate-400">Total Interest</p>
+              <p className="text-sm font-bold text-yellow-400">₹{totalInterest.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400">Total Amount</p>
+              <p className="text-sm font-bold text-amber-400">₹{totalAmount.toLocaleString()}</p>
+            </div>
+        </div>
+      </div>
+
+      {/* Inputs */}
+      <div className="space-y-6 bg-white md:bg-transparent p-4 md:p-0 rounded-xl border md:border-none border-slate-200">
+        
+        {/* Loan Amount */}
+        <div>
+          <div className="flex justify-between items-center mb-3">
+            <label className="text-sm font-bold text-slate-700">Loan Amount</label>
+            <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden">
+               <button onClick={() => setLoanAmount((prev) => Math.max(5000, prev - 5000))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Minus className="w-3 h-3"/></button>
+               <div className="px-2 py-1 flex items-center border-x border-slate-100 bg-slate-50 min-w-[80px] justify-center">
+                  <IndianRupee className="w-3 h-3 text-slate-400 mr-1" />
+                  <input 
+                    type="number" 
+                    value={loanAmount} 
+                    onChange={(e) => setLoanAmount(Number(e.target.value))}
+                    className="w-24 text-center text-sm font-bold text-slate-800 outline-none bg-transparent"
+                  />
+               </div>
+               <button onClick={() => setLoanAmount((prev) => Math.min(2000000, prev + 5000))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Plus className="w-3 h-3"/></button>
+            </div>
+          </div>
+          <input 
+            type="range" min="5000" max="2000000" step="5000" 
+            value={loanAmount} 
+            onChange={(e) => setLoanAmount(Number(e.target.value))}
+            style={{ touchAction: 'none' }}
+            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500 hover:accent-amber-600 transition-all"
+          />
+          <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-hide">
+             {[50000, 100000, 200000, 500000].map(val => (
+               <button 
+                 key={val}
+                 onClick={() => setLoanAmount(val)}
+                 className={`px-3 py-1 text-xs font-medium rounded-full border transition-all whitespace-nowrap ${loanAmount === val ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-white border-slate-200 text-slate-600 hover:border-amber-200'}`}
+               >
+                 ₹{(val/100000).toFixed(1)}L
+               </button>
+             ))}
+          </div>
+        </div>
+
+        {/* Tenure */}
+        <div>
+          <div className="flex justify-between items-center mb-3">
+            <label className="text-sm font-bold text-slate-700">Tenure (Months)</label>
+            <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden">
+               <button onClick={() => setTenure((prev) => Math.max(3, prev - 3))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Minus className="w-3 h-3"/></button>
+               <div className="px-2 py-1 flex items-center border-x border-slate-100 bg-slate-50 min-w-[60px] justify-center">
+                  <input 
+                    type="number" value={tenure} onChange={(e) => setTenure(Number(e.target.value))}
+                    className="w-14 text-center text-sm font-bold text-slate-800 outline-none bg-transparent"
+                  />
+                  <span className="text-xs text-slate-400 ml-1">mo</span>
+               </div>
+               <button onClick={() => setTenure((prev) => Math.min(36, prev + 3))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Plus className="w-3 h-3"/></button>
+            </div>
+          </div>
+          <input 
+            type="range" min="3" max="36" step="3" 
+            value={tenure} 
+            onChange={(e) => setTenure(Number(e.target.value))}
+            style={{ touchAction: 'none' }}
+            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500 hover:accent-amber-600 transition-all"
+          />
+          <div className="flex justify-between text-[10px] text-slate-400 mt-2 font-medium">
+            <span>3 Months</span>
+            <span>36 Months</span>
+          </div>
+        </div>
+
+        {/* Interest */}
+        <div>
+          <div className="flex justify-between items-center mb-3">
+            <label className="text-sm font-bold text-slate-700">Interest Rate</label>
+            <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden">
+               <button onClick={() => setInterestRate((prev) => Math.max(7, +(prev - 0.5).toFixed(2)))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Minus className="w-3 h-3"/></button>
+               <div className="px-2 py-1 flex items-center border-x border-slate-100 bg-slate-50 min-w-[60px] justify-center">
+                  <input 
+                    type="number" value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))}
+                    className="w-14 text-center text-sm font-bold text-slate-800 outline-none bg-transparent"
+                  />
+                  <span className="text-xs text-slate-400 ml-1">%</span>
+               </div>
+               <button onClick={() => setInterestRate((prev) => Math.min(18, +(prev + 0.5).toFixed(2)))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Plus className="w-3 h-3"/></button>
+            </div>
+          </div>
+          <input 
+            type="range" min="7" max="18" step="0.5" 
+            value={interestRate} 
+            onChange={(e) => setInterestRate(Number(e.target.value))}
+            style={{ touchAction: 'none' }}
+            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500 hover:accent-amber-600 transition-all"
+          />
+          <div className="flex justify-between text-[10px] text-slate-400 mt-2 font-medium">
+            <span>7%</span>
+            <span>18%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const GoldLoanClient = () => {
   // UI State
@@ -21,41 +149,45 @@ const GoldLoanClient = () => {
   const [loanAmount, setLoanAmount] = useState(100000);
   const [interestRate, setInterestRate] = useState(10);
   const [tenure, setTenure] = useState(12);
-  const [emi, setEmi] = useState(0);
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // --- EMI Calculation Logic ---
-  useEffect(() => {
-    const r = interestRate / 12 / 100;
-    const n = tenure;
-    const e = loanAmount * r * (Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1));
-    setEmi(Math.round(e));
+  // --- Optimized EMI Calculation ---
+  const emi = useMemo(() => {
+    const P = loanAmount;
+    const R = interestRate / 12 / 100;
+    const N = tenure;
+
+    if (P > 0 && R > 0 && N > 0) {
+      return Math.round(P * R * (Math.pow(1 + R, N) / (Math.pow(1 + R, N) - 1)));
+    }
+    return 0;
   }, [loanAmount, interestRate, tenure]);
+
+  const totalAmount = useMemo(() => emi * tenure, [emi, tenure]);
+  const totalInterest = useMemo(() => totalAmount - loanAmount, [totalAmount, loanAmount]);
 
   const handleApplyClick = () => {
     setIsModalOpen(true);
   };
 
-  // Smooth Scroll Handler
   const scrollToSection = (id) => {
     setActiveTab(id);
     const element = document.getElementById(id);
     if (element) {
-      const offset = 120; // Height of sticky headers
+      const offset = 120;
       const bodyRect = document.body.getBoundingClientRect().top;
       const elementRect = element.getBoundingClientRect().top;
       const elementPosition = elementRect - bodyRect;
       const offsetPosition = elementPosition - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
     }
   };
 
-  // --- Data ---
+  const toggleFaq = (index) => {
+    setActiveFaq(activeFaq === index ? null : index);
+  };
+
   const features = [
     { id: 'quick', icon: Zap, title: 'Quick Processing', desc: 'Approved and disbursed in 15-30 minutes.' },
     { id: 'docs', icon: FileText, title: 'Minimal Docs', desc: 'Apply with just PAN or Aadhaar.' },
@@ -87,80 +219,42 @@ const GoldLoanClient = () => {
     { q: 'What if I default?', a: 'Lender may auction gold after due notice. Repay on time to avoid this.' }
   ];
 
-  // --- Reusable Calculator Widget ---
-  const CalculatorWidget = () => (
-    <div className="space-y-6 md:space-y-8">
-      <div className="bg-slate-900 text-white p-6 rounded-2xl text-center shadow-lg">
-        <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Monthly Installment</p>
-        <p className="text-4xl font-bold">₹{emi.toLocaleString()}</p>
-        <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-800">
-            <div>
-              <p className="text-[10px] text-slate-400">Total Interest</p>
-              <p className="text-sm font-bold text-yellow-400">₹{(emi * tenure - loanAmount).toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400">Total Amount</p>
-              <p className="text-sm font-bold text-amber-400">₹{(emi * tenure).toLocaleString()}</p>
-            </div>
-        </div>
-      </div>
-
-      <div className="space-y-6 bg-white md:bg-transparent p-4 md:p-0 rounded-xl border md:border-none border-slate-200">
-        <div>
-          <div className="flex justify-between text-sm font-semibold mb-2">
-            <span className="text-slate-500">Loan Amount</span>
-            <span className="text-slate-900">₹{(loanAmount/1000).toFixed(0)}k</span>
-          </div>
-          <input 
-            type="range" min="5000" max="2000000" step="5000" 
-            value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
-          />
-        </div>
-
-        <div>
-          <div className="flex justify-between text-sm font-semibold mb-2">
-            <span className="text-slate-500">Tenure</span>
-            <span className="text-slate-900">{tenure} Months</span>
-          </div>
-          <input 
-            type="range" min="3" max="36" step="3" 
-            value={tenure} onChange={(e) => setTenure(Number(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
-          />
-        </div>
-
-        <div>
-          <div className="flex justify-between text-sm font-semibold mb-2">
-            <span className="text-slate-500">Interest Rate</span>
-            <span className="text-slate-900">{interestRate}%</span>
-          </div>
-          <input 
-            type="range" min="7" max="18" step="0.5" 
-            value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
-          />
-        </div>
-      </div>
-
-      {/* Desktop Only Apply Button */}
-      <div className="hidden lg:block pt-2">
-        <button 
-          onClick={handleApplyClick}
-          className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 active:scale-95 transition-all text-white px-6 py-4 rounded-xl font-bold text-base shadow-xl shadow-amber-200"
-        >
-          Apply Now <ArrowRight className="w-5 h-5" />
-        </button>
-        <p className="text-center text-xs text-slate-400 mt-3">Instant Cash • 100% Insured</p>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-20 lg:pb-0 text-slate-900">
+      
+      {/* Range Slider Styles */}
+      <style jsx global>{`
+        input[type="range"] {
+          -webkit-appearance: none;
+          width: 100%;
+          background: transparent;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          height: 18px;
+          width: 18px;
+          border-radius: 50%;
+          background: #d97706; /* amber-600 */
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+          transition: transform 120ms cubic-bezier(.2,.8,.2,1), box-shadow 120ms ease;
+          -webkit-tap-highlight-color: transparent;
+        }
+        input[type="range"]::-moz-range-thumb {
+          height: 18px;
+          width: 18px;
+          border-radius: 50%;
+          background: #d97706;
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+          transition: transform 120ms cubic-bezier(.2,.8,.2,1), box-shadow 120ms ease;
+        }
+      `}</style>
+
       <Meta title="Gold Loan | Loanzaar" description="Instant cash against gold." />
       
-      {/* 1. Header (Universal) */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 h-16 flex items-center justify-between">
         <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
           <BackButton className="text-sm font-semibold text-slate-500 flex items-center gap-1 hover:text-slate-900 transition-colors">
@@ -173,7 +267,7 @@ const GoldLoanClient = () => {
 
       <main className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pt-6">
 
-        {/* 2. Hero Section */}
+        {/* Hero Section */}
         <section id="overview" className="mb-8">
           <div className="bg-gradient-to-br from-yellow-500 to-amber-600 rounded-[2rem] p-6 md:p-10 text-white shadow-xl shadow-amber-200/50 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
@@ -189,7 +283,6 @@ const GoldLoanClient = () => {
                 <p className="text-amber-50 text-sm md:text-lg mb-6 leading-relaxed max-w-lg">
                   Get funds in 30 mins. Your gold stays safe in secure vaults. No income proof required.
                 </p>
-                
                 <div className="flex flex-wrap gap-3 text-xs md:text-sm font-medium">
                   <div className="flex items-center gap-2 bg-black/20 px-4 py-2 rounded-full backdrop-blur-md">
                     <Shield className="w-4 h-4 text-white" /> 100% Insured
@@ -203,7 +296,7 @@ const GoldLoanClient = () => {
           </div>
         </section>
 
-        {/* 3. Sticky Navigation Anchor Bar */}
+        {/* Tab Nav */}
         <div className="sticky top-16 z-40 bg-slate-50/95 backdrop-blur-sm pt-2 pb-4 border-b border-slate-200 mb-8">
           <div className="flex overflow-x-auto gap-2 md:gap-4 pb-2 scrollbar-hide">
             {[
@@ -230,13 +323,9 @@ const GoldLoanClient = () => {
           </div>
         </div>
 
-        {/* 4. Main Layout Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 pb-12">
           
-          {/* LEFT COLUMN: Content Sections (col-span-8) */}
           <div className="lg:col-span-7 xl:col-span-8 space-y-16">
-            
-            {/* OVERVIEW CONTENT */}
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div>
                 <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
@@ -247,23 +336,23 @@ const GoldLoanClient = () => {
                 </p>
               </div>
 
-              {/* Key Benefits Box */}
+              {/* Key Benefits */}
               <div className="bg-amber-50/80 p-6 rounded-2xl border border-amber-100">
-                 <h3 className="text-sm font-bold text-amber-900 mb-4 uppercase tracking-wide">Key Benefits</h3>
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <h3 className="text-sm font-bold text-amber-900 mb-4 uppercase tracking-wide">Key Benefits</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
-                     { title: 'Speed', val: '30 Mins', sub: 'Disbursal' },
-                     { title: 'Rate', val: '0.75%', sub: 'per month*' },
-                     { title: 'Docs', val: 'KYC Only', sub: 'No Income Proof' },
-                     { title: 'Security', val: 'Bank Vault', sub: 'Insured' },
-                   ].map((stat, i) => (
-                     <div key={i} className="bg-white p-4 rounded-xl border border-amber-50 shadow-sm flex flex-col justify-center">
+                      { title: 'Speed', val: '30 Mins', sub: 'Disbursal' },
+                      { title: 'Rate', val: '0.75%', sub: 'per month*' },
+                      { title: 'Docs', val: 'KYC Only', sub: 'No Income Proof' },
+                      { title: 'Security', val: 'Bank Vault', sub: 'Insured' },
+                    ].map((stat, i) => (
+                      <div key={i} className="bg-white p-4 rounded-xl border border-amber-50 shadow-sm flex flex-col justify-center">
                         <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase">{stat.title}</p>
                         <p className="text-sm md:text-base font-bold text-amber-700 mt-1">{stat.val}</p>
                         <p className="text-[10px] md:text-xs text-slate-500 mt-0.5">{stat.sub}</p>
-                     </div>
-                   ))}
-                </div>
+                      </div>
+                    ))}
+                  </div>
               </div>
 
               {/* Eligibility */}
@@ -280,15 +369,21 @@ const GoldLoanClient = () => {
               </div>
             </div>
 
-            {/* CALCULATOR SECTION (Mobile Only - Hidden on LG) */}
+            {/* Mobile Calculator */}
             <div id="calculator" className="lg:hidden scroll-mt-32 border-t border-slate-200 pt-8">
                <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                   <Calculator className="w-5 h-5 text-amber-600" /> EMI Calculator
                </h3>
-               <CalculatorWidget />
+               {/* Use the new Component here */}
+               <GoldLoanCalculator 
+                 loanAmount={loanAmount} setLoanAmount={setLoanAmount}
+                 interestRate={interestRate} setInterestRate={setInterestRate}
+                 tenure={tenure} setTenure={setTenure}
+                 emi={emi} totalInterest={totalInterest} totalAmount={totalAmount}
+               />
             </div>
 
-            {/* FEATURES SECTION */}
+            {/* Features */}
             <div id="features" className="scroll-mt-32 border-t border-slate-200 pt-8">
               <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <Star className="w-6 h-6 text-yellow-500 fill-yellow-500" /> Features & Benefits
@@ -308,7 +403,7 @@ const GoldLoanClient = () => {
               </div>
             </div>
 
-            {/* DOCUMENTS SECTION */}
+            {/* Documents */}
             <div id="docs" className="scroll-mt-32 border-t border-slate-200 pt-8">
               <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <FileText className="w-6 h-6 text-slate-700" /> Required Documents
@@ -333,7 +428,7 @@ const GoldLoanClient = () => {
               </div>
             </div>
 
-            {/* FAQS SECTION */}
+            {/* FAQs */}
             <div id="faqs" className="scroll-mt-32 border-t border-slate-200 pt-8">
               <h3 className="text-xl md:text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <HelpCircle className="w-6 h-6 text-slate-700" /> Frequently Asked Questions
@@ -342,7 +437,7 @@ const GoldLoanClient = () => {
                 {faqs.map((item, i) => (
                   <div key={i} className="border border-slate-200 rounded-xl overflow-hidden bg-white hover:border-amber-300 transition-colors">
                     <button 
-                      onClick={() => setActiveFaq(activeFaq === i ? null : i)}
+                      onClick={() => toggleFaq(i)}
                       className="w-full flex justify-between items-center p-5 text-left"
                     >
                       <span className="text-sm md:text-base font-semibold text-slate-800 pr-4">{item.q}</span>
@@ -361,17 +456,22 @@ const GoldLoanClient = () => {
             
           </div>
 
-          {/* RIGHT COLUMN: Sticky Sidebar (Calculator) (lg:col-span-4) */}
+          {/* Desktop Sidebar */}
           <div className="hidden lg:block lg:col-span-5 xl:col-span-4">
              <div className="sticky top-32 space-y-6">
                 <div id="calculator" className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
                    <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
                       <Calculator className="w-5 h-5 text-amber-600" /> EMI Calculator
                    </h3>
-                   <CalculatorWidget />
+                   {/* Use the new Component here */}
+                   <GoldLoanCalculator 
+                     loanAmount={loanAmount} setLoanAmount={setLoanAmount}
+                     interestRate={interestRate} setInterestRate={setInterestRate}
+                     tenure={tenure} setTenure={setTenure}
+                     emi={emi} totalInterest={totalInterest} totalAmount={totalAmount}
+                   />
                 </div>
                 
-                {/* Trust Badge Widget */}
                 <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200 flex items-center gap-4">
                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-amber-600">
                       <Shield className="w-5 h-5" />
@@ -387,7 +487,7 @@ const GoldLoanClient = () => {
         </div>
       </main>
 
-      {/* 5. Sticky Bottom Action Bar (Mobile/Tablet Only) */}
+      {/* Sticky Bottom Bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 pb-safe z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         <div className="flex items-center gap-4 max-w-md mx-auto">
           <div className="flex-1">
@@ -403,12 +503,10 @@ const GoldLoanClient = () => {
         </div>
       </div>
 
-      {/* Dynamic Gold Loan Modal */}
       {isModalOpen && (
         <GoldLoanForm isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} loanType="Gold Loan" />
       )}
-        {/* Bottom navigation */}
-        <BottomNav />
+      <BottomNav />
     </div>
   );
 };
