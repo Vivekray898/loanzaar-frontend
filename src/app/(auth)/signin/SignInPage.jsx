@@ -87,36 +87,38 @@ function SignInPage({ onShowSignup, onShowForgot, isModal = false }) {
       const supabaseResult = await signInWithEmailPassword(formData.email, formData.password);
 
       if (supabaseResult.success) {
-        try {
-          const profile = await getUserProfileByUID(supabaseResult.uid);
+        const profile = await getUserProfileByUID(supabaseResult.uid);
 
-          if (profile.success) {
-            localStorage.setItem('userToken', supabaseResult.token);
-            localStorage.setItem('userId', profile.data.userId);
-            localStorage.setItem('supabaseUID', supabaseResult.uid);
-            localStorage.setItem('userName', profile.data.name);
-            localStorage.setItem('userRole', profile.data.role);
+        console.debug('SignInPage: profile response for uid', supabaseResult.uid, profile);
 
-            const userData = {
-              userId: profile.data.userId,
-              supabaseUID: supabaseResult.uid,
-              name: profile.data.name,
-              role: profile.data.role,
-              email: formData.email
-            };
-            localStorage.setItem('userData', JSON.stringify(userData));
+        if (profile.success && profile.data) {
+          localStorage.setItem('userToken', supabaseResult.token);
+          localStorage.setItem('userId', profile.data.userId);
+          localStorage.setItem('supabaseUID', supabaseResult.uid);
+          localStorage.setItem('userName', profile.data.name);
+          localStorage.setItem('userRole', profile.data.role);
 
-            if (profile.data.role === 'admin') {
-              router.replace('/admin');
-            } else {
-              router.replace('/account');
-            }
+          const userData = {
+            userId: profile.data.userId,
+            supabaseUID: supabaseResult.uid,
+            name: profile.data.name,
+            role: profile.data.role,
+            email: formData.email
+          };
+          localStorage.setItem('userData', JSON.stringify(userData));
+
+          if (profile.data.role === 'admin') {
+            router.replace('/admin');
+          } else {
+            router.replace('/account');
           }
-        } catch (profileError) {
+        } else {
+          // Profile missing or incomplete — handle gracefully
+          console.warn('SignInPage: profile missing or incomplete', { uid: supabaseResult.uid, profile });
           localStorage.setItem('userToken', supabaseResult.token);
           localStorage.setItem('supabaseUID', supabaseResult.uid);
           localStorage.setItem('supabaseEmail', supabaseResult.email);
-          setMessage({ type: 'warning', text: 'Profile incomplete. Redirecting...' });
+          setMessage({ type: 'warning', text: 'Profile incomplete or not found. Redirecting to profile...' });
           router.replace('/account/profile');
         }
       }

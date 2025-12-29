@@ -75,6 +75,8 @@ export const UserAuthProvider = ({ children }) => {
           .eq('user_id', supaUser.id)
           .single()
 
+        console.debug('UserAuthProvider: profile fetch', { uid: supaUser.id, data, error })
+
         // If profile missing, create a minimal profile using available metadata
         if (error && error.code === 'PGRST116') {
           const newProfile = {
@@ -112,6 +114,7 @@ export const UserAuthProvider = ({ children }) => {
           setUser(prev => ({ ...prev, full_name: data.full_name ?? prev?.displayName ?? null, phone: data.phone ?? null }))
         } else {
           // Fallback
+          console.warn('UserAuthProvider: profile lookup returned no data for uid', supaUser.id)
           setRole('user')
         }
       } catch (e) {
