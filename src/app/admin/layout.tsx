@@ -13,25 +13,79 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Auth Guard
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/signin');
-        return;
-      }
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .single();
+    let mounted = true;
+    let sub: any = null;
 
-      if (profile?.role !== 'admin') {
-        router.push('/');
+    const redirectToSignin = () => { if (mounted) router.replace('/signin'); };
+    const redirectToHome = () => { if (mounted) router.replace('/'); };
+
+    const handleProfileCheck = async (user: any) => {
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) {
+          console.warn('AdminLayout: profile lookup issue', error);
+          redirectToHome();
+          return;
+        }
+
+        if (profile?.role !== 'admin') {
+          redirectToHome();
+          return;
+        }
+
+        if (mounted) setIsLoading(false);
+      } catch (e) {
+        console.error('AdminLayout: unexpected error checking profile', e);
+        redirectToHome();
       }
-      setIsLoading(false);
+    };
+
+    const checkUser = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          await handleProfileCheck(session.user);
+          return;
+        }
+
+        // If no session, wait briefly for auth state restoration (avoid immediate redirect)
+        await new Promise<void>((resolve) => {
+          let resolved = false;
+          sub = supabase.auth.onAuthStateChange((event, sess) => {
+            if (!resolved && sess?.user) {
+              resolved = true;
+              resolve();
+              handleProfileCheck(sess.user);
+              if (sub?.data?.subscription?.unsubscribe) sub.data.subscription.unsubscribe();
+            }
+          });
+
+          // Timeout: if no session within 2s, redirect to sign-in
+          setTimeout(() => {
+            if (!resolved) {
+              resolved = true;
+              resolve();
+              redirectToSignin();
+            }
+          }, 2000);
+        });
+      } catch (e) {
+        console.error('AdminLayout: getSession failed', e);
+        redirectToSignin();
+      }
     };
 
     checkUser();
+
+    return () => {
+      mounted = false;
+      if (sub?.data?.subscription?.unsubscribe) sub.data.subscription.unsubscribe();
+    };
   }, [router]);
 
   const navLinks = [

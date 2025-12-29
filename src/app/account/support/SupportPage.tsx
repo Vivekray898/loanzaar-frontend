@@ -30,7 +30,7 @@ interface ContactOption {
 }
 
 export default function SupportPage() {
-  const supportEmail = 'support@loanzaar.in'
+  const supportEmail = 'info@loanzaar.in'
   const phoneNumber = '+911234567890'
   const whatsappNumber = '911234567890'
 

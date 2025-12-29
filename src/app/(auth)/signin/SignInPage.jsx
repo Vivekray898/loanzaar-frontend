@@ -107,9 +107,9 @@ function SignInPage({ onShowSignup, onShowForgot, isModal = false }) {
             localStorage.setItem('userData', JSON.stringify(userData));
 
             if (profile.data.role === 'admin') {
-              router.push('/admin');
+              router.replace('/admin');
             } else {
-              router.push('/account');
+              router.replace('/account');
             }
           }
         } catch (profileError) {
@@ -117,7 +117,7 @@ function SignInPage({ onShowSignup, onShowForgot, isModal = false }) {
           localStorage.setItem('supabaseUID', supabaseResult.uid);
           localStorage.setItem('supabaseEmail', supabaseResult.email);
           setMessage({ type: 'warning', text: 'Profile incomplete. Redirecting...' });
-          router.push('/account/profile');
+          router.replace('/account/profile');
         }
       }
     } catch (error) {

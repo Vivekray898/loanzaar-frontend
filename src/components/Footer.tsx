@@ -190,16 +190,16 @@ export default function Footer() {
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
                 <span className="text-slate-400 text-xs leading-relaxed">
-                  123, Financial District, Gachibowli,<br />Hyderabad, Telangana - 500032
+                  Siliguri, Jalpaiguri,<br />West Bengal - 734006
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-blue-500 shrink-0" />
-                <a href="tel:18001234567" className="text-slate-400 hover:text-white transition-colors">1800-123-4567</a>
+                <a href="tel:18001234567" className="text-slate-400 hover:text-white transition-colors">76795 87581</a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-blue-500 shrink-0" />
-                <a href="mailto:support@loanzaar.in" className="text-slate-400 hover:text-white transition-colors">support@loanzaar.in</a>
+                <a href="mailto:info@loanzaar.in" className="text-slate-400 hover:text-white transition-colors">info@loanzaar.in</a>
               </li>
             </ul>
           </FooterAccordion>

@@ -113,7 +113,7 @@ export default function AccountClient() {
             <div className="grid gap-3">
               <NavCard href="/account/profile" icon={User} title="Personal Profile" subtitle="Manage details & KYC" color="blue" />
               <NavCard href="/account/track" icon={Clock} title="Track Applications" subtitle="View status updates" color="indigo" />
-              <NavCard href="/settings" icon={Settings} title="Settings" subtitle="Preferences & Security" color="slate" />
+              {/* <NavCard href="/settings" icon={Settings} title="Settings" subtitle="Preferences & Security" color="slate" /> */}
             </div>
           </div>
 
@@ -121,7 +121,7 @@ export default function AccountClient() {
           <div className="space-y-4">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider px-2">Support</h3>
             <div className="grid gap-3">
-              <NavCard href="/learn" icon={BookOpen} title="Help Center" subtitle="FAQs & Guides" color="orange" />
+              <NavCard href="/faqs" icon={BookOpen} title="Help Center" subtitle="FAQs & Guides" color="orange" />
               <NavCard href="/account/support" icon={LifeBuoy} title="Customer Support" subtitle="Get help 24/7" color="rose" />
               <NavCard href="/privacy-policy" icon={Shield} title="Legal & Privacy" subtitle="Terms & Conditions" color="emerald" />
             </div>

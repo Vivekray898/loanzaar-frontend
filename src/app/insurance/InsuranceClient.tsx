@@ -64,8 +64,11 @@ const toolOptions: ToolItem[] = [
   { title: 'Premium Calc', url: '/calculators', icon: Calculator, desc: 'Estimate cost' },
   { title: 'Compare Plans', url: '/compare', icon: Layers, desc: 'Side-by-side' },
   { title: 'Claim Support', url: '/support', icon: Phone, desc: '24/7 Assistance' },
-  { title: 'Insurance Guide', url: '/blogs', icon: BookOpen, desc: 'Expert tips' },
+  { title: 'Insurance Guide', url: 'https://blog.loanzaar.in', icon: BookOpen, desc: 'Expert tips on loans, finance and investments' },
 ]
+
+// Helper to detect external links (http, https, mailto, tel)
+const isExternal = (url?: string) => typeof url === 'string' && (url.startsWith('http') || url.startsWith('mailto:') || url.startsWith('tel:'));
 
 const faqs: FAQItem[] = [
   { q: 'Which insurance plan offers tax benefits?', a: 'Life insurance premiums qualify for deductions under Section 80C (up to ₹1.5 Lakh). Health insurance premiums allow deductions under Section 80D (up to ₹25,000 for individuals).' },
@@ -193,19 +196,37 @@ export default function InsuranceClient() {
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
               {toolOptions.map((tool, i) => (
-                <Link 
-                  key={i} 
-                  href={tool.url} 
-                  className="bg-white border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50 p-4 rounded-2xl group transition-all duration-200 flex flex-col items-center text-center md:items-start md:text-left gap-3 md:gap-2 active:scale-95"
-                >
-                  <div className="p-2 bg-slate-50 rounded-lg text-slate-600 group-hover:text-emerald-600 group-hover:bg-white transition-colors shadow-sm">
-                    <tool.icon className="w-5 h-5 md:w-6 md:h-6" />
-                  </div>
-                  <div>
-                    <span className="block text-sm md:text-base font-bold text-slate-800 group-hover:text-emerald-900">{tool.title}</span>
-                    <span className="hidden md:block text-xs text-slate-500 mt-0.5">{tool.desc}</span>
-                  </div>
-                </Link>
+                isExternal(tool.url) ? (
+                  <a
+                    key={i}
+                    href={tool.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50 p-4 rounded-2xl group transition-all duration-200 flex flex-col items-center text-center md:items-start md:text-left gap-3 md:gap-2 active:scale-95"
+                  >
+                    <div className="p-2 bg-slate-50 rounded-lg text-slate-600 group-hover:text-emerald-600 group-hover:bg-white transition-colors shadow-sm">
+                      <tool.icon className="w-5 h-5 md:w-6 md:h-6" />
+                    </div>
+                    <div>
+                      <span className="block text-sm md:text-base font-bold text-slate-800 group-hover:text-emerald-900">{tool.title}</span>
+                      <span className="hidden md:block text-xs text-slate-500 mt-0.5">{tool.desc}</span>
+                    </div>
+                  </a>
+                ) : (
+                  <Link 
+                    key={i} 
+                    href={tool.url} 
+                    className="bg-white border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50 p-4 rounded-2xl group transition-all duration-200 flex flex-col items-center text-center md:items-start md:text-left gap-3 md:gap-2 active:scale-95"
+                  >
+                    <div className="p-2 bg-slate-50 rounded-lg text-slate-600 group-hover:text-emerald-600 group-hover:bg-white transition-colors shadow-sm">
+                      <tool.icon className="w-5 h-5 md:w-6 md:h-6" />
+                    </div>
+                    <div>
+                      <span className="block text-sm md:text-base font-bold text-slate-800 group-hover:text-emerald-900">{tool.title}</span>
+                      <span className="hidden md:block text-xs text-slate-500 mt-0.5">{tool.desc}</span>
+                    </div>
+                  </Link>
+                )
               ))}
             </div>
           </section>

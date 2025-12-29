@@ -1,18 +1,58 @@
+'use client'
+
+import React, { useEffect, useState } from 'react';
 import { FileText, Users, MessageSquare, TrendingUp } from 'lucide-react';
-import { serverUrl } from '@/utils/serverUrl';
+import { useRouter } from 'next/navigation';
+import { useUserAuth } from '@/context/UserAuthContext';
+import { getIdToken } from '@/services/supabaseAuthService';
 
-export default async function AdminDashboard() {
-  const res = await fetch(serverUrl('/api/admin/stats'), { 
-    cache: 'no-store', 
-    headers: { 'x-internal-secret': process.env.INTERNAL_ADMIN_SECRET || '' } 
-  });
-  
-  let stats = { applications: 0, contacts: 0, users: 0 };
+export default function AdminDashboardClient() {
+  const router = useRouter();
+  const { user, role, loading, isAuthenticated } = useUserAuth();
+  const [stats, setStats] = useState({ applications: 0, contacts: 0, users: 0 });
+  const [statsLoading, setStatsLoading] = useState(true);
 
-  if (res.ok) {
-    const json = await res.json();
-    if (json?.success) stats = json.data;
-  }
+  // Guard: redirect if not authenticated or not admin
+  useEffect(() => {
+    if (!loading) {
+      if (!isAuthenticated) {
+        router.replace('/signin');
+      } else if (role !== 'admin') {
+        router.replace('/');
+      }
+    }
+  }, [loading, isAuthenticated, role, router]);
+
+  // Fetch stats only when we're confirmed admin
+  useEffect(() => {
+    let mounted = true;
+    const fetchStats = async () => {
+      setStatsLoading(true);
+      try {
+        const token = await getIdToken();
+        const res = await fetch('/api/admin/stats', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!mounted) return;
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.success) setStats(json.data);
+        }
+      } catch (e) {
+        console.error('Failed to load admin stats', e);
+      } finally {
+        if (mounted) setStatsLoading(false);
+      }
+    }
+
+    if (!loading && isAuthenticated && role === 'admin') {
+      fetchStats();
+    }
+
+    return () => { mounted = false }
+  }, [loading, isAuthenticated, role]);
+
+  if (loading || statsLoading) return <div className="h-48 flex items-center justify-center">Loading...</div>;
 
   const cards = [
     { label: 'Total Applications', value: stats.applications, icon: FileText, color: 'bg-blue-500', shadow: 'shadow-blue-200' },

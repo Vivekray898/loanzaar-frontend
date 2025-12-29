@@ -101,7 +101,7 @@ export default function NavBar() {
       label: 'Resources',
       type: 'dropdown',
       children: [
-        { label: 'Blogs', link: '/blogs' },
+        { label: 'Blogs', link: 'https://blog.loanzaar.in' },
         { label: 'Credit Score', link: '/credit-score-guide' },
         { label: 'Calculators', link: '/calculators' },
       ]
@@ -161,6 +161,9 @@ export default function NavBar() {
 
   const getDashboardLink = () => (user?.role === 'admin' ? '/admin' : '/account');
 
+  // Helper to detect external links (http, https, mailto, tel)
+  const isExternal = (url?: string) => typeof url === 'string' && (url.startsWith('http') || url.startsWith('mailto:') || url.startsWith('tel:'));
+
   return (
     <>
       <header className="sticky top-0 z-[100] w-full bg-white border-b border-slate-200 shadow-sm">
@@ -186,9 +189,15 @@ export default function NavBar() {
               {navItems.map((item) => (
                 <div key={item.label} className="relative" ref={(el) => { dropdownRefs.current[item.label] = el; }}>
                   {item.type === 'link' ? (
-                    <Link href={item.link!} className="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors py-2">
-                      {item.label}
-                    </Link>
+                    isExternal(item.link) ? (
+                      <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors py-2">
+                        {item.label}
+                      </a>
+                    ) : (
+                      <Link href={item.link!} className="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors py-2">
+                        {item.label}
+                      </Link>
+                    )
                   ) : (
                     <div
                       onMouseEnter={() => setHoverOpen(item.label)}
@@ -214,21 +223,29 @@ export default function NavBar() {
                                   {/* Nested Dropdown Menu */}
                                   <div className="absolute left-full top-0 ml-2 w-56 rounded-xl bg-white shadow-xl border border-slate-100 p-2 z-50 invisible group-hover/nested:visible opacity-0 group-hover/nested:opacity-100 transition-all duration-200">
                                     {child.children.map((subChild) => (
-                                      <Link 
-                                        key={subChild.label} 
-                                        href={subChild.link!} 
-                                        className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors"
-                                      >
+                                    isExternal(subChild.link) ? (
+                                      <a key={subChild.label} href={subChild.link} target="_blank" rel="noopener noreferrer" className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors">
+                                        {subChild.label}
+                                      </a>
+                                    ) : (
+                                      <Link key={subChild.label} href={subChild.link!} className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors">
                                         {subChild.label}
                                       </Link>
-                                    ))}
+                                    )
+                                  ))}
                                   </div>
                                 </div>
                               ) : (
-                                <Link href={child.link!} className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors">
-                                  {child.label}
-                                </Link>
-                              )}
+                                isExternal(child.link) ? (
+                                  <a href={child.link} target="_blank" rel="noopener noreferrer" className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors">
+                                    {child.label}
+                                  </a>
+                                ) : (
+                                  <Link href={child.link!} className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors">
+                                    {child.label}
+                                  </Link>
+                                )
+                              )} 
                             </div>
                           ))}
                         </div>
@@ -241,7 +258,7 @@ export default function NavBar() {
 
             {/* Right Actions */}
             <div className="flex items-center gap-3 z-[101]">
-              <a href="tel:1800-123-4567" className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 text-slate-700 font-semibold text-xs hover:border-blue-600 hover:text-blue-600 transition-all">
+              <a href="tel:76795 87581" className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 text-slate-700 font-semibold text-xs hover:border-blue-600 hover:text-blue-600 transition-all">
                 <Phone className="w-3.5 h-3.5" />
                 <span>Support</span>
               </a>
@@ -320,12 +337,18 @@ export default function NavBar() {
             {navItems.map((item) => (
               <div key={item.label} className="border-b border-slate-100 last:border-0">
                 {item.type === 'link' ? (
-                  <Link 
-                    href={item.link!} 
-                    className="flex items-center justify-between py-4 text-slate-800 font-semibold active:text-blue-600"
-                  >
-                    {item.label}
-                  </Link>
+                  isExternal(item.link) ? (
+                    <a href={item.link} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between py-4 text-slate-800 font-semibold active:text-blue-600">
+                      {item.label}
+                    </a>
+                  ) : (
+                    <Link 
+                      href={item.link!} 
+                      className="flex items-center justify-between py-4 text-slate-800 font-semibold active:text-blue-600"
+                    >
+                      {item.label}
+                    </Link>
+                  )
                 ) : (
                   <div>
                     {/* Level 1 Accordion Toggle */}
@@ -362,24 +385,32 @@ export default function NavBar() {
                                       style={{ maxHeight: mobileNestedExpanded === child.label ? '500px' : '0px' }}
                                     >
                                       {child.children.map((subChild) => (
-                                        <Link 
-                                          key={subChild.label} 
-                                          href={subChild.link!} 
-                                          className="block py-3 px-4 text-sm text-slate-500 hover:text-blue-600"
-                                        >
-                                          {subChild.label}
-                                        </Link>
+                                        isExternal(subChild.link) ? (
+                                          <a key={subChild.label} href={subChild.link} target="_blank" rel="noopener noreferrer" className="block py-3 px-4 text-sm text-slate-500 hover:text-blue-600">
+                                            {subChild.label}
+                                          </a>
+                                        ) : (
+                                          <Link key={subChild.label} href={subChild.link!} className="block py-3 px-4 text-sm text-slate-500 hover:text-blue-600">
+                                            {subChild.label}
+                                          </Link>
+                                        )
                                       ))}
                                     </div>
                                 </div>
                             ) : (
                                 /* Standard Child Link */
-                                <Link 
-                                  href={child.link!} 
-                                  className="block py-3 px-4 rounded-lg text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50"
-                                >
-                                  {child.label}
-                                </Link>
+                                isExternal(child.link) ? (
+                                  <a href={child.link} target="_blank" rel="noopener noreferrer" className="block py-3 px-4 rounded-lg text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50">
+                                    {child.label}
+                                  </a>
+                                ) : (
+                                  <Link 
+                                    href={child.link!} 
+                                    className="block py-3 px-4 rounded-lg text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50"
+                                  >
+                                    {child.label}
+                                  </Link>
+                                )
                             )}
                           </div>
                         ))}
