@@ -16,8 +16,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     let mounted = true;
     let sub: any = null;
 
-    const redirectToSignin = () => { if (mounted) router.replace('/signin'); };
-    const redirectToHome = () => { if (mounted) router.replace('/'); };
+    const redirectToSignin = (reason?: string) => { console.debug('AdminLayout: redirecting to /signin', reason); if (mounted) router.replace('/signin'); };
+    const redirectToHome = (reason?: string) => { console.debug('AdminLayout: redirecting to /', reason); if (mounted) router.replace('/'); };
 
     const handleProfileCheck = async (user: any) => {
       try {
@@ -48,15 +48,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const checkUser = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        console.debug('AdminLayout: getSession returned', { session });
         if (session?.user) {
           await handleProfileCheck(session.user);
           return;
         }
 
-        // If no session, wait briefly for auth state restoration (avoid immediate redirect)
+        // If no session, wait a bit longer for auth state restoration (avoid immediate redirect)
         await new Promise<void>((resolve) => {
           let resolved = false;
           sub = supabase.auth.onAuthStateChange((event, sess) => {
+            console.debug('AdminLayout: onAuthStateChange', { event, sess });
             if (!resolved && sess?.user) {
               resolved = true;
               resolve();
@@ -65,14 +67,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             }
           });
 
-          // Timeout: if no session within 2s, redirect to sign-in
+          // Timeout: if no session within 4s, redirect to sign-in
           setTimeout(() => {
             if (!resolved) {
               resolved = true;
               resolve();
-              redirectToSignin();
+              redirectToSignin('auth-state timeout');
             }
-          }, 2000);
+          }, 4000);
         });
       } catch (e) {
         console.error('AdminLayout: getSession failed', e);
