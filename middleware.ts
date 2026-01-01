@@ -1,61 +1,68 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { hasAuthCookie, getCookieName } from '@/lib/auth/edgeSession'
 
-// Protect the /admin routes - only allow users with profiles.role === 'admin'
+/**
+ * LIGHTWEIGHT Edge Runtime Authentication Middleware
+ * 
+ * This middleware runs at the Edge and ONLY:
+ * 1. Checks if auth_session cookie EXISTS
+ * 2. Redirects if missing on protected routes
+ * 
+ * ACTUAL session validation (signature verification, JWT decode, etc.)
+ * happens in /api/auth/session endpoint (Node.js runtime)
+ * 
+ * Why? Edge Runtime doesn't support Node.js crypto functions.
+ * The browser will make a request to /api/auth/session to validate.
+ */
+
 export async function middleware(req: NextRequest) {
-  const { cookies } = req
-  const token = cookies.get('userToken')?.value
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+  const pathname = req.nextUrl.pathname || '/'
 
-  // If no token -> redirect to sign in
-  if (!token) {
-    return NextResponse.redirect(new URL('/signin', req.url))
-  }
+  // List of public routes that don't require authentication
+  const publicRoutes = [
+    '/signin',
+    '/auth/send-otp',
+    '/auth/verify-otp',
+    '/auth/request-otp',
+    '/privacy',
+    '/terms',
+    '/about',
+    '/',
+  ]
 
-  try {
-    // Validate token and get user info
-    const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        apikey: anonKey || ''
-      }
-    })
-
-    if (!userRes.ok) {
-      return NextResponse.redirect(new URL('/signin', req.url))
-    }
-
-    const user = await userRes.json()
-    const userId = user?.id
-    if (!userId) return NextResponse.redirect(new URL('/signin', req.url))
-
-    // Query the profile to check role (using anon key)
-    const profileRes = await fetch(`${supabaseUrl}/rest/v1/profiles?user_id=eq.${userId}&select=role`, {
-      headers: {
-        apikey: anonKey || '',
-        Authorization: `Bearer ${anonKey || ''}`
-      }
-    })
-
-    if (!profileRes.ok) {
-      return NextResponse.redirect(new URL('/', req.url))
-    }
-
-    const profiles = await profileRes.json()
-    const role = profiles?.[0]?.role
-    if (role !== 'admin') {
-      return NextResponse.redirect(new URL('/', req.url))
-    }
-
-    // Authorized
+  // Check if route is public
+  const isPublicRoute = publicRoutes.some(
+    route => pathname === route || pathname.startsWith(route)
+  )
+  if (isPublicRoute) {
     return NextResponse.next()
-  } catch (error) {
-    console.error('Middleware admin auth error:', error)
-    return NextResponse.redirect(new URL('/signin', req.url))
   }
+
+  // Get auth_session cookie (no decoding, just check existence)
+  const cookieName = getCookieName()
+  const authCookie = req.cookies.get(cookieName)?.value
+  const hasSession = hasAuthCookie(authCookie)
+
+  if (!hasSession) {
+    // No session cookie - redirect to signin with deep link
+    const nextRoute = encodeURIComponent(pathname)
+    return NextResponse.redirect(
+      new URL(`/?modal=login&next_route=${nextRoute}`, req.url)
+    )
+  }
+
+  // Cookie exists - allow request to proceed
+  // Client-side AuthContext will validate when it mounts
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/admin/:path*']
+  matcher: [
+    '/admin/:path*',
+    '/agent/:path*',
+    '/account/:path*',
+    '/apply/:path*',
+    '/dashboard/:path*',
+  ],
 }

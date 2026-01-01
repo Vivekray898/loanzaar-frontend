@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import Turnstile from '@/components/Turnstile';
-import { submitApplication } from '@/services/supabaseService';
+import { submitApplication, getClientProfileId } from '@/services/supabaseService';
 import { 
   User, Mail, Phone, ChevronDown, X, CheckCircle2, LucideIcon 
 } from 'lucide-react';
@@ -85,6 +85,7 @@ const CreditCardFormModal: React.FC<CreditCardFormModalProps> = ({ isOpen, onClo
     setIsLoading(true);
 
     try {
+         const profileId = await getClientProfileId();
          const payload = {
             fullName: formData.fullName,
             email: formData.email,
@@ -98,7 +99,8 @@ const CreditCardFormModal: React.FC<CreditCardFormModalProps> = ({ isOpen, onClo
                monthlyIncome: formData.monthlyIncome,
                employmentType: formData.employmentType,
                message: formData.message
-            }
+            },
+            profileId: profileId || undefined
          };
 
          const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;

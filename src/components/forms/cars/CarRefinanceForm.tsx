@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { submitApplication } from '@/services/supabaseService';
+import { submitApplication, getClientProfileId } from '@/services/supabaseService';
 import { X, User, Car, Check, Loader2, MapPin, Calendar, IndianRupee, Building2, Shield } from 'lucide-react';
 import Turnstile from '@/components/Turnstile';
 
@@ -87,6 +87,8 @@ export default function CarRefinanceForm({
     setIsLoading(true);
     
     try {
+      const clientProfileId = await getClientProfileId();
+
       const payload = {
         fullName: formData.fullName,
         mobile: formData.mobile,
@@ -100,7 +102,9 @@ export default function CarRefinanceForm({
           manufacturingYear: formData.manufacturingYear || null,
           currentLender: formData.currentLender || null,
           outstandingAmount: formData.outstandingAmount,
-        }
+        },
+        // Attach resolved client profile id when present (set during OTP verify)
+        profileId: clientProfileId || undefined
       };
 
       const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;

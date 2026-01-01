@@ -8,7 +8,15 @@ const ToastContext = createContext();
 export const useToast = () => {
   const context = useContext(ToastContext);
   if (!context) {
-    throw new Error('useToast must be used within ToastProvider');
+    // If a consumer accidentally calls useToast outside of ToastProvider (e.g., during error pages or early render),
+    // return a no-op implementation to avoid crashing the app. Also log a warning to help catch misuse.
+    console.warn('useToast called outside ToastProvider. Returning noop toast methods.');
+    return {
+      success: (msg) => { /* noop */ },
+      error: (msg) => { /* noop */ },
+      info: (msg) => { /* noop */ },
+      warning: (msg) => { /* noop */ },
+    };
   }
   return context;
 };
@@ -69,7 +77,7 @@ export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
   const addToast = useCallback((message, type = 'info') => {
-    const id = Date.now();
+    const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
     setToasts(prev => [...prev, { id, message, type }]);
     return id;
   }, []);

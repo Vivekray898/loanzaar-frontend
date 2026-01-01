@@ -3,20 +3,24 @@
 import React, { useEffect, useState } from 'react';
 import { FileText, Users, MessageSquare, TrendingUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useUserAuth } from '@/context/UserAuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { getIdToken } from '@/services/supabaseAuthService';
+import { useSignInModal } from '@/context/SignInModalContext';
 
 export default function AdminDashboardClient() {
   const router = useRouter();
-  const { user, role, loading, isAuthenticated } = useUserAuth();
+  const { user, isLoading: loading, isAuthenticated, logout } = useAuth();
   const [stats, setStats] = useState({ applications: 0, contacts: 0, users: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
 
   // Guard: redirect if not authenticated or not admin
+  const { open: openSignIn } = useSignInModal();
+  const role = user?.role;
+
   useEffect(() => {
     if (!loading) {
       if (!isAuthenticated) {
-        router.replace('/signin');
+        try { openSignIn(); } catch(e) { router.replace('/?modal=login'); }
       } else if (role !== 'admin') {
         router.replace('/');
       }

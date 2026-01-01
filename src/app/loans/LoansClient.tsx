@@ -92,7 +92,7 @@ const loanOptions: LoanItem[] = [
     hint: 'Reduce your Car EMI', promo: '📉 Cash Top-up' 
   },
   { 
-    title: 'Credit Cards', url: '/loans/credit-cards', icon: CreditCard, 
+    title: 'Credit Cards', url: '/loans/credit-card', icon: CreditCard, 
     color: 'text-pink-600', bg: 'bg-pink-50', 
     hint: 'Premium Rewards', promo: '💳 Lifetime Free' 
   },

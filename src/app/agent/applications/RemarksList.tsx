@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react'
 import { MessageCircle, Send, Calendar } from 'lucide-react'
-import { supabase } from '@/config/supabase'
 
 interface Remark {
   id: string
@@ -26,13 +25,8 @@ export default function RemarksList({ applicationId }: { applicationId: string }
   const fetchRemarks = async () => {
     setLoading(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const token = session?.access_token
-
       const res = await fetch(`/api/agent/applications/${applicationId}/remark`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        }
+        credentials: 'include'
       })
 
       if (res.ok) {
@@ -52,15 +46,12 @@ export default function RemarksList({ applicationId }: { applicationId: string }
 
     setSubmitting(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const token = session?.access_token
-
       const res = await fetch(`/api/agent/applications/${applicationId}/remark`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({ remark: newRemark })
       })
 

@@ -34,6 +34,16 @@ interface Application {
   ip?: string;
   user_agent?: string;
   created_at?: string;
+
+  // Profile relation (populated by admin API)
+  profile_id?: string | null;
+  profile?: {
+    id: string;
+    full_name?: string;
+    email?: string;
+    phone?: string;
+    phone_verified?: boolean;
+  } | null;
   
   // Dynamic Data
   metadata?: Record<string, any>;
@@ -45,6 +55,7 @@ interface Agent {
   user_id: string;
   full_name?: string;
   email?: string;
+  phone?: string;
   role: string;
 }
 
@@ -54,6 +65,42 @@ export default function ApplicationList({ initialData }: { initialData: any[] })
   const [assignments, setAssignments] = useState<Record<string, string>>({}); 
   const [assigning, setAssigning] = useState<Record<string, boolean>>({}); 
 
+  // Local apps state so we can update UI optimistically when status changes
+  const [apps, setApps] = useState<Application[]>(initialData || []);
+  const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
+
+  // Keep local apps in sync if parent re-fetches initialData
+  useEffect(() => { setApps(initialData || []); }, [initialData]);
+
+  // Handler to update application status (admin only)
+  const handleStatusUpdate = async (appId: string, newStatus: string) => {
+    setStatusUpdating(prev => ({ ...prev, [appId]: true }));
+    try {
+      const { data: { session } } = await (await import('@/config/supabase')).supabase.auth.getSession();
+      const token = session?.access_token;
+      const res = await fetch(`/api/admin/applications/${encodeURIComponent(appId)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json?.error || res.statusText);
+      const updated = json.data;
+
+      // Update local UI
+      setApps(prev => prev.map(a => a.id === appId ? { ...a, status: updated.status } : a));
+      if (selectedApp?.id === appId) setSelectedApp(prev => prev ? { ...prev, status: updated.status } : prev);
+    } catch (err) {
+      alert('Failed to update status: ' + (err as Error).message);
+    } finally {
+      setStatusUpdating(prev => ({ ...prev, [appId]: false }));
+    }
+  };
+
   // ... (Keep existing useEffects for fetching assignments and agents unchanged) ...
   useEffect(() => {
     const fetchAssignments = async () => {
@@ -61,6 +108,7 @@ export default function ApplicationList({ initialData }: { initialData: any[] })
         const { data: { session } } = await (await import('@/config/supabase')).supabase.auth.getSession();
         const token = session?.access_token;
         const res = await fetch('/api/admin/applications/assignments', {
+          credentials: 'include',
           headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
         });
         if (!res.ok) return;
@@ -79,13 +127,21 @@ export default function ApplicationList({ initialData }: { initialData: any[] })
         const { data: { session } } = await (await import('@/config/supabase')).supabase.auth.getSession();
         const token = session?.access_token;
         const res = await fetch('/api/admin/users?role=agent', {
+          credentials: 'include',
           headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
         });
-        if (!res.ok) return;
+        if (!res.ok) {
+          console.warn('Failed to fetch agents: status', res.status);
+          setAgents([]);
+          return;
+        }
         const json = await res.json();
         const agentProfiles = (json.data || []).filter((p: any) => p.role === 'agent');
-        setAgents(agentProfiles);
-      } catch (err) { console.error('Failed to load agents:', err); }
+        // Normalize shape to include user_id for backwards compatibility
+        const normalized = agentProfiles.map((p: any) => ({ ...p, user_id: p.id }));
+        if (normalized.length === 0) console.warn('No agents returned from /api/admin/users');
+        setAgents(normalized);
+      } catch (err) { console.error('Failed to load agents:', err); setAgents([]); }
     };
     fetchAgents();
   }, []);
@@ -107,6 +163,7 @@ export default function ApplicationList({ initialData }: { initialData: any[] })
       const token = session?.access_token;
       const res = await fetch('/api/admin/applications', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -155,7 +212,7 @@ export default function ApplicationList({ initialData }: { initialData: any[] })
 
         {/* Mobile View */}
         <div className="md:hidden space-y-3">
-          {initialData.map((app) => (
+          {apps.map((app) => (
             <MobileCard key={app.id} app={app} onViewDetails={() => openModal(app)} />
           ))}
         </div>
@@ -173,7 +230,7 @@ export default function ApplicationList({ initialData }: { initialData: any[] })
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {initialData.map((app) => (
+              {apps.map((app) => (
                 <DesktopRow key={app.id} app={app} onViewDetails={() => openModal(app)} />
               ))}
             </tbody>
@@ -189,6 +246,8 @@ export default function ApplicationList({ initialData }: { initialData: any[] })
           onAssign={assignApplication}
           assignments={assignments}
           assigning={assigning}
+          onStatusUpdate={handleStatusUpdate}
+          statusUpdating={statusUpdating}
         />
       )}
     </>
@@ -203,7 +262,12 @@ function MobileCard({ app, onViewDetails }: { app: Application, onViewDetails: (
       <div onClick={onViewDetails} className="p-4 cursor-pointer active:bg-slate-50">
         <div className="flex justify-between items-start mb-3">
           <div className="flex flex-col">
-            <span className="font-bold text-slate-900">{app.full_name}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-900">{app.full_name}</span>
+              {app.profile?.id && (
+                <a href={`/admin/users?user_id=${encodeURIComponent(app.profile.id)}`} className="text-xs text-slate-500 hover:underline">{app.profile.full_name || app.profile.phone}</a>
+              )}
+            </div>
             <span className="text-xs text-slate-500">{new Date(app.created_at || '').toLocaleDateString()}</span>
           </div>
           <StatusBadge status={app.status || 'new'} />
@@ -228,12 +292,19 @@ function DesktopRow({ app, onViewDetails }: { app: Application, onViewDetails: (
   return (
     <tr onClick={onViewDetails} className="cursor-pointer transition-colors hover:bg-slate-50 group">
       <td className="px-6 py-4">
-        <div className="flex flex-col">
-          <span className="font-bold text-slate-900 text-sm group-hover:text-blue-700 transition-colors">{app.full_name}</span>
-          <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-            <Phone size={10} /> {app.mobile_number}
+            <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-900 text-sm group-hover:text-blue-700 transition-colors">{app.full_name}</span>
+              {app.profile?.id && (
+                <a href={`/admin/users?user_id=${encodeURIComponent(app.profile.id)}`} className="text-xs text-slate-500 ml-2 hover:underline">
+                  ({app.profile.full_name || app.profile.phone})
+                </a>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+              <Phone size={10} /> {app.mobile_number}
+            </div>
           </div>
-        </div>
       </td>
       <td className="px-6 py-4">
         <div className="flex flex-col items-start gap-1">
@@ -272,7 +343,7 @@ function DesktopRow({ app, onViewDetails }: { app: Application, onViewDetails: (
 
 // --- MODAL & DETAILS ---
 
-function DetailsModal({ app, onClose, agents, onAssign, assignments, assigning }: { app: Application, onClose: () => void, agents: Agent[], onAssign: any, assignments: any, assigning: any }) {
+function DetailsModal({ app, onClose, agents, onAssign, assignments, assigning, onStatusUpdate, statusUpdating }: { app: Application, onClose: () => void, agents: Agent[], onAssign: any, assignments: any, assigning: any, onStatusUpdate: (id: string, status: string) => void, statusUpdating: Record<string, boolean> }) {
   return (
     <div className="fixed inset-0 z-[110] flex items-start md:items-center justify-center p-4 pt-16 md:pt-20 lg:pt-24">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
@@ -301,14 +372,14 @@ function DetailsModal({ app, onClose, agents, onAssign, assignments, assigning }
 
         {/* Modal Body */}
         <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-50/50">
-          <ExpandedDetails app={app} agents={agents} onAssign={onAssign} assignments={assignments} assigning={assigning} />
+          <ExpandedDetails app={app} agents={agents} onAssign={onAssign} assignments={assignments} assigning={assigning} onStatusUpdate={onStatusUpdate} statusUpdating={statusUpdating} />
         </div>
       </div>
     </div>
   );
 }
 
-function ExpandedDetails({ app, agents, onAssign, assignments, assigning }: { app: Application, agents: Agent[], onAssign: any, assignments: any, assigning: any }) {
+function ExpandedDetails({ app, agents, onAssign, assignments, assigning, onStatusUpdate, statusUpdating }: { app: Application, agents: Agent[], onAssign: any, assignments: any, assigning: any, onStatusUpdate: (id: string, status: string) => void, statusUpdating: Record<string, boolean> }) {
   
   // Format Metadata Keys (snake_case to Title Case)
   const formatKey = (key: string) => {
@@ -334,12 +405,18 @@ function ExpandedDetails({ app, agents, onAssign, assignments, assigning }: { ap
                   value={assignments[app.id] || ''}
                   onChange={(e) => { if (e.target.value) onAssign(app.id, e.target.value); }}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
-                  disabled={Boolean(assigning[app.id])}
+                  disabled={Boolean(assigning[app.id]) || agents.length === 0}
                 >
                   <option value="">-- Unassigned --</option>
-                  {agents.map(agent => (
-                    <option key={agent.user_id} value={agent.user_id}>{agent.full_name || agent.email}</option>
-                  ))}
+                  {agents.length === 0 ? (
+                    <option value="" disabled>No agents available</option>
+                  ) : (
+                    agents.map(agent => (
+                      <option key={agent.user_id} value={agent.user_id}>
+                        {agent.full_name ? `${agent.full_name}${agent.phone ? ` (${agent.phone})` : ''}` : (agent.phone || agent.email || agent.user_id)}
+                      </option>
+                    ))
+                  )}
                 </select>
              </div>
              {assigning[app.id] && <span className="text-xs text-blue-500 animate-pulse font-medium">Updating...</span>}
@@ -354,6 +431,29 @@ function ExpandedDetails({ app, agents, onAssign, assignments, assigning }: { ap
              <DetailItem label="Product Type" value={app.product_type} />
              <DetailItem label="Current Stage" value={app.application_stage} highlight />
              <DetailItem label="Source" value={app.source} />
+          </div>
+
+          {/* Status Update Control */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-3">
+            <div className="p-5">
+              <p className="text-sm text-slate-600 mb-1">Current Status</p>
+              <div className="flex items-center gap-3">
+                <StatusBadge status={app.status || 'new'} />
+
+                <select
+                  value={app.status || 'new'}
+                  onChange={(e) => onStatusUpdate(app.id, e.target.value)}
+                  className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white"
+                  disabled={Boolean(statusUpdating[app.id])}
+                >
+                  {['new','processing','on_hold','approved','rejected'].map((s) => (
+                    <option key={s} value={s}>{s.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>
+                  ))}
+                </select>
+
+                {statusUpdating[app.id] && <span className="text-xs text-blue-500 animate-pulse">Updating...</span>}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -426,6 +526,14 @@ function ExpandedDetails({ app, agents, onAssign, assignments, assigning }: { ap
           <div className="space-y-4">
              <ContactRow icon={<Mail size={16} />} label="Email Address" value={app.email} isLink prefix="mailto:" />
              <ContactRow icon={<Phone size={16} />} label="Mobile Number" value={app.mobile_number} isLink prefix="tel:" />
+             {app.profile && (
+               <div className="pt-3 border-t border-slate-100">
+                 <p className="text-[10px] uppercase font-bold text-slate-400 mb-2">Linked Profile</p>
+                 <a href={`/admin/users?user_id=${encodeURIComponent(app.profile.id)}`} className="text-sm font-semibold text-blue-600 hover:underline block">
+                   {app.profile.full_name || app.profile.phone} {app.profile.phone_verified ? <span className="text-xs text-emerald-600 ml-2">Verified</span> : <span className="text-xs text-slate-400 ml-2">Unverified</span>}
+                 </a>
+               </div>
+             )}
           </div>
         </div>
 

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { submitApplication } from '@/services/supabaseService';
+import { submitApplication, getClientProfileId } from '@/services/supabaseService';
 import { 
   X, User, Sun, Check, Loader2, MapPin, Zap, ArrowRight, 
   ArrowLeft, Building, Home, IndianRupee 
@@ -113,6 +113,7 @@ export default function SolarApplicationForm({
     setIsLoading(true);
 
     try {
+      const profileId = await getClientProfileId();
       const payload = {
         full_name: formData.fullName,
         mobile_number: formData.mobile,
@@ -133,7 +134,8 @@ export default function SolarApplicationForm({
           installationSize: formData.installationSize,
           panelsType: formData.panelsType,
           roofType: formData.roofType
-        }
+        },
+        profileId: profileId || undefined
       };
 
       const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;

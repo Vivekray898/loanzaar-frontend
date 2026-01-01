@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireAgent } from '@/lib/agentAuth'
+
+export const runtime = 'nodejs'
 
 /**
  * GET /api/agent/applications
  * Fetch applications assigned to the current agent (active assignments only).
  */
 export async function GET(request: Request) {
-  const { requireAgent } = await import('@/lib/agentAuth')
   const check = await requireAgent(request)
   if (!check.ok) {
     return NextResponse.json({ success: false, error: check.message }, { status: check.status })
@@ -18,6 +20,10 @@ export async function GET(request: Request) {
   if (!supabaseUrl || !supabaseServiceKey) {
     console.error('Missing Supabase config for agent applications API', { supabaseUrl: !!supabaseUrl, hasServiceKey: !!supabaseServiceKey })
     return NextResponse.json({ success: false, error: 'Server config error: missing supabase settings' }, { status: 500 })
+  }
+
+  if (!check.user?.id) {
+    return NextResponse.json({ success: false, error: 'Invalid user session' }, { status: 401 })
   }
 
   try {

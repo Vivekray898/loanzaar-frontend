@@ -135,7 +135,7 @@ function ApplyHubContent() {
       bg: 'bg-cyan-50' 
     },
     { 
-      href: '/loans/credit-cards', 
+      href: '/loans/credit-card', 
       title: 'Credit Cards', 
       hint: 'Premium Rewards', 
       promo: '💳 Lifetime Free',

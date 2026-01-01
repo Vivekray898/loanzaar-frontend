@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireAgent } from '@/lib/agentAuth'
+
+export const runtime = 'nodejs'
 
 /**
  * GET /api/agent/stats
@@ -7,15 +10,9 @@ import { createClient } from '@supabase/supabase-js'
  * Used by dashboard (server-side with internal secret).
  */
 export async function GET(request: Request) {
-  // Allow internal server calls using a shared secret header
-  const internalSecret = request.headers.get('x-internal-secret')
-  if (internalSecret !== process.env.INTERNAL_ADMIN_SECRET) {
-    // Otherwise require agent auth
-    const { requireAgent } = await import('@/lib/agentAuth')
-    const check = await requireAgent(request)
-    if (!check.ok) {
-      return NextResponse.json({ success: false, error: check.message }, { status: check.status })
-    }
+  const check = await requireAgent(request)
+  if (!check.ok) {
+    return NextResponse.json({ success: false, error: check.message }, { status: check.status })
   }
 
   try {

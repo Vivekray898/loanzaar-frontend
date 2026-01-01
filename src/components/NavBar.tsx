@@ -1,14 +1,15 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { UserAuthContext } from '../context/UserAuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { 
   ChevronDown, Phone, LogOut, LayoutDashboard, User as UserIcon, 
   Menu, X, ChevronRight, ShieldCheck, CreditCard, Wallet, LucideIcon 
 } from 'lucide-react';
 import Container from './Container';
+import { useSignInModal } from '@/context/SignInModalContext';
 
 // --- Interfaces ---
 
@@ -44,16 +45,19 @@ export default function NavBar() {
 
   // Refs
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const userMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
   
   const pathname = usePathname();
   const router = useRouter();
   
-  // Context
-  const authContext = useContext(UserAuthContext) as AuthContextType | null;
-  const user = authContext?.user ?? null;
-  const isAuthenticated = !!user;
-  const logout = authContext?.logout ?? (() => router.push('/signin'));
+  // Context - unified auth
+  const { user: authUser, logout: authLogout, isAuthenticated } = useAuth();
+  const { open: openSignIn } = useSignInModal();
+  
+  const logout = async () => {
+    await authLogout();
+    router.push('/');
+  };
 
   const navItems: NavItem[] = [
     {
@@ -159,7 +163,7 @@ export default function NavBar() {
     setMobileNestedExpanded(mobileNestedExpanded === label ? null : label);
   };
 
-  const getDashboardLink = () => (user?.role === 'admin' ? '/admin' : '/account');
+  const getDashboardLink = () => (authUser?.role === 'admin' ? '/admin' : '/account');
 
   // Helper to detect external links (http, https, mailto, tel)
   const isExternal = (url?: string) => typeof url === 'string' && (url.startsWith('http') || url.startsWith('mailto:') || url.startsWith('tel:'));
@@ -223,16 +227,16 @@ export default function NavBar() {
                                   {/* Nested Dropdown Menu */}
                                   <div className="absolute left-full top-0 ml-2 w-56 rounded-xl bg-white shadow-xl border border-slate-100 p-2 z-50 invisible group-hover/nested:visible opacity-0 group-hover/nested:opacity-100 transition-all duration-200">
                                     {child.children.map((subChild) => (
-                                    isExternal(subChild.link) ? (
-                                      <a key={subChild.label} href={subChild.link} target="_blank" rel="noopener noreferrer" className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors">
-                                        {subChild.label}
-                                      </a>
-                                    ) : (
-                                      <Link key={subChild.label} href={subChild.link!} className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors">
-                                        {subChild.label}
-                                      </Link>
-                                    )
-                                  ))}
+                                      isExternal(subChild.link) ? (
+                                        <a key={subChild.label} href={subChild.link} target="_blank" rel="noopener noreferrer" className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors">
+                                          {subChild.label}
+                                        </a>
+                                      ) : (
+                                        <Link key={subChild.label} href={subChild.link!} className="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors">
+                                          {subChild.label}
+                                        </Link>
+                                      )
+                                    ))}
                                   </div>
                                 </div>
                               ) : (
@@ -268,9 +272,9 @@ export default function NavBar() {
                 {isAuthenticated ? (
                   <div className="relative" ref={userMenuRef}>
                     <button onClick={() => setShowUserMenu(!showUserMenu)} className="flex items-center gap-2 p-1 pl-2 rounded-full border border-slate-200 hover:border-blue-300 transition-all">
-                      <span className="text-xs font-bold text-slate-700 truncate max-w-[80px]">{user?.name || 'User'}</span>
+                      <span className="text-xs font-bold text-slate-700 truncate max-w-[80px]">{authUser?.fullName || 'User'}</span>
                       <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
-                        {user?.name?.charAt(0).toUpperCase() || 'U'}
+                        {authUser?.fullName?.charAt(0).toUpperCase() || 'U'}
                       </div>
                     </button>
                     {showUserMenu && (
@@ -281,7 +285,12 @@ export default function NavBar() {
                     )}
                   </div>
                 ) : (
-                  <Link href="/signin" className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-blue-600 text-white font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-blue-300 transition-all">Sign In</Link>
+                  (() => {
+                    const { open } = useSignInModal();
+                    return (
+                      <button onClick={() => open()} className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-blue-600 text-white font-bold text-sm shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-blue-300 transition-all">Sign In</button>
+                    );
+                  })()
                 )}
               </div>
 
@@ -313,11 +322,11 @@ export default function NavBar() {
             <div className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between border border-slate-100 mb-6 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
-                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                  {authUser?.fullName?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div>
-                  <p className="font-bold text-slate-900">{user?.name}</p>
-                  <p className="text-xs text-slate-500 truncate max-w-[150px]">{user?.email}</p>
+                  <p className="font-bold text-slate-900">{authUser?.fullName || 'User'}</p>
+                  <p className="text-xs text-slate-500 truncate max-w-[150px]">{authUser?.phone}</p>
                 </div>
               </div>
               <Link href={getDashboardLink()} className="p-2 bg-white rounded-full shadow-sm text-blue-600">
@@ -325,11 +334,16 @@ export default function NavBar() {
               </Link>
             </div>
           ) : (
-            <div className="bg-blue-50 rounded-2xl p-6 text-center mb-6 shrink-0">
-              <h3 className="font-bold text-blue-900 mb-2">Welcome to Loanzaar</h3>
-              <p className="text-xs text-blue-700 mb-4">Sign in to track applications & get offers.</p>
-              <Link href="/signin" className="block w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md">Sign In / Register</Link>
-            </div>
+            (() => {
+              const { open } = useSignInModal();
+              return (
+                <div className="bg-blue-50 rounded-2xl p-6 text-center mb-6 shrink-0">
+                  <h3 className="font-bold text-blue-900 mb-2">Welcome to Loanzaar</h3>
+                  <p className="text-xs text-blue-700 mb-4">Sign in to track applications & get offers.</p>
+                  <button onClick={() => { open(); setIsMobileMenuOpen(false); }} className="block w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md">Sign In / Register</button>
+                </div>
+              );
+            })()
           )}
 
           {/* Navigation Links Container */}
@@ -379,7 +393,6 @@ export default function NavBar() {
                                       <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${mobileNestedExpanded === child.label ? 'rotate-180' : ''}`} />
                                     </button>
                                     
-                                    {/* Level 2 Accordion Content */}
                                     <div 
                                       className={`overflow-hidden transition-all duration-300 ease-in-out border-l-2 border-slate-100 ml-4`}
                                       style={{ maxHeight: mobileNestedExpanded === child.label ? '500px' : '0px' }}
@@ -411,7 +424,7 @@ export default function NavBar() {
                                     {child.label}
                                   </Link>
                                 )
-                            )}
+                            )} 
                           </div>
                         ))}
                       </div>

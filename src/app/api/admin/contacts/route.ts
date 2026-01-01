@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdmin } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic'; // Prevent caching
+export const runtime = 'nodejs';
 
 export async function GET(request: Request) {
   try {
     // Verify caller is an admin
-    const { requireAdmin } = await import('@/lib/adminAuth')
     const check = await requireAdmin(request)
     if (!check.ok) {
       return NextResponse.json({ success: false, error: check.message }, { status: check.status })

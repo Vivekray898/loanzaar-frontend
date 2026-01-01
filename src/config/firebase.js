@@ -40,22 +40,14 @@ export const auth = {
   },
 
   async signInWithEmailAndPassword(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    // Fetch session and wrap
-    const { data: sessionData } = await supabase.auth.getSession();
-    const wrapped = wrapSessionUser(sessionData?.session || null);
-    this.currentUser = wrapped;
-    return { user: wrapped };
+    // Email/password sign-in retired. Open SignIn modal to prompt OTP sign-in instead.
+    try { const { open } = require('@/context/SignInModalContext').useSignInModal(); if(open) open(); } catch (e) { /* ignore */ }
+    return { user: null, error: new Error('Email/password login retired. Use phone OTP.') };
   },
 
   async createUserWithEmailAndPassword(email, password) {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
-    const { data: sessionData } = await supabase.auth.getSession();
-    const wrapped = wrapSessionUser(sessionData?.session || null);
-    this.currentUser = wrapped;
-    return { user: wrapped };
+    // Email/password signup retired. Please use phone OTP flows to create accounts.
+    return { user: null, error: new Error('Email/password signup retired. Use phone OTP.') };
   },
 
   async signOut() {

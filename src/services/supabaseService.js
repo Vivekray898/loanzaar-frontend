@@ -6,6 +6,38 @@
 import { supabase } from '../config/supabase';
 import { getSupabaseToken } from '@/utils/supabaseTokenHelper';
 
+// Client helper to resolve a profile id that represents the authenticated/OTP-verified
+// profile for the current browser session. Preference order:
+// 1) localStorage.lead_user_id (explicit from OTP flows)
+// 2) server-verified profile for the authenticated Supabase user
+export async function getClientProfileId() {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    const lead = localStorage.getItem('lead_user_id');
+    if (lead) return lead;
+
+    // If user has an active Supabase session, attempt to resolve profile id server-side
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    if (!userId) return undefined;
+
+    try {
+      const res = await fetch(`/api/auth/profile/${encodeURIComponent(userId)}`);
+      if (!res.ok) return undefined;
+      const json = await res.json();
+      if (json?.success && json?.data?.id) return json.data.id;
+    } catch (e) {
+      console.debug('getClientProfileId: failed to resolve server profile', e);
+    }
+
+    return undefined;
+  } catch (e) {
+    console.debug('getClientProfileId: unexpected error', e);
+    return undefined;
+  }
+}
+
+
 /**
  * Submit form data to Firestore
  * Public forms (loan, insurance, contact, creditCard) → admin_loans, admin_insurance, admin_messages, other_data
@@ -42,7 +74,10 @@ export const submitToFirestore = async (type, formData, status = 'pending') => {
     }
 
     const collectionName = collectionMap[type] || 'loan_applications';
-    
+
+    // Helper to get lead id from localStorage (set after OTP flows)
+    const getLeadId = () => (typeof window !== 'undefined' ? (localStorage.getItem('lead_user_id') || undefined) : undefined);
+
     const rowData = {
       type,
       user_id: supaUser ? supaUser.id : null,
@@ -51,6 +86,7 @@ export const submitToFirestore = async (type, formData, status = 'pending') => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
+
 
     console.log(`📤 Submitting ${type} to table '${collectionName}'...`);
 
@@ -66,6 +102,8 @@ export const submitToFirestore = async (type, formData, status = 'pending') => {
         loanType: formData.loanType || formData.product_type || null,
         source: status || 'website',
         metadata: formData.metadata || formData || {},
+        // Attach lead/profile id if available (prefer explicit client-determined id)
+        profileId: formData.user_id || (await getClientProfileId()) || undefined
       };
 
       const res = await fetch('/api/apply', {
@@ -139,10 +177,24 @@ export const submitLoanApplication = async (loanData) => {
 export const submitApplication = async (applicationData) => {
   try {
     // Proxy the application submission to the server route which uses the service role key
+    // Invariant: if the client is authenticated (has a Supabase session), a profileId must be sent.
+    // Client-side we prefer explicit applicationData.profileId, then resolve from localStorage or the server.
+    const resolvedClientProfileId = await getClientProfileId();
+    const bodyPayload = { ...applicationData, profileId: applicationData?.profileId || resolvedClientProfileId || undefined };
+
+    // If user is signed-in with Supabase, include bearer token so server can detect authenticated requests
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    // Note: server will validate the presence and ownership of profileId for authenticated requests and
+    // reject the request if it cannot be associated with a valid profile.
     const res = await fetch('/api/apply', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(applicationData),
+      headers,
+      body: JSON.stringify(bodyPayload),
     });
     const json = await res.json();
     if (!res.ok) {
@@ -243,7 +295,7 @@ export const getUserSubmissions = async (type = null) => {
       const { data: loans, error } = await supabase
         .from('loan_applications')
         .select('*')
-        .eq('user_id', user.id)
+        .or(`user_id.eq.${user.id},id.eq.${user.id}`)
         .order('created_at', { ascending: false });
       if (error) throw error;
       (loans || []).forEach(row => {
@@ -260,7 +312,7 @@ export const getUserSubmissions = async (type = null) => {
       const { data: ins, error } = await supabase
         .from('insurance_applications')
         .select('*')
-        .eq('user_id', user.id)
+        .or(`user_id.eq.${user.id},id.eq.${user.id}`)
         .order('created_at', { ascending: false });
       if (error) throw error;
       (ins || []).forEach(row => {
@@ -342,11 +394,11 @@ export const listenToUserSubmissions = (callback, type = null, userId = null) =>
 
   // Listen to inserts/updates for loan_applications
   if (!type || type === 'loan') {
-    filters.push({ schema: 'public', table: 'loan_applications', event: '*', filter: uid ? `user_id=eq.${uid}` : undefined });
+    filters.push({ schema: 'public', table: 'loan_applications', event: '*', filter: uid ? `or(user_id.eq.${uid},id.eq.${uid})` : undefined });
   }
   // Listen to inserts/updates for insurance_applications
   if (!type || type === 'insurance') {
-    filters.push({ schema: 'public', table: 'insurance_applications', event: '*', filter: uid ? `user_id=eq.${uid}` : undefined });
+    filters.push({ schema: 'public', table: 'insurance_applications', event: '*', filter: uid ? `or(user_id.eq.${uid},id.eq.${uid})` : undefined });
   }
 
   filters.forEach(f => {
@@ -520,5 +572,8 @@ export default {
   listenToPendingSubmissions,
   sendChatMessage,
   listenToChatMessages,
-  useFirestoreSubmissions
+  useFirestoreSubmissions,
+  // Convenience exports
+  submitApplication,
+  getClientProfileId
 };

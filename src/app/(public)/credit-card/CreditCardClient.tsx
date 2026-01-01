@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Meta from '@/components/Meta';
+import ProtectedCTAButton from '@/components/ProtectedCTAButton' 
 // @ts-ignore - Assuming file exists
 import CreditCardFormModal from '@/components/forms/others/CreditCardFormModal';
 import { 
@@ -37,6 +38,17 @@ const CreditCardClient: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    const handler = (e: any) => {
+      try {
+        const action = e?.detail?.action
+        if (action === 'find_card') setIsModalOpen(true)
+      } catch (err) {}
+    }
+    window.addEventListener('resume-flow', handler)
+    return () => window.removeEventListener('resume-flow', handler)
+  }, [])
   
   // --- Scroll Logic ---
   const handleTabClick = (tabId: string) => {
@@ -113,12 +125,13 @@ const CreditCardClient: React.FC = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-              <button 
-                onClick={() => setIsModalOpen(true)}
+              <ProtectedCTAButton
+                label="Find My Card"
+                onContinue={() => setIsModalOpen(true)}
                 className="px-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm md:text-base shadow-lg shadow-slate-200 transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2"
               >
                 Find My Card <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
-              </button>
+              </ProtectedCTAButton> 
               
               {/* Compact Stats */}
               <div className="flex items-center justify-center gap-4 px-4 py-3 bg-white border border-slate-100 rounded-xl shadow-sm">
@@ -203,9 +216,10 @@ const CreditCardClient: React.FC = () => {
            {/* Mobile: 2 Columns, Desktop: 4 Columns */}
            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               {cardTypes.map((card, i) => (
-                 <div 
-                    key={i} 
-                    onClick={() => setIsModalOpen(true)}
+                 <ProtectedCTAButton
+                    key={i}
+                    label="Find My Card"
+                    onContinue={() => setIsModalOpen(true)}
                     className="group bg-white p-4 md:p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition-all cursor-pointer text-center"
                  >
                     <div className={`w-10 h-10 md:w-14 md:h-14 mx-auto rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ${card.color}`}>
@@ -213,7 +227,7 @@ const CreditCardClient: React.FC = () => {
                     </div>
                     <h3 className="text-sm md:text-base font-bold text-slate-900 mb-0.5">{card.name}</h3>
                     <p className="text-[10px] md:text-xs text-slate-500 font-medium leading-tight">{card.desc}</p>
-                 </div>
+                 </ProtectedCTAButton>
               ))}
            </div>
         </section>
@@ -226,9 +240,9 @@ const CreditCardClient: React.FC = () => {
                  <p className="text-slate-400 text-sm md:text-base leading-relaxed">
                     More than plastic money. Security, convenience, and rewards debit cards can't match.
                  </p>
-                 <button onClick={() => setIsModalOpen(true)} className="text-blue-400 text-sm font-bold flex items-center gap-2 hover:gap-3 transition-all pt-2">
+                 <ProtectedCTAButton label="Find My Card" onContinue={() => setIsModalOpen(true)} className="text-blue-400 text-sm font-bold flex items-center gap-2 hover:gap-3 transition-all pt-2">
                     Check Eligibility <ArrowRight className="w-4 h-4" />
-                 </button>
+                 </ProtectedCTAButton>
               </div>
               <div className="grid gap-3 md:gap-4">
                  {features.map((feat, i) => (

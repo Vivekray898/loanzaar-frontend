@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { submitApplication } from '@/services/supabaseService';
+import { submitApplication, getClientProfileId } from '@/services/supabaseService';
 import { X, Home, User, Check, Loader2, MapPin, Building, ArrowRight, ArrowLeft } from 'lucide-react';
 import Turnstile from '@/components/Turnstile';
 
@@ -101,6 +101,7 @@ export default function LoanAgainstPropertyForm({ isOpen, onClose, loanType = 'L
 
     setIsLoading(true);
     try {
+      const profileId = await getClientProfileId();
       const payload = {
         full_name: formData.fullName,
         mobile_number: formData.mobile,
@@ -123,7 +124,8 @@ export default function LoanAgainstPropertyForm({ isOpen, onClose, loanType = 'L
           ownership: formData.ownership || null,
           occupancy: formData.occupancy || null,
           pincode: formData.pincode || null
-        }
+        },
+        profileId: profileId || undefined
       };
 
       const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;

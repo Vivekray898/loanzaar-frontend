@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/config/supabase';
 import { LayoutDashboard, Users, FileText, MessageSquare, LogOut } from 'lucide-react';
+import { useSignInModal } from '@/context/SignInModalContext';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
@@ -12,19 +13,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
 
   // Auth Guard
+  const { open: openSignIn } = useSignInModal();
+
   useEffect(() => {
     let mounted = true;
     let sub: any = null;
 
-    const redirectToSignin = (reason?: string) => { console.debug('AdminLayout: redirecting to /signin', reason); if (mounted) router.replace('/signin'); };
-    const redirectToHome = (reason?: string) => { console.debug('AdminLayout: redirecting to /', reason); if (mounted) router.replace('/'); };
+    const redirectToSignin = (reason?: string) => { 
+      console.debug('AdminLayout: redirecting to sign-in', reason); 
+      if (mounted) { 
+        try { 
+          openSignIn(); 
+          router.replace('/'); 
+        } catch(e) { 
+          router.replace('/?modal=login'); 
+        } 
+      } 
+    };
+    
+    const redirectToHome = (reason?: string) => { 
+      console.debug('AdminLayout: redirecting to /', reason); 
+      if (mounted) router.replace('/'); 
+    };
 
     const handleProfileCheck = async (user: any) => {
       try {
+        // FIXED: Added .single() to execute the query and wrapped error handling in an if block
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('role')
-          .eq('user_id', user.id)
+          .or(`id.eq.${user.id},phone.eq.${user.id}`)
           .single();
 
         if (error) {
@@ -39,7 +57,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }
 
         if (mounted) setIsLoading(false);
-      } catch (e) {
+      } catch (e: any) {
         console.error('AdminLayout: unexpected error checking profile', e);
         redirectToHome();
       }
@@ -49,14 +67,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       try {
         const { data: { session } } = await supabase.auth.getSession();
         console.debug('AdminLayout: getSession returned', { session });
-        if (session?.user) {
+        
+            if (session?.user) {
           await handleProfileCheck(session.user);
           return;
         }
 
-        // If no session, wait a bit longer for auth state restoration (avoid immediate redirect)
+        // If no session, check server-side admin cookie session first (so OTP/profile-based admins can access)
+        try {
+          const adminRes = await fetch('/api/admin/session');
+          if (adminRes.ok) {
+            const json = await adminRes.json();
+            if (json?.success && json?.profile) {
+              // authorized via admin cookie
+              if (mounted) setIsLoading(false);
+              return;
+            }
+          }
+        } catch (err) {
+          console.warn('AdminLayout: admin cookie check failed', err);
+        }
+
+        // If no admin cookie, wait a bit longer for auth state restoration
         await new Promise<void>((resolve) => {
           let resolved = false;
+          
           sub = supabase.auth.onAuthStateChange((event, sess) => {
             console.debug('AdminLayout: onAuthStateChange', { event, sess });
             if (!resolved && sess?.user) {
@@ -88,7 +123,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       mounted = false;
       if (sub?.data?.subscription?.unsubscribe) sub.data.subscription.unsubscribe();
     };
-  }, [router]);
+  }, [router, openSignIn]);
 
   const navLinks = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -100,10 +135,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (isLoading) return <div className="h-screen flex items-center justify-center bg-slate-50 text-slate-400">Loading...</div>;
 
   return (
-    // pb-20 adds padding at bottom on mobile so content isn't hidden behind the sticky nav
     <div className="flex min-h-screen bg-slate-50 text-slate-900 font-sans pb-20 md:pb-0">
       
-      {/* --- DESKTOP SIDEBAR (Hidden on Mobile) --- */}
+      {/* --- DESKTOP SIDEBAR --- */}
       <aside className="hidden md:flex flex-col w-64 bg-slate-900 text-slate-300 h-screen sticky top-0 border-r border-slate-800">
         <div className="h-20 flex items-center px-6 border-b border-slate-800">
           <h1 className="text-xl font-bold text-white tracking-wide">LoanZaar Admin</h1>
@@ -133,7 +167,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <div className="p-4 border-t border-slate-800">
           <button 
-            onClick={async () => { await supabase.auth.signOut(); try { document.cookie = 'userToken=; Path=/; Max-Age=0; Secure; SameSite=None'; } catch(e){}; router.push('/signin'); }}
+            onClick={async () => { 
+              try { await supabase.auth.signOut(); } catch(e){}
+              try { document.cookie = 'userToken=; Path=/; Max-Age=0; Secure; SameSite=None'; } catch(e){}
+              try { await fetch('/api/admin/login', { method: 'DELETE' }); } catch(e){}
+              try { openSignIn(); } catch(e) { router.push('/?modal=login'); }
+            }}
             className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-red-400 hover:bg-red-950/30 hover:text-red-300 transition-all"
           >
             <LogOut size={20} /> 
@@ -142,7 +181,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      {/* --- MOBILE BOTTOM NAVIGATION (Hidden on Desktop) --- */}
+      {/* --- MOBILE BOTTOM NAVIGATION --- */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 flex justify-around items-center px-2 py-3 safe-area-pb shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         {navLinks.map((link) => {
           const Icon = link.icon;
@@ -159,7 +198,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           );
         })}
         <button 
-          onClick={async () => { await supabase.auth.signOut(); router.push('/signin'); }}
+          onClick={async () => { 
+            try { await supabase.auth.signOut(); } catch(e){}
+            try { await fetch('/api/admin/login', { method: 'DELETE' }); } catch(e){}
+            try { openSignIn(); } catch(e) { router.push('/?modal=login'); }
+          }}
           className="flex flex-col items-center gap-1 p-2 text-red-400 rounded-lg"
         >
           <LogOut size={24} />
@@ -169,7 +212,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* --- MAIN CONTENT --- */}
       <main className="flex-1 w-full min-w-0">
-        {/* Simple Mobile Header */}
         <div className="md:hidden h-16 bg-white border-b border-slate-200 flex items-center justify-center sticky top-0 z-40 px-4 shadow-sm">
           <h1 className="text-lg font-bold text-slate-800">Admin Dashboard</h1>
         </div>

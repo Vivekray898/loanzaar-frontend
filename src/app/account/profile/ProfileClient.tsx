@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useUserAuth } from '@/context/UserAuthContext'
-import { supabase } from '@/config/supabase'
+import { useAuth } from '@/context/AuthContext'
+import { useSignInModal } from '@/context/SignInModalContext' 
 import { 
   User, Mail, Phone, MapPin, Camera, Save, RefreshCw, 
   ChevronLeft, Loader2, Check, AlertCircle, ShieldCheck, Lock
@@ -25,8 +25,7 @@ interface FormErrors {
 }
 
 export default function ProfileClient() {
-  interface AuthUser { uid?: string; email?: string | null; displayName?: string | null; photoURL?: string | null }
-  const { user, isAuthenticated, loading } = useUserAuth() as { user?: AuthUser | null, isAuthenticated: boolean, loading: boolean }
+  const { user, isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
 
   const [form, setForm] = useState<ProfileForm>({
@@ -41,31 +40,98 @@ export default function ProfileClient() {
   const [statusMsg, setStatusMsg] = useState<string>('')
   const [msgType, setMsgType] = useState<'success' | 'error' | ''>('')
 
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/signin')
-    }
-  }, [loading, isAuthenticated, router])
+  const { open: openSignIn } = useSignInModal();
 
   useEffect(() => {
-    if (user?.uid) {
-      setForm(prev => ({ ...prev, email: user.email || '' }))
-      fetchProfile(user.uid)
+    if (!isLoading && !isAuthenticated) {
+      try { openSignIn(); } catch(e) { router.push('/?modal=login'); }
+    }
+  }, [isLoading, isAuthenticated, router])
+
+  useEffect(() => {
+    if (user?.id) {
+      setForm(prev => ({ ...prev, phone: user.phone || '' }))
+      fetchProfile(user.id)
     }
   }, [user])
+
+  // Profile cache helpers (cookie-based)
+  // Avoid importing client-only code in SSR — require lazily
+  const loadFromCache = (uid: string) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { getProfileCache } = require('@/utils/profileCache');
+      return getProfileCache(uid);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  const isUuid = (val: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val);
 
   const fetchProfile = async (uid: string) => {
     setBusy(true)
     setStatusMsg('')
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', uid)
-        .single()
+      let result: any = null
 
-      if (data) {
-        setForm(prev => ({ ...prev, ...data }))
+      // Check cookie cache first
+      try {
+        const cached = loadFromCache(uid);
+        if (cached) {
+          result = cached;
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      // If not cached, query server
+      if (!result) {
+        // Prefer server GET by id (if uuid); otherwise try id-by-phone fallback via server
+        if (isUuid(uid)) {
+          const res = await fetch(`/api/auth/profile/${encodeURIComponent(uid)}`);
+          if (res.ok) {
+            const json = await res.json();
+            if (json?.success && json.profile) result = json.profile;
+            else if (res.status === 404) {
+              // not found by id, we'll try phone next
+            } else {
+              console.error('Error fetching profile by id from server:', json?.error || res.statusText);
+            }
+          } else {
+            const json = await res.json().catch(() => ({}));
+            if (res.status !== 404) console.error('Profile GET error (id):', json?.error || res.statusText);
+          }
+        }
+
+        // Fallback: try phone lookup if we didn't get a result
+        if (!result) {
+          // We support the server GET endpoint using ?id=<phone> as fallback
+          const res = await fetch(`/api/auth/profile/?id=${encodeURIComponent(uid)}`);
+          if (res.ok) {
+            const json = await res.json();
+            if (json?.success && json.profile) result = json.profile;
+            else console.error('Error fetching profile by phone from server:', json?.error || res.statusText);
+          } else {
+            const json = await res.json().catch(() => ({}));
+            if (res.status !== 404) console.error('Profile GET error (phone):', json?.error || res.statusText);
+          }
+        }
+
+        // If we obtained result from server, cache it
+        if (result) {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const { setProfileCache } = require('@/utils/profileCache');
+            setProfileCache(result);
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
+
+      if (result) {
+        setForm(prev => ({ ...prev, ...result }))
       }
     } catch (e) {
       console.error(e)
@@ -77,7 +143,9 @@ export default function ProfileClient() {
   const validate = (): boolean => {
     const e: FormErrors = {}
     if (!form.full_name || form.full_name.trim().length < 2) e.full_name = 'Name is too short'
-    if (form.phone && !/^[0-9+\s-]{7,15}$/.test(form.phone)) e.phone = 'Invalid phone number'
+    // Email is editable; validate basic format if present
+    if (form.email && !/^[\w-.+]+@[\w-]+\.[\w-.]+$/.test(form.email)) e.email = 'Invalid email address'
+    // Phone is read-only on this page; skip client-side format validation to avoid blocking
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -93,32 +161,48 @@ export default function ProfileClient() {
     e.preventDefault()
     setStatusMsg('')
     if (!validate()) return
-    if (!user?.uid) return
+    if (!user?.id) return
 
     setBusy(true)
     try {
-      const payload = {
-        user_id: user.uid,
+      // Build payload
+      const payload: any = {
+        id: undefined,
         full_name: form.full_name || null,
         email: form.email || null,
         phone: form.phone || null,
         address: form.address || null,
         photo_url: form.photo_url || null,
-        updated_at: new Date().toISOString()
       }
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .upsert(payload, { onConflict: 'user_id' })
-        .select()
+      // If current user id looks like a profile id, include it for an id-based upsert
+      if (user?.id && /^[0-9a-fA-F-]{36}$/.test(user.id)) {
+        payload.id = user.id
+      }
 
-      if (error) {
+      const res = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json?.success) {
         setStatusMsg('Update failed. Try again.')
         setMsgType('error')
       } else {
         setStatusMsg('Profile updated successfully')
         setMsgType('success')
-        if (data && data[0]) setForm(prev => ({ ...prev, ...data[0] }))
+        if (json.profile) {
+          setForm(prev => ({ ...prev, ...json.profile }))
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const { setProfileCache } = require('@/utils/profileCache');
+            setProfileCache(json.profile);
+          } catch (e) {
+            // ignore cache set failures
+          }
+        }
       }
     } catch (err) {
       setStatusMsg('An unexpected error occurred.')
@@ -128,7 +212,7 @@ export default function ProfileClient() {
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
@@ -234,38 +318,40 @@ export default function ProfileClient() {
                     {errors.full_name && <p className="text-xs text-red-500 ml-1">{errors.full_name}</p>}
                   </div>
 
-                  {/* Phone */}
+                  {/* Phone (read-only) */}
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Phone Number</label>
                     <div className="relative group">
-                      <Phone className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                      <Phone className="absolute left-4 top-3.5 w-5 h-5 text-slate-400 transition-colors" />
                       <input
                         name="phone"
                         type="tel"
                         value={form.phone}
-                        onChange={handleChange}
-                        className={`w-full pl-12 pr-4 py-3 bg-slate-50 border rounded-xl outline-none transition-all font-medium text-slate-900 ${errors.phone ? 'border-red-300 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-slate-100 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:bg-white'}`}
+                        readOnly
+                        className={`w-full pl-12 pr-12 py-3 bg-slate-100 border rounded-xl outline-none transition-all font-medium text-slate-500 cursor-not-allowed`}
                         placeholder="+91 00000 00000"
                       />
+                      <Lock className="absolute right-4 top-3.5 w-4 h-4 text-slate-400" />
                     </div>
-                    {errors.phone && <p className="text-xs text-red-500 ml-1">{errors.phone}</p>}
+                    <p className="text-[10px] text-slate-400 ml-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" /> Phone number cannot be changed here. To update your phone, re-verify with a new number.
+                    </p>
                   </div>
 
-                  {/* Email (Read Only) */}
+                  {/* Email (Editable) */}
                   <div className="space-y-2 md:col-span-2">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Email Address</label>
                     <div className="relative">
                       <Mail className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
                       <input
+                        name="email"
                         value={form.email}
-                        readOnly
-                        className="w-full pl-12 pr-10 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-medium cursor-not-allowed select-none"
+                        onChange={handleChange}
+                        className={`w-full pl-12 pr-10 py-3 bg-slate-50 border rounded-xl outline-none transition-all font-medium text-slate-900 ${errors.email ? 'border-red-300 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-slate-100 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:bg-white'}`}
+                        placeholder="you@example.com"
                       />
-                      <Lock className="absolute right-4 top-3.5 w-4 h-4 text-slate-400" />
                     </div>
-                    <p className="text-[10px] text-slate-400 ml-1 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" /> Cannot be changed for security reasons
-                    </p>
+                    {errors.email && <p className="text-xs text-red-500 ml-1">{errors.email}</p>}
                   </div>
 
                   {/* Address */}
@@ -300,7 +386,7 @@ export default function ProfileClient() {
 
                 <button
                   type="button"
-                  onClick={() => user?.uid && fetchProfile(user.uid)}
+                  onClick={() => user?.id && fetchProfile(user.id)}
                   disabled={busy}
                   className="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-white hover:text-slate-900 transition-all disabled:opacity-50"
                 >

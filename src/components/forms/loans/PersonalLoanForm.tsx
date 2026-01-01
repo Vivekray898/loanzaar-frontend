@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { submitApplication } from '@/services/supabaseService';
+import { submitApplication, getClientProfileId } from '@/services/supabaseService';
 import { X, User, Briefcase, Check, Loader2, IndianRupee, MapPin, Building, Home, ArrowRight, ArrowLeft } from 'lucide-react';
 import Turnstile from '@/components/Turnstile';
 
@@ -99,6 +99,7 @@ const PersonalLoanForm: React.FC<PersonalLoanFormProps> = ({
     setIsLoading(true);
 
     try {
+      const profileId = await getClientProfileId();
       const payload = {
         full_name: formData.fullName,
         mobile_number: formData.mobile,
@@ -118,7 +119,9 @@ const PersonalLoanForm: React.FC<PersonalLoanFormProps> = ({
           monthlyIncome: formData.monthlyIncome,
           // Store raw values in metadata too just in case
           raw_address: `${formData.addressLine1}, ${formData.addressLine2}, ${formData.city}, ${formData.state} - ${formData.pincode}`
-        }
+        },
+        // Attach resolved client profileId when available (preferred)
+        profileId: profileId || undefined
       };
 
       const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;

@@ -13,7 +13,8 @@ import { usePathname } from 'next/navigation'
  */
 export default function PublicLayout({ children }) {
   const pathname = usePathname()
-  const isAuthRoute = pathname?.startsWith('/signin') ||
+  const isModalLogin = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('modal') === 'login';
+  const isAuthRoute = isModalLogin || pathname?.startsWith('/signin') ||
                       pathname?.startsWith('/signup') ||
                       pathname?.startsWith('/forgot-password') ||
                       pathname?.startsWith('/finish-signup') ||

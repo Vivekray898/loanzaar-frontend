@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { submitApplication } from '@/services/supabaseService';
+import { submitApplication, getClientProfileId } from '@/services/supabaseService';
 import { 
   X, GraduationCap, User, Check, Loader2, 
   MapPin, Building, Home, ArrowRight, ArrowLeft 
@@ -102,6 +102,7 @@ export default function EducationLoanForm({ isOpen, onClose, loanType = 'Educati
 
     setIsLoading(true);
     try {
+      const profileId = await getClientProfileId();
       const payload = {
         full_name: formData.fullName,
         mobile_number: formData.mobile,
@@ -122,7 +123,8 @@ export default function EducationLoanForm({ isOpen, onClose, loanType = 'Educati
           institution: formData.institution || null,
           loanAmountDesired: formData.loanAmountDesired || null,
           tenurePreference: formData.tenurePreference || null
-        }
+        },
+        profileId: profileId || undefined
       };
 
       const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;

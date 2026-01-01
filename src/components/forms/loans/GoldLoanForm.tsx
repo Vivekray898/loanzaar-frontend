@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { submitApplication } from '@/services/supabaseService';
+import { submitApplication, getClientProfileId } from '@/services/supabaseService';
 import { 
   X, IndianRupee, User, Check, Loader2, Target, 
   MapPin, Building, Home, ArrowRight, ArrowLeft 
@@ -103,6 +103,7 @@ export default function GoldLoanForm({ isOpen, onClose, loanType = 'Gold Loan' }
 
     setIsLoading(true);
     try {
+      const profileId = await getClientProfileId();
       const payload = {
         full_name: formData.fullName,
         mobile_number: formData.mobile,
@@ -123,7 +124,8 @@ export default function GoldLoanForm({ isOpen, onClose, loanType = 'Gold Loan' }
           purity: formData.purity || null,
           loanAmountDesired: formData.loanAmountDesired || null,
           tenurePreference: formData.tenurePreference || null
-        }
+        },
+        profileId: profileId || undefined
       };
 
       const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;

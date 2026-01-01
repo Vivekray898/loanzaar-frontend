@@ -10,3 +10,6 @@ declare module '*.png';
 declare module '*.jpg';
 declare module '*.jpeg';
 declare module '*.gif';
+
+declare module '@supabase/auth-helpers-nextjs';
+declare module 'sonner';

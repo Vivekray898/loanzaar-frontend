@@ -3,6 +3,7 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../config/supabase'
+import { useSignInModal } from '@/context/SignInModalContext'
 
 /**
  * Single auth provider that exposes:
@@ -16,7 +17,19 @@ export const UserAuthContext = createContext(null)
 
 export const useUserAuth = () => {
   const ctx = useContext(UserAuthContext)
-  if (!ctx) throw new Error('useUserAuth must be used within UserAuthProvider')
+  if (!ctx) {
+    // If called outside of UserAuthProvider, return a safe fallback to avoid runtime crashes.
+    // This mirrors prior behavior (treat as unauthenticated) and logs a warning for visibility.
+    console.warn('useUserAuth called outside UserAuthProvider. Returning fallback unauthenticated context.');
+    return {
+      user: null,
+      role: 'guest',
+      loading: false,
+      isAuthenticated: false,
+      login: async () => {},
+      logout: async () => {},
+    }
+  }
   return ctx
 }
 
@@ -36,14 +49,47 @@ export const UserAuthProvider = ({ children }) => {
     mounted = true
     setLoading(true)
 
+    const setProfileFromLeadId = async (leadId) => {
+      if (!leadId) return // guard against accidental calls
+      try {
+        // Use server endpoint to avoid client anon requests hitting RLS / unauthorized errors
+        const res = await fetch(`/api/auth/profile/${encodeURIComponent(leadId)}`, { method: 'GET' })
+        const json = await res.json()
+        if (!res.ok || !json?.success) {
+          console.error('Failed to fetch profile for lead id', leadId, json?.error || json)
+          setUser(null)
+          setRole('guest')
+          setLoading(false)
+          return
+        }
+
+        const data = json.data
+        setUser({ uid: data.id, email: data.email, displayName: data.full_name, photoURL: data.photo_url })
+        setRole(data.role || 'user')
+        setLoading(false)
+      } catch (err) {
+        console.error('Unexpected error fetching profile for lead id', err)
+        setUser(null)
+        setRole('guest')
+        setLoading(false)
+      }
+    }
+
     const handleAuthChange = async (event, session) => {
       if (!mounted) return
 
       const supaUser = session?.user ?? null
 
       if (!supaUser) {
-        // Guest state
+        // No Supabase session — check for local lead login
         lastCheckedUid.current = null
+        const leadId = (typeof window !== 'undefined') ? localStorage.getItem('lead_user_id') : null
+        if (leadId) {
+          await setProfileFromLeadId(leadId)
+          setLoading(false)
+          return
+        }
+
         setUser(null)
         setRole('guest')
         setLoading(false)
@@ -72,7 +118,7 @@ export const UserAuthProvider = ({ children }) => {
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('user_id', supaUser.id)
+          .or(`id.eq.${supaUser.id},phone.eq.${supaUser.id}`)
           .single()
 
         console.debug('UserAuthProvider: profile fetch', { uid: supaUser.id, data, error })
@@ -80,7 +126,7 @@ export const UserAuthProvider = ({ children }) => {
         // If profile missing, create a minimal profile using available metadata
         if (error && error.code === 'PGRST116') {
           const newProfile = {
-            user_id: supaUser.id,
+            // NOTE: No longer setting `user_id` here. We'll rely on `phone` or let this be a minimal profile record.
             full_name: supaUser.user_metadata?.full_name || (supaUser.email ? supaUser.email.split('@')[0] : null),
             email: supaUser.email || null,
             phone: supaUser.user_metadata?.phone || null,
@@ -134,28 +180,51 @@ export const UserAuthProvider = ({ children }) => {
       try {
         const { data } = await supabase.auth.getSession()
         handleAuthChange('init', data.session)
+
+        // Also check for local lead login on startup
+        if (!data.session) {
+          const leadId = (typeof window !== 'undefined') ? localStorage.getItem('lead_user_id') : null
+          if (leadId) {
+            await setProfileFromLeadId(leadId)
+          }
+        }
       } catch (e) {
         setLoading(false)
         console.error('UserAuthProvider: getSession failed', e)
       }
     })()
 
+    // Listen for lead-login events (dispatched after OTP flows)
+    const leadHandler = async (e) => {
+      const leadId = e?.detail?.userId || (typeof window !== 'undefined' ? localStorage.getItem('lead_user_id') : null)
+      if (leadId) {
+        await setProfileFromLeadId(leadId)
+      }
+    }
+    if (typeof window !== 'undefined') window.addEventListener('lead-login', leadHandler)
+
     return () => {
       mounted = false
       if (subscriptionRef.current?.unsubscribe) subscriptionRef.current.unsubscribe()
+      if (typeof window !== 'undefined') window.removeEventListener('lead-login', leadHandler)
     }
   }, [])
 
   const login = async (credentials) => {
-    // credentials: { email, password } or other supabase signin payload
-    return supabase.auth.signInWithPassword(credentials)
+    // Email/password login has been retired. Open the centralized SignIn modal to prompt OTP sign-in.
+    try { openSignIn(); } catch (e) { /* ignore - best effort */ }
+    return { success: false, error: new Error('Email/password login retired. Please use phone OTP.') }
   }
+
+  const { open: openSignIn } = useSignInModal();
 
   const logout = async () => {
     lastCheckedUid.current = null
     setUser(null)
     setRole('guest')
     try {
+      // Clear local lead id as well
+      try { localStorage.removeItem('lead_user_id') } catch (e) { /* ignore */ }
       await supabase.auth.signOut()
       // Clear middleware cookie
       try {
@@ -163,7 +232,8 @@ export const UserAuthProvider = ({ children }) => {
       } catch (e) {
         console.warn('UserAuthProvider: could not clear userToken cookie', e)
       }
-      router.push('/signin')
+      // Open centralized Sign In modal instead of redirect
+      try { openSignIn(); } catch (e) { router.push('/?modal=login'); }
     } catch (e) {
       console.error('UserAuthProvider: signOut failed', e)
     }

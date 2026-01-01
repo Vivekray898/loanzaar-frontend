@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Meta from '@/components/Meta';
 import BackButton from '@/components/BackButton';
 import BottomNav from '@/components/BottomNav';
+import ProtectedCTAButton from '@/components/ProtectedCTAButton' 
 // @ts-ignore
 import BusinessApplicationFrom from '@/components/forms/loans/BusinessApplicationFrom';
 import { 
@@ -40,10 +41,17 @@ const BusinessLoanClient = () => {
     }
   }, [loanAmount, interestRate, tenure]);
 
-  const handleApplyClick = () => {
-    setIsModalOpen(true);
-  };
 
+  React.useEffect(() => {
+    const handler = (e) => {
+      try {
+        const action = e?.detail?.action
+        if (action === 'apply_now') setIsModalOpen(true)
+      } catch (err) {}
+    }
+    window.addEventListener('resume-flow', handler)
+    return () => window.removeEventListener('resume-flow', handler)
+  }, [])
   // Smooth Scroll Handler
   const scrollToSection = (id) => {
     setActiveTab(id);
@@ -520,12 +528,9 @@ const BusinessLoanClient = () => {
 
                       {/* Desktop Apply Button */}
                       <div className="pt-2">
-                        <button 
-                          onClick={handleApplyClick}
-                          className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-white px-6 py-4 rounded-xl font-bold text-base shadow-xl shadow-blue-200"
-                        >
+                        <ProtectedCTAButton label="Apply Now" onContinue={() => setIsModalOpen(true)} className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-white px-6 py-4 rounded-xl font-bold text-base shadow-xl shadow-blue-200">
                           Apply Now <ArrowRight className="w-5 h-5" />
-                        </button>
+                        </ProtectedCTAButton>
                         <p className="text-center text-[10px] text-slate-400 mt-2 font-medium uppercase tracking-wide">100% Collateral Free</p>
                       </div>
                    </div>
@@ -542,12 +547,9 @@ const BusinessLoanClient = () => {
             <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">EMI Starts at</p>
             <p className="text-lg font-bold text-slate-900">₹{emi.toLocaleString()}<span className="text-xs text-slate-400 font-normal">/mo</span></p>
           </div>
-          <button 
-            onClick={handleApplyClick}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-200"
-          >
-            Apply Now <ArrowRight className="w-4 h-4" />
-          </button>
+          <ProtectedCTAButton label="Apply Now" onContinue={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg">
+            <>Apply Now <ArrowRight className="w-4 h-4" /></>
+          </ProtectedCTAButton>
         </div>
       </div>
 

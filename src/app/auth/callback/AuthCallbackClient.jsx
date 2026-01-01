@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/config/supabase'
+import { useSignInModal } from '@/context/SignInModalContext'
 
 export default function AuthCallbackClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { open: openSignIn } = useSignInModal()
   const [status, setStatus] = useState('Processing authentication...')
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export default function AuthCallbackClient() {
         const session = sessionData?.session
         if (!session) {
           setStatus('No active session found. Redirecting to sign in...')
-          setTimeout(() => router.replace('/signin'), 1200)
+          setTimeout(() => { try { openSignIn(); } catch(e) { router.replace('/?modal=login'); } }, 1200)
           return
         }
 
@@ -56,7 +58,7 @@ export default function AuthCallbackClient() {
       } catch (err) {
         console.error('Auth callback error:', err)
         setStatus('Authentication failed. Redirecting to sign in...')
-        setTimeout(() => router.replace('/signin'), 1500)
+        setTimeout(() => { try { openSignIn(); } catch(e) { router.replace('/?modal=login'); } }, 1500)
       }
     }
 

@@ -1,14 +1,17 @@
 'use client'
 
 import React from 'react';
-import { useRouter } from 'next/navigation';
-import { useUserAuth } from '../context/UserAuthContext';
+import { useRouter, usePathname } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { useSignInModal } from '@/context/SignInModalContext';
 
 function ProtectedUserRoute({ children }) {
   const router = useRouter();
-  const { isAuthenticated, loading } = useUserAuth();
+  const pathname = usePathname();
+  const { isAuthenticated, isLoading } = useAuth();
+  const { open } = useSignInModal();
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
@@ -20,7 +23,7 @@ function ProtectedUserRoute({ children }) {
   }
 
   if (!isAuthenticated) {
-    router.push('/signin');
+    open(pathname);
     return null;
   }
 

@@ -4,19 +4,15 @@ import { supabase } from '../config/supabase'
 
 // Admin helpers (no React hook compatibility export)
 export async function adminLogin(email, password) {
-  return supabase.auth.signInWithPassword({ email, password })
+  // Email/password admin login retired. Open SignIn modal to prompt OTP-based sign-in instead.
+  try { const { open } = require('@/context/SignInModalContext').useSignInModal(); if(open) open(); } catch (e) { /* best effort */ }
+  return { success: false, error: new Error('Admin email/password login retired. Use phone OTP.') }
 }
 
 export async function adminSignup(email, password, fullName, phone, role = 'admin') {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { full_name: fullName } }
-  })
-  if (error) return { success: false, error }
-
+  // Create an admin profile record without using Supabase email/password signup.
+  // Admins can then authenticate via the phone OTP flow.
   const profile = {
-    user_id: data?.user?.id,
     full_name: fullName,
     email,
     phone,
@@ -26,7 +22,7 @@ export async function adminSignup(email, password, fullName, phone, role = 'admi
   }
   const { error: insertErr } = await supabase.from('profiles').insert([profile])
   if (insertErr) return { success: false, error: insertErr }
-  return { success: true, uid: data.user.id }
+  return { success: true }
 }
 
 export async function adminLogout() {
@@ -46,7 +42,7 @@ export async function updateAdminProfile(userId, newAdminData) {
   if (!userId) return { success: false, error: 'No user id' }
   try {
     const updatedData = { ...newAdminData, updated_at: new Date().toISOString() }
-    const { error } = await supabase.from('profiles').update(updatedData).eq('user_id', userId)
+    const { error } = await supabase.from('profiles').update(updatedData).or(`id.eq.${userId},phone.eq.${userId}`)
     if (error) throw error
     return { success: true }
   } catch (e) {

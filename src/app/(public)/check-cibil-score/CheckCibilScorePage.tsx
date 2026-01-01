@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Meta from '@/components/Meta';
+import ProtectedCTAButton from '@/components/ProtectedCTAButton' 
 import CibilScoreFormModal from '@/components/forms/others/CibilScoreFormModal'; // Import the new component
 import { 
   ChevronDown, ShieldCheck, BarChart3, Search, Star, Lightbulb, 
@@ -14,6 +15,17 @@ const CheckCibilScorePage = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
+
+  React.useEffect(() => {
+    const handler = (e: any) => {
+      try {
+        const action = e?.detail?.action
+        if (action === 'credit_score') setShowModal(true)
+      } catch (err) {}
+    }
+    window.addEventListener('resume-flow', handler)
+    return () => window.removeEventListener('resume-flow', handler)
+  }, [])
   
   // --- Scroll Logic ---
   const handleTabClick = (tabId: string) => {
@@ -109,12 +121,13 @@ const CheckCibilScorePage = () => {
                 </p>
                 
                 <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start pt-4">
-                    <button 
-                        onClick={() => setShowModal(true)}
+                    <ProtectedCTAButton
+                        label="Check Score Now"
+                        onContinue={() => setShowModal(true)}
                         className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] transition-all active:scale-95 flex items-center justify-center gap-2"
                     >
                         Check Score Now <ArrowRight className="w-5 h-5" />
-                    </button>
+                    </ProtectedCTAButton>
                     <div className="flex -space-x-2">
                         {[1,2,3,4].map(i => (
                             <div key={i} className="w-10 h-10 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[10px] text-white font-bold">

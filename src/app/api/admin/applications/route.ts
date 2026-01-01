@@ -28,13 +28,34 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
+    const status = searchParams.get('status') || null;
+    const product_type = searchParams.get('product_type') || null;
+    const profileId = searchParams.get('profileId') || null;
+    const search = searchParams.get('search') || null;
+    const sortBy = searchParams.get('sortBy') || 'created_at';
+    const sortDir = (searchParams.get('sortDir') || 'desc').toLowerCase() === 'asc' ? { ascending: true } : { ascending: false };
 
-    // 3. Use Wildcard Select (*)
-    const { data: applications, error, count } = await supabaseAdmin
+    // 3. Select required fields and include related profile info (id, full_name, email, phone)
+    // Use explicit selects for stable UI fields
+    let query = supabaseAdmin
       .from('applications')
-      .select('*', { count: 'exact' }) 
-      .order('created_at', { ascending: false })
+      .select(`id,created_at,full_name,mobile_number,email,city,product_category,product_type,application_stage,status,source,metadata,address_line_1,address_line_2,pincode,state,ip,user_agent,profile_id,profiles(id,full_name,email,phone,phone_verified)`, { count: 'exact' })
+      .order(sortBy, sortDir)
       .range(offset, offset + limit - 1);
+
+    // 4. Apply filters
+    if (status) query = query.eq('status', status);
+    if (product_type) query = query.eq('product_type', product_type);
+    if (profileId) query = query.eq('profile_id', profileId);
+
+    // 5. Search (name or mobile)
+    if (search) {
+      // Use ilike for case-insensitive partial match across full_name and mobile_number
+      const term = `%${search}%`;
+      query = query.or(`full_name.ilike.${term},mobile_number.ilike.${term},email.ilike.${term}`);
+    }
+
+    const { data: applications, error, count } = await query;
 
     if (error) {
       console.error('Supabase Query Error:', error);
@@ -104,7 +125,7 @@ export async function POST(request: Request) {
     const { data: agentProfile, error: agentError } = await supabaseAdmin
       .from('profiles')
       .select('role')
-      .eq('user_id', agent_user_id)
+      .eq('id', agent_user_id)
       .single()
 
     if (agentError || !agentProfile) {

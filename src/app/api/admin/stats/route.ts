@@ -1,19 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdmin } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic'; // Prevent caching so stats are real-time
+export const runtime = 'nodejs';
 
 export async function GET(request: Request) {
   try {
-    // Allow internal server-to-server calls using a shared secret header
-    const internalSecret = request.headers.get('x-internal-secret')
-    if (internalSecret !== process.env.INTERNAL_ADMIN_SECRET) {
-      // Otherwise require admin auth header
-      const { requireAdmin } = await import('@/lib/adminAuth')
-      const check = await requireAdmin(request)
-      if (!check.ok) {
-        return NextResponse.json({ success: false, error: check.message }, { status: check.status })
-      }
+    // Require admin auth
+    const check = await requireAdmin(request)
+    if (!check.ok) {
+      return NextResponse.json({ success: false, error: check.message }, { status: check.status })
     }
 
     // 1. Setup Admin Client with Service Role Key

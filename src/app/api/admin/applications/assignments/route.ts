@@ -1,21 +1,24 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireAdmin } from '@/lib/adminAuth'
+
+export const runtime = 'nodejs'
 
 export async function GET(request: Request) {
-  const { requireAdmin } = await import('@/lib/adminAuth')
-  const check = await requireAdmin(request)
-  if (!check.ok) {
-    return NextResponse.json({ success: false, error: check.message }, { status: check.status })
-  }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl || !supabaseServiceKey) {
-    return NextResponse.json({ success: false, error: 'Server config error' }, { status: 500 })
-  }
-
   try {
+    // Validate admin role
+    const check = await requireAdmin(request)
+    if (!check.ok) {
+      return NextResponse.json({ success: false, error: check.message }, { status: check.status })
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json({ success: false, error: 'Server config error' }, { status: 500 })
+    }
+
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
     const { data: assignments, error } = await supabaseAdmin
       .from('application_assignments')

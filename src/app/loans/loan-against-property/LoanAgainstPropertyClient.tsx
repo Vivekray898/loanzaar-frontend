@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import Meta from '@/components/Meta';
 import BackButton from '@/components/BackButton';
 import BottomNav from '@/components/BottomNav';
+import ProtectedCTAButton from '@/components/ProtectedCTAButton' 
 // @ts-ignore
 import LoanAgainstPropertyForm from '@/components/forms/loans/LoanAgainstPropertyForm';
 import { 
@@ -12,13 +13,28 @@ import {
   Minus, Plus, IndianRupee, Calendar, Percent
 } from 'lucide-react';
 
+// --- Types ---
+interface LoanCalculatorProps {
+  loanAmount: number;
+  setLoanAmount: React.Dispatch<React.SetStateAction<number>>;
+  interestRate: number;
+  setInterestRate: React.Dispatch<React.SetStateAction<number>>;
+  tenure: number;
+  setTenure: React.Dispatch<React.SetStateAction<number>>;
+  emi: number;
+  totalInterest: number;
+  totalAmount: number;
+  onApply: () => void;
+}
+
 // --- 1. Extracted Calculator Component (Fixes Lag & Enhances UI) ---
-const LapLoanCalculator = ({ 
+const LapLoanCalculator: React.FC<LoanCalculatorProps> = ({ 
   loanAmount, setLoanAmount, 
   interestRate, setInterestRate, 
   tenure, setTenure, 
-  emi, totalInterest, totalAmount 
-}: any) => {
+  emi, totalInterest, totalAmount,
+  onApply
+}) => {
   return (
     <div className="space-y-6 md:space-y-8">
       {/* Results Card */}
@@ -45,7 +61,7 @@ const LapLoanCalculator = ({
           <div className="flex justify-between items-center mb-3">
             <label className="text-sm font-bold text-slate-700">Loan Amount</label>
             <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden">
-               <button onClick={() => setLoanAmount((prev: number) => Math.max(1000000, prev - 100000))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Minus className="w-3 h-3"/></button>
+               <button onClick={() => setLoanAmount((prev) => Math.max(1000000, prev - 100000))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Minus className="w-3 h-3"/></button>
                <div className="px-2 py-1 flex items-center border-x border-slate-100 bg-slate-50 min-w-[80px] justify-center">
                   <IndianRupee className="w-3 h-3 text-slate-400 mr-1" />
                   <input 
@@ -55,7 +71,7 @@ const LapLoanCalculator = ({
                     className="w-24 text-center text-sm font-bold text-slate-800 outline-none bg-transparent"
                   />
                </div>
-               <button onClick={() => setLoanAmount((prev: number) => Math.min(50000000, prev + 100000))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Plus className="w-3 h-3"/></button>
+               <button onClick={() => setLoanAmount((prev) => Math.min(50000000, prev + 100000))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Plus className="w-3 h-3"/></button>
             </div>
           </div>
           <input 
@@ -84,13 +100,13 @@ const LapLoanCalculator = ({
           <div className="flex justify-between items-center mb-3">
             <label className="text-sm font-bold text-slate-700">Tenure (Years)</label>
             <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden">
-               <button onClick={() => setTenure((prev: number) => Math.max(60, prev - 12))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Minus className="w-3 h-3"/></button>
+               <button onClick={() => setTenure((prev) => Math.max(60, prev - 12))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Minus className="w-3 h-3"/></button>
                <div className="px-2 py-1 flex items-center border-x border-slate-100 bg-slate-50 min-w-[60px] justify-center">
                   <Calendar className="w-3 h-3 text-slate-400 mr-1" />
                   <span className="text-sm font-bold text-slate-800">{Math.floor(tenure / 12)}</span>
                   <span className="text-xs text-slate-400 ml-1">yr</span>
                </div>
-               <button onClick={() => setTenure((prev: number) => Math.min(240, prev + 12))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Plus className="w-3 h-3"/></button>
+               <button onClick={() => setTenure((prev) => Math.min(240, prev + 12))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Plus className="w-3 h-3"/></button>
             </div>
           </div>
           <input 
@@ -111,7 +127,7 @@ const LapLoanCalculator = ({
           <div className="flex justify-between items-center mb-3">
             <label className="text-sm font-bold text-slate-700">Interest Rate</label>
             <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden">
-               <button onClick={() => setInterestRate((prev: number) => Math.max(8, +(prev - 0.1).toFixed(2)))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Minus className="w-3 h-3"/></button>
+               <button onClick={() => setInterestRate((prev) => Math.max(8, +(prev - 0.1).toFixed(2)))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Minus className="w-3 h-3"/></button>
                <div className="px-2 py-1 flex items-center border-x border-slate-100 bg-slate-50 min-w-[60px] justify-center">
                   <input 
                     type="number" value={interestRate} onChange={(e) => setInterestRate(Number(e.target.value))}
@@ -119,7 +135,7 @@ const LapLoanCalculator = ({
                   />
                   <span className="text-xs text-slate-400 ml-1">%</span>
                </div>
-               <button onClick={() => setInterestRate((prev: number) => Math.min(15, +(prev + 0.1).toFixed(2)))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Plus className="w-3 h-3"/></button>
+               <button onClick={() => setInterestRate((prev) => Math.min(15, +(prev + 0.1).toFixed(2)))} className="p-2 hover:bg-slate-50 text-slate-500 active:bg-slate-100 transition-colors"><Plus className="w-3 h-3"/></button>
             </div>
           </div>
           <input 
@@ -134,6 +150,20 @@ const LapLoanCalculator = ({
             <span>15%</span>
           </div>
         </div>
+      </div>
+
+      {/* Desktop/Tablet Apply Button (Visible on md+) */}
+      <div className="hidden md:block pt-2">
+        <ProtectedCTAButton
+          label="Apply Now"
+          onContinue={onApply}
+          className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all text-white px-6 py-4 rounded-xl font-bold text-base shadow-xl shadow-indigo-200"
+        >
+          Apply Now <ArrowRight className="w-5 h-5" />
+        </ProtectedCTAButton>
+        <p className="text-center text-[10px] text-slate-400 mt-3 font-medium uppercase tracking-wide">
+          Unlock Property Value • Quick Disbursal
+        </p>
       </div>
     </div>
   );
@@ -170,6 +200,17 @@ const LoanAgainstPropertyClient = () => {
   const handleApplyClick = () => {
     setIsModalOpen(true);
   };
+
+  React.useEffect(() => {
+    const handler = (e: any) => {
+      try {
+        const action = e?.detail?.action
+        if (action === 'apply_now') setIsModalOpen(true)
+      } catch (err) {}
+    }
+    window.addEventListener('resume-flow', handler)
+    return () => window.removeEventListener('resume-flow', handler)
+  }, [])
 
   const scrollToSection = (id: string) => {
     setActiveTab(id);
@@ -393,6 +434,7 @@ const LoanAgainstPropertyClient = () => {
                  interestRate={interestRate} setInterestRate={setInterestRate}
                  tenure={tenure} setTenure={setTenure}
                  emi={emi} totalInterest={totalInterest} totalAmount={totalAmount}
+                 onApply={handleApplyClick}
                />
             </div>
 
@@ -481,6 +523,7 @@ const LoanAgainstPropertyClient = () => {
                      interestRate={interestRate} setInterestRate={setInterestRate}
                      tenure={tenure} setTenure={setTenure}
                      emi={emi} totalInterest={totalInterest} totalAmount={totalAmount}
+                     onApply={handleApplyClick}
                    />
                 </div>
                 
@@ -506,12 +549,13 @@ const LoanAgainstPropertyClient = () => {
             <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">EMI Starts at</p>
             <p className="text-lg font-bold text-slate-900">₹{emi.toLocaleString()}<span className="text-xs text-slate-400 font-normal">/mo</span></p>
           </div>
-          <button 
-            onClick={handleApplyClick}
+          <ProtectedCTAButton
+            label="Apply Now"
+            onContinue={handleApplyClick}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-indigo-200"
           >
             Apply Now <ArrowRight className="w-4 h-4" />
-          </button>
+          </ProtectedCTAButton> 
         </div>
       </div>
 

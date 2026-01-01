@@ -5,30 +5,43 @@ import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/config/supabase'
 import { LayoutDashboard, FileText, LogOut, UserCircle } from 'lucide-react'
 import Link from 'next/link'
+import { useSignInModal } from '@/context/SignInModalContext' 
 
 export default function AgentLayout({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const pathname = usePathname()
 
-  // Auth Guard
+  const { open: openSignIn } = useSignInModal();
+
+  // Auth Guard - use unified AuthContext (OTP cookie based) instead of legacy Supabase session
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push('/signin')
-        return
-      }
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .single()
+      setIsLoading(true)
+      try {
+        // Call the authoritative session endpoint to check whether an agent session exists
+        let restored = false;
+        try {
+          const res = await fetch('/api/auth/session', { method: 'GET', credentials: 'include' });
+          if (res.ok) {
+            const json = await res.json();
+            restored = json?.profile?.role === 'agent';
+          }
+        } catch (e) {
+          restored = false;
+        }
 
-      if (profile?.role !== 'agent') {
-        router.push('/')
+        if (!restored) {
+          try { openSignIn(pathname); } catch (e) { router.push('/?modal=login&next=' + encodeURIComponent(pathname || '/')); }
+          return
+        }
+      } catch (e) {
+        console.error('[AgentLayout] auth check failed', e)
+        try { openSignIn(pathname); } catch (e) { router.push('/?modal=login&next=' + encodeURIComponent(pathname || '/')); }
+        return
+      } finally {
+        setIsLoading(false)
       }
-      setIsLoading(false)
     }
 
     checkUser()
@@ -135,7 +148,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
           );
         })}
         <button 
-          onClick={async () => { await supabase.auth.signOut(); router.push('/signin'); }}
+          onClick={async () => { await supabase.auth.signOut(); try { openSignIn(); } catch(e) { router.push('/?modal=login'); } }}
           className="flex flex-col items-center gap-1 p-2 text-red-400 rounded-lg"
         >
           <LogOut size={24} />

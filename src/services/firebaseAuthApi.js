@@ -11,25 +11,38 @@ export const createOrUpdateUserProfile = async (profileData) => {
   try {
     const supabaseUID = profileData.supabaseUID || profileData.uid || profileData.id || profileData.userId;
 
-    if (!supabaseUID || !profileData.name || !profileData.email || !profileData.phone) {
-      throw new Error('Please provide supabaseUID (or id), name, email, and phone');
+    // Accept either a profile id, legacy supabase UID, or a phone number as identifier
+    const profileId = profileData.id || profileData.supabaseUID || profileData.uid || profileData.userId || null;
+    const phone = profileData.phone || null;
+
+    if (!profileId && !phone) {
+      throw new Error('Please provide a profile id, supabaseUID, or phone');
     }
 
     const payload = {
-      user_id: supabaseUID,
-      full_name: profileData.name,
-      email: profileData.email,
-      phone: profileData.phone,
+      full_name: profileData.name || null,
+      email: profileData.email || null,
+      phone: phone,
       address: profileData.address || null,
       photo_url: profileData.photoUrl || profileData.photo_url || null,
       updated_at: new Date().toISOString(),
     };
 
-    // Use upsert to insert or update the profile by user_id
-    const { data, error } = await supabase
-      .from('profiles')
-      .upsert(payload, { onConflict: 'user_id' })
-      .select();
+    // Prefer upserting by phone (primary identity) if phone is available; otherwise, fallback to legacy user_id
+    let data, error;
+    if (phone) {
+      const res = await supabase.from('profiles').upsert({ ...payload }, { onConflict: 'phone' }).select();
+      data = res.data; error = res.error;
+    } else {
+      // No phone: upsert by canonical profile id
+      const res = await supabase.from('profiles').upsert({ id: profileId, ...payload }, { onConflict: 'id' }).select();
+      data = res.data; error = res.error;
+    }
+
+    if (error) {
+      console.error('Supabase upsert error (profiles):', error);
+      throw error;
+    }
 
     if (error) {
       console.error('Supabase upsert error (profiles):', error);
@@ -54,7 +67,7 @@ export const getUserProfileByUID = async (supabaseUID) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('user_id', supabaseUID)
+      .or(`id.eq.${supabaseUID},phone.eq.${supabaseUID}`)
       .limit(1);
 
     if (error) {
@@ -92,7 +105,7 @@ export const deleteUserProfile = async (supabaseUID) => {
     const { data, error } = await supabase
       .from('profiles')
       .delete()
-      .eq('user_id', supabaseUID);
+      .or(`id.eq.${supabaseUID},phone.eq.${supabaseUID}`);
 
     if (error) {
       console.error('Supabase delete error (profiles):', error);

@@ -3,10 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import Meta from '@/components/Meta';
 import { useRouter } from 'next/navigation';
+import { useSignInModal } from '@/context/SignInModalContext';
 import { createOrUpdateUserProfile } from '@/services/firebaseAuthApi';
 
 const CompleteProfilePage = () => {
   const router = useRouter();
+  const { open: openSignIn } = useSignInModal();
   const [status, setStatus] = useState('form');
   const [message, setMessage] = useState('');
   const [supabaseUID, setSupabaseUID] = useState('');
@@ -29,7 +31,7 @@ const CompleteProfilePage = () => {
     if (!uid || !email) {
       setStatus('error');
       setMessage('Session expired. Please sign in again.');
-      setTimeout(() => router.push('/signin'), 3000);
+      setTimeout(() => { try { openSignIn(); } catch(e) { router.push('/?modal=login'); } }, 3000);
       return;
     }
     
@@ -141,7 +143,7 @@ const CompleteProfilePage = () => {
             <p className="text-red-600 text-sm">{message}</p>
             {message.includes('Session expired') && (
               <button 
-                onClick={() => router.push('/signin')}
+                onClick={() => { try { openSignIn(); } catch(e) { router.push('/?modal=login'); } }}
                 className="mt-3 w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
               >
                 Return to Sign In

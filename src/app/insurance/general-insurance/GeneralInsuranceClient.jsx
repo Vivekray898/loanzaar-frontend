@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Meta from '@/components/Meta';
 import BackButton from '@/components/BackButton';
 import BottomNav from '@/components/BottomNav';
+import ProtectedCTAButton from '@/components/ProtectedCTAButton' 
 import GeneralInsuranceForm from '@/components/forms/insurances/GeneralInsuranceForm'; // ✅ Import the form
 import { 
   ChevronDown, Shield, Layers, Star, FileText, HelpCircle, 
@@ -21,6 +22,18 @@ const GeneralInsuranceClient = () => {
   const handleApplyClick = () => {
     setIsFormOpen(true); // ✅ Toggle form state
   };
+
+  React.useEffect(() => {
+    const handler = (e) => {
+      try {
+        const action = e?.detail?.action
+        if (!action) return
+        if (action === 'quote' || action === 'apply_now') setIsFormOpen(true)
+      } catch (err) {}
+    }
+    window.addEventListener('resume-flow', handler)
+    return () => window.removeEventListener('resume-flow', handler)
+  }, [])
 
   // Smooth Scroll Handler
   const scrollToSection = (id) => {
@@ -269,12 +282,13 @@ const GeneralInsuranceClient = () => {
                    </h3>
                    <p className="text-sm text-slate-500 mb-6">Not sure which insurance is right for your asset? Speak to our certified experts.</p>
                    
-                   <button 
-                      onClick={handleApplyClick}
+                   <ProtectedCTAButton
+                      label="Get Quote"
+                      onContinue={handleApplyClick}
                       className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-white px-6 py-4 rounded-xl font-bold text-base shadow-lg shadow-blue-200"
                    >
                       Get Quote Now <ArrowRight className="w-5 h-5" />
-                   </button>
+                   </ProtectedCTAButton> 
                    <p className="text-center text-xs text-slate-400 mt-3">Free quotes. No obligation.</p>
                 </div>
                 
@@ -301,12 +315,13 @@ const GeneralInsuranceClient = () => {
             <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Asset Cover</p>
             <p className="text-sm font-bold text-slate-900">Get Quote</p>
           </div>
-          <button 
-            onClick={handleApplyClick}
+          <ProtectedCTAButton
+            label="Apply Now"
+            onContinue={handleApplyClick}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-200"
           >
             Apply Now <ArrowRight className="w-4 h-4" />
-          </button>
+          </ProtectedCTAButton> 
         </div>
       </div>
 

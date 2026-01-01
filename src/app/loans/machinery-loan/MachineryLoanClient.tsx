@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Meta from '@/components/Meta';
 import BackButton from '@/components/BackButton';
 import BottomNav from '@/components/BottomNav';
+import ProtectedCTAButton from '@/components/ProtectedCTAButton'
 import StructuredData from '@/components/StructuredData';
 import { generateLoanSchema, generateWebPageSchema } from '@/utils/schema';
 // @ts-ignore
@@ -14,13 +15,28 @@ import {
   Minus, Plus, Percent, Calendar
 } from 'lucide-react';
 
+// --- Types ---
+interface LoanCalculatorProps {
+  loanAmount: number;
+  setLoanAmount: React.Dispatch<React.SetStateAction<number>>;
+  interestRate: number;
+  setInterestRate: React.Dispatch<React.SetStateAction<number>>;
+  tenure: number;
+  setTenure: React.Dispatch<React.SetStateAction<number>>;
+  emi: number;
+  totalInterest: number;
+  totalAmount: number;
+  onApply: () => void;
+}
+
 // --- 1. Extracted Calculator Component (Fixes Lag & Enhances UI) ---
-const MachineryLoanCalculator = ({ 
+const MachineryLoanCalculator: React.FC<LoanCalculatorProps> = ({ 
   loanAmount, setLoanAmount, 
   interestRate, setInterestRate, 
   tenure, setTenure, 
-  emi, totalInterest, totalAmount 
-}: any) => {
+  emi, totalInterest, totalAmount,
+  onApply
+}) => {
   return (
     <div className="space-y-6 md:space-y-8">
       {/* Results Card */}
@@ -137,6 +153,20 @@ const MachineryLoanCalculator = ({
           </div>
         </div>
       </div>
+
+      {/* Desktop/Tablet Apply Button (Visible on md+) */}
+      <div className="hidden md:block pt-2">
+        <ProtectedCTAButton
+          label="Apply Now"
+          onContinue={onApply}
+          className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 active:scale-95 transition-all text-white px-6 py-4 rounded-xl font-bold text-base shadow-xl shadow-green-200"
+        >
+          Apply Now <ArrowRight className="w-5 h-5" />
+        </ProtectedCTAButton>
+        <p className="text-center text-[10px] text-slate-400 mt-3 font-medium uppercase tracking-wide">
+          Up to 100% Financing Available
+        </p>
+      </div>
     </div>
   );
 };
@@ -173,6 +203,16 @@ const MachineryLoanClient = () => {
     setIsModalOpen(true);
   };
 
+  React.useEffect(() => {
+    const handler = (e: any) => {
+      try {
+        const action = e?.detail?.action
+        if (action === 'apply_now') setIsModalOpen(true)
+      } catch (err) {}
+    }
+    window.addEventListener('resume-flow', handler)
+    return () => window.removeEventListener('resume-flow', handler)
+  }, [])
   const scrollToSection = (id: string) => {
     setActiveTab(id);
     const element = document.getElementById(id);
@@ -404,6 +444,7 @@ const MachineryLoanClient = () => {
                  interestRate={interestRate} setInterestRate={setInterestRate}
                  tenure={tenure} setTenure={setTenure}
                  emi={emi} totalInterest={totalInterest} totalAmount={totalAmount}
+                 onApply={handleApplyClick}
                />
             </div>
 
@@ -492,6 +533,7 @@ const MachineryLoanClient = () => {
                      interestRate={interestRate} setInterestRate={setInterestRate}
                      tenure={tenure} setTenure={setTenure}
                      emi={emi} totalInterest={totalInterest} totalAmount={totalAmount}
+                     onApply={handleApplyClick}
                    />
                 </div>
                 
@@ -517,12 +559,13 @@ const MachineryLoanClient = () => {
             <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">EMI Starts at</p>
             <p className="text-lg font-bold text-slate-900">₹{emi.toLocaleString()}<span className="text-xs text-slate-400 font-normal">/mo</span></p>
           </div>
-          <button 
-            onClick={handleApplyClick}
+          <ProtectedCTAButton
+            label="Apply Now"
+            onContinue={handleApplyClick}
             className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 active:scale-95 transition-all text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-orange-200"
           >
             Apply Now <ArrowRight className="w-4 h-4" />
-          </button>
+          </ProtectedCTAButton> 
         </div>
       </div>
 

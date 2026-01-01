@@ -8,7 +8,6 @@ import {
 
 interface UserData {
   id: string;
-  user_id: string;
   full_name: string;
   email?: string;
   phone?: string;
@@ -33,18 +32,15 @@ export default function UserList({ initialUsers }: { initialUsers: UserData[] })
 
     try {
       // optimistic update
-      setUsers(prev => prev.map(u => u.user_id === targetUser.user_id ? { ...u, role: newRole } : u));
-
-      const { data } = await (await import('@/config/supabase')).supabase.auth.getSession();
-      const token = data?.session?.access_token;
+      setUsers(prev => prev.map(u => u.id === targetUser.id ? { ...u, role: newRole } : u));
 
       const res = await fetch('/api/admin/users', {
         method: 'PUT',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ user_id: targetUser.user_id, role: newRole })
+        body: JSON.stringify({ user_id: targetUser.id, role: newRole })
       });
 
       if (!res.ok) throw new Error('Server error');
@@ -52,10 +48,10 @@ export default function UserList({ initialUsers }: { initialUsers: UserData[] })
       if (!json.success) throw new Error(json.error || 'Failed');
 
       // update from server result
-      setUsers(prev => prev.map(u => u.user_id === targetUser.user_id ? { ...u, role: json.data.role } : u));
+      setUsers(prev => prev.map(u => u.id === targetUser.id ? { ...u, role: json.data.role } : u));
     } catch (e) {
       alert('Failed to change role. ' + (e as Error).message);
-      setUsers(prev => prev.map(u => u.user_id === targetUser.user_id ? { ...u, role: oldRole } : u));
+      setUsers(prev => prev.map(u => u.id === targetUser.id ? { ...u, role: oldRole } : u));
     } finally {
       setUpdatingUserId(null);
     }
@@ -195,7 +191,7 @@ function DesktopUserRow({ user, onChangeRole, busy }: { user: UserData, onChange
           <div>
             <div className="font-bold text-slate-900 text-sm">{user.full_name || 'Unnamed'}</div>
             <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1 group-hover:text-blue-500 transition-colors cursor-pointer" title="Copy ID">
-               ID: {user.user_id?.split('-')[0]}...
+               ID: {user.id?.split('-')[0]}...
             </div>
           </div>
         </div>

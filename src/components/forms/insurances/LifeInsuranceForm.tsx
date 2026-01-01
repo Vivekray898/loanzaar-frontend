@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import { X, User, Shield, Check, Loader2, Calendar, Phone, MapPin, Heart, Home, Building, ArrowRight, ArrowLeft } from 'lucide-react';
-import { submitApplication } from '@/services/supabaseService';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
+import { submitApplication, getClientProfileId } from '@/services/supabaseService';
 import Turnstile from '@/components/Turnstile';
+import { OtpVerifier } from '@/components/OtpVerifier';
 
 interface LifeInsuranceFormData {
   fullName: string;
@@ -30,7 +32,7 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
   onClose, 
   insuranceType = "Life Insurance" 
 }) => {
-  const [step, setStep] = useState<number>(1);
+  const [step, setStep] = useState<number | 'otp'>(1);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [formData, setFormData] = useState<LifeInsuranceFormData>({
     fullName: '',
@@ -48,12 +50,23 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
 
+  // OTP flow handled by `OtpVerifier` component
+  const [otpVerified, setOtpVerified] = useState<boolean>(false);
+  const [createdUserCredentials, setCreatedUserCredentials] = useState<{ userId: string; password?: string | null } | null>(null);
+
+  // progress percent considers the OTP step as ~33%
+  const progressPercent = step === 'otp' ? 33.333 : (typeof step === 'number' ? (step / 3) * 100 : 0);
+
   // Reset state when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
       const timer = setTimeout(() => {
-        setStep(1);
+          setStep(1);
         setCaptchaToken(null);
+
+        // Reset OTP state
+        setOtpVerified(false);
+        setCreatedUserCredentials(null);
       }, 300);
       return () => clearTimeout(timer);
     }
@@ -69,18 +82,53 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
     return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
 
+  const [contactError, setContactError] = useState<string | null>(null);
+
   const handleInput = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    // sanitize mobile input to digits only and limit to 10 chars
+    if (name === 'mobile') {
+      const digits = value.replace(/\D/g, '').slice(0, 10);
+      setFormData({ ...formData, mobile: digits });
+      if (contactError) setContactError(null);
+      return;
+    }
+
+    setFormData({ ...formData, [name]: value });
   };
 
+  // OTP flows are delegated to the reusable `OtpVerifier` component (no internal mock OTP logic here).
   const nextStep = () => {
-    // Step 1 Validation
+    // Step 1 Validation + send OTP
     if (step === 1) {
-      if (!formData.fullName.trim() || formData.mobile.length < 10) {
-        alert("Please enter a valid Name and 10-digit Mobile Number.");
+      if (!formData.fullName.trim()) {
+        alert("Please enter a valid Name.");
         return;
       }
+
+      // Validate mobile using libphonenumber-js
+      const phone = parsePhoneNumberFromString(formData.mobile, 'IN');
+      if (!phone || !phone.isValid() || phone.country !== 'IN') {
+        setContactError('Please enter a valid 10-digit Indian mobile number.');
+        return;
+      }
+
+      // Normalize to national digits (keep existing UI value, server expects raw digits)
+      setContactError(null);
+
+      // Show OTP step (actual sending / verification handled by `OtpVerifier`)
+      setStep('otp');
+      return;
     }
+
+    // Guard: prevent skipping OTP (race conditions)
+    if (step === 2 && !otpVerified) {
+      alert("Please verify your mobile number first.");
+      setStep('otp');
+      return;
+    }
+
     // Step 2 Validation
     if (step === 2) {
       if (!formData.age || !formData.coverageAmount) {
@@ -88,11 +136,16 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
         return;
       }
     }
-    setStep(prev => prev + 1);
+
+    setStep(prev => (typeof prev === 'number' ? prev + 1 : prev));
   };
 
   const prevStep = () => {
-    setStep(prev => prev - 1);
+    if (step === 'otp') {
+      setStep(1);
+      return;
+    }
+    setStep(prev => (typeof prev === 'number' ? prev - 1 : 1));
   };
 
   const handleFinalSubmit = async () => {
@@ -105,6 +158,7 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
     setIsLoading(true);
 
     try {
+      const clientProfileId = await getClientProfileId();
       const payload = {
         full_name: formData.fullName,
         mobile_number: formData.mobile,
@@ -115,6 +169,10 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
         city: formData.city,
         state: formData.state,
         pincode: formData.pincode,
+
+        // Backwards-compatible lead id and preferred explicit profile id
+        user_id: createdUserCredentials?.userId || (typeof window !== 'undefined' ? localStorage.getItem('lead_user_id') : null),
+        profileId: clientProfileId || undefined,
 
         loanType: 'life-insurance', // Kept for consistency
         product_type: 'life-insurance',
@@ -129,7 +187,7 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
 
       const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;
 
-      console.log(`📤 Submitting ${insuranceType} Inquiry...`, { mobile: payload.mobile_number });
+      console.log(`📤 Submitting ${insuranceType} Inquiry...`, { mobile: payload.mobile_number, user_id: payload.user_id });
 
       const res = await submitApplication(submitPayload);
 
@@ -168,11 +226,11 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
         </div>
 
         {/* Progress Bar */}
-        {step < 4 && (
+        {step !== 4 && (
           <div className="h-1 w-full bg-slate-100">
             <div 
               className="h-full bg-teal-600 transition-all duration-500 ease-out" 
-              style={{ width: `${(step / 3) * 100}%` }} 
+              style={{ width: `${progressPercent}%` }} 
             />
           </div>
         )}
@@ -215,6 +273,7 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
                     placeholder="99999 00000" 
                     className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all font-medium"
                   />
+                  {contactError && <p className="text-xs text-red-600 mt-2">{contactError}</p>}
                 </div>
               </div>
 
@@ -224,6 +283,22 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
               >
                 Next Step <ArrowRight className="w-5 h-5" />
               </button>
+            </div>
+          )}
+
+          {/* --- OTP VERIFICATION --- */}
+          {step === 'otp' && (
+            <div className="space-y-5 animate-in slide-in-from-right-4 duration-300">
+              <OtpVerifier
+                mobile={formData.mobile}
+                fullName={formData.fullName}
+                onSuccess={(data) => {
+                  setOtpVerified(true);
+                  setCreatedUserCredentials(data);
+                  setStep(2);
+                }}
+                onBack={() => setStep(1)}
+              />
             </div>
           )}
 
@@ -390,7 +465,7 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
         </div>
 
         {/* Footer Note */}
-        {step < 4 && (
+        {step !== 4 && (
           <div className="p-4 bg-slate-50 border-t border-slate-200 text-center">
              <p className="text-[10px] text-slate-400 font-medium flex items-center justify-center gap-1">
                <Shield className="w-3 h-3" /> Data is secure & encrypted

@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireAgent } from '@/lib/agentAuth'
+
+export const runtime = 'nodejs'
 
 /**
  * POST /api/agent/applications/[id]/remark
@@ -15,7 +18,6 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: applicationId } = await params
-  const { requireAgent } = await import('@/lib/agentAuth')
   const check = await requireAgent(request)
   if (!check.ok) {
     return NextResponse.json({ success: false, error: check.message }, { status: check.status })
@@ -26,6 +28,10 @@ export async function POST(
 
   if (!supabaseUrl || !supabaseServiceKey) {
     return NextResponse.json({ success: false, error: 'Server config error' }, { status: 500 })
+  }
+
+  if (!check.user?.id) {
+    return NextResponse.json({ success: false, error: 'Invalid user session' }, { status: 401 })
   }
 
   try {
@@ -107,7 +113,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: applicationId } = await params
-  const { requireAgent } = await import('@/lib/agentAuth')
   const check = await requireAgent(request)
   if (!check.ok) {
     return NextResponse.json({ success: false, error: check.message }, { status: check.status })
@@ -118,6 +123,10 @@ export async function GET(
 
   if (!supabaseUrl || !supabaseServiceKey) {
     return NextResponse.json({ success: false, error: 'Server config error' }, { status: 500 })
+  }
+
+  if (!check.user?.id) {
+    return NextResponse.json({ success: false, error: 'Invalid user session' }, { status: 401 })
   }
 
   try {

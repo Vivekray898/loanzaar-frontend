@@ -28,9 +28,11 @@ export default function SessionManager({
   adminTimeoutMinutes = 30
 }: SessionManagerProps) {
   const pathname = usePathname();
+  const isModalLogin = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('modal') === 'login';
   
   const isAdminRoute = pathname?.startsWith('/admin') ?? false;
   const isUserRoute = (
+    isModalLogin ||
     pathname?.startsWith('/account') || 
     pathname?.includes('/signin') || 
     pathname?.includes('/signup') ||

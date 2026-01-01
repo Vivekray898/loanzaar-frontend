@@ -1,23 +1,18 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { X, ArrowLeft } from 'lucide-react'
-import { useUserAuth } from '../context/UserAuthContext'
-import SignInPage from '../app/(auth)/signin/SignInPage'
-import SignUpPage from '../app/(auth)/signup/SignUpPage'
-import ForgotPasswordPage from '../app/(auth)/forgot-password/ForgotPasswordPage'
+import { X } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
+import SignInModal from './SignInModal'
 
 interface SignInSheetProps {
   open?: boolean;
   onClose?: () => void;
 }
 
-type ViewState = 'signin' | 'signup' | 'forgot';
-
 export default function SignInSheet({ open = false, onClose = () => {} }: SignInSheetProps) {
-  // Assuming useUserAuth is typed in the context file, otherwise inferring boolean
-  const { isAuthenticated } = useUserAuth(); 
-  const [view, setView] = useState<ViewState>('signin');
+  // Using unified auth context
+  const { isAuthenticated } = useAuth(); 
 
   useEffect(() => {
     if (isAuthenticated && open) onClose()
@@ -30,10 +25,6 @@ export default function SignInSheet({ open = false, onClose = () => {} }: SignIn
     else document.body.style.overflow = prev;
     
     return () => { document.body.style.overflow = prev };
-  }, [open])
-
-  useEffect(() => {
-    if (!open) setView('signin')
   }, [open])
 
   if (!open) return null
@@ -51,20 +42,7 @@ export default function SignInSheet({ open = false, onClose = () => {} }: SignIn
         
         {/* Sticky Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-white rounded-t-3xl sm:rounded-t-2xl z-10 sticky top-0">
-          <div className="flex items-center gap-4">
-            {view !== 'signin' && (
-              <button 
-                onClick={() => setView('signin')} 
-                className="w-10 h-10 -ml-2 rounded-full text-slate-500 hover:bg-slate-100 transition-colors flex items-center justify-center"
-                aria-label="Back"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-            )}
-            <h3 className="text-xl font-bold text-slate-900">
-              {view === 'signin' ? 'Welcome Back' : view === 'signup' ? 'Join Loanzaar' : 'Reset Password'}
-            </h3>
-          </div>
+          <h3 className="text-xl font-bold text-slate-900">Welcome Back</h3>
           <button 
             onClick={onClose} 
             className="w-10 h-10 -mr-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors flex items-center justify-center"
@@ -75,30 +53,12 @@ export default function SignInSheet({ open = false, onClose = () => {} }: SignIn
         </div>
 
         {/* Content Area - Scrollable */}
-        <div className="overflow-y-auto p-0 flex-1">
-          {view === 'signin' && (
-            <div className="px-1 py-2">
-                 {/* Pass minimal props to reuse logic but allow styling overrides if needed */}
-                 {/* @ts-ignore - Assuming these components accept these props based on JS usage */}
-                <SignInPage 
-                    onShowSignup={() => setView('signup')} 
-                    onShowForgot={() => setView('forgot')} 
-                    isModal={true} 
-                />
-            </div>
-          )}
-          {view === 'signup' && (
-              <div className="px-1 py-2">
-                 {/* @ts-ignore */}
-                 <SignUpPage onShowSignin={() => setView('signin')} />
-              </div>
-          )}
-          {view === 'forgot' && (
-              <div className="px-1 py-2">
-                  {/* @ts-ignore */}
-                  <ForgotPasswordPage onBackToSignin={() => setView('signin')} />
-              </div>
-          )}
+        <div className="overflow-y-auto p-6 flex-1">
+          {/* Use the unified SignInModal component which handles OTP for all user types */}
+          <SignInModal 
+            forceOpen={false}
+            onClose={onClose}
+          />
         </div>
       </div>
     </div>

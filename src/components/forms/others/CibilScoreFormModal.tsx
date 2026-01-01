@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import Turnstile from '@/components/Turnstile';
-import { submitApplication } from '@/services/supabaseService';
+import { submitApplication, getClientProfileId } from '@/services/supabaseService';
 import { User, Phone, CreditCard, X, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 interface CibilScoreFormModalProps {
@@ -76,6 +76,7 @@ const CibilScoreFormModal: React.FC<CibilScoreFormModalProps> = ({ isOpen, onClo
 
     setIsLoading(true);
     try {
+      const profileId = await getClientProfileId();
       const payload = {
         fullName: formData.fullName,
         mobile: formData.phone,
@@ -85,7 +86,8 @@ const CibilScoreFormModal: React.FC<CibilScoreFormModalProps> = ({ isOpen, onClo
         source: 'website',
         metadata: {
           panNumber: formData.panNumber
-        }
+        },
+        profileId: profileId || undefined
       };
 
       const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;

@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react'
 import { MessageSquare, Calendar } from 'lucide-react'
-import { supabase } from '@/config/supabase'
 
 interface Remark {
   id: string
@@ -29,13 +28,8 @@ export default function AdminRemarksList({ applicationId }: { applicationId: str
   const fetchRemarks = async () => {
     setLoading(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const token = session?.access_token
-
       const res = await fetch(`/api/admin/applications/${applicationId}/remarks`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        }
+        credentials: 'include'
       })
 
       if (res.ok) {
@@ -45,12 +39,8 @@ export default function AdminRemarksList({ applicationId }: { applicationId: str
         // Fetch agent profiles for display
         const agentIds = Array.from(new Set(remarksData.map(r => r.agent_user_id)))
         if (agentIds.length > 0) {
-          const { data: { session } } = await supabase.auth.getSession()
-          const token = session?.access_token
           const profilesRes = await fetch('/api/admin/users', {
-            headers: {
-              ...(token ? { Authorization: `Bearer ${token}` } : {})
-            }
+            credentials: 'include'
           })
           if (profilesRes.ok) {
             const profilesJson = await profilesRes.json()

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { submitApplication } from '@/services/supabaseService';
+import { submitApplication, getClientProfileId } from '@/services/supabaseService';
 import { 
   X, User, Briefcase, Check, Loader2, IndianRupee, 
   MapPin, Building, Home, ArrowRight, ArrowLeft 
@@ -106,6 +106,7 @@ const HomeApplicationForm: React.FC<HomeApplicationFormProps> = ({
     setIsLoading(true);
 
     try {
+      const profileId = await getClientProfileId();
       const payload = {
         full_name: formData.fullName,
         mobile_number: formData.mobile,
@@ -123,7 +124,8 @@ const HomeApplicationForm: React.FC<HomeApplicationFormProps> = ({
         metadata: {
           employmentType: formData.employmentType,
           monthlyIncome: formData.monthlyIncome
-        }
+        },
+        profileId: profileId || undefined
       };
 
       const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;

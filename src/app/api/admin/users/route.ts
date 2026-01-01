@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdmin } from '@/lib/adminAuth'
 
 // Lightweight in-memory rate limiter (per actor id) — simple protection
 const RATE_WINDOW_MS = 60 * 1000; // 1 minute
 const RATE_LIMIT = 20; // 20 ops per minute per admin
 const rateMap = new Map<string, { count: number; windowStart: number }>();
 
-// We explicitly create the client here to ensure we use the SERVICE_ROLE key 
-// which bypasses RLS (Row Level Security) to see ALL users.
+export const runtime = 'nodejs'
+
 export async function GET(request: Request) {
   try {
-    // Verify caller is an admin
-    const { requireAdmin } = await import('@/lib/adminAuth')
+    // Validate admin role
     const check = await requireAdmin(request)
     if (!check.ok) {
       return NextResponse.json({ success: false, error: check.message }, { status: check.status })
@@ -30,13 +30,20 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
+    const role = searchParams.get('role'); // Optional role filter
 
-    // Select '*' fetches ALL columns (address, photo_url, etc.) automatically
-    const { data: users, error, count } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('profiles')
-      .select('*', { count: 'exact' }) 
+      .select('id,full_name,email,phone,role,created_at,updated_at,phone_verified', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
+
+    // Apply role filter if provided
+    if (role) {
+      query = query.eq('role', role);
+    }
+
+    const { data: users, error, count } = await query;
 
     if (error) throw error;
 
@@ -55,7 +62,7 @@ export async function GET(request: Request) {
 // Update a user's role
 export async function PUT(request: Request) {
   try {
-    const { requireAdmin } = await import('@/lib/adminAuth')
+    // Validate admin role
     const check = await requireAdmin(request)
     if (!check.ok) {
       return NextResponse.json({ success: false, error: check.message }, { status: check.status })
@@ -99,7 +106,7 @@ export async function PUT(request: Request) {
     const { data: existing, error: fetchErr } = await supabaseAdmin
       .from('profiles')
       .select('role')
-      .eq('user_id', user_id)
+      .eq('id', user_id)
       .single()
 
     if (fetchErr) {
@@ -116,7 +123,7 @@ export async function PUT(request: Request) {
     const { data: updated, error } = await supabaseAdmin
       .from('profiles')
       .update({ role, updated_at: new Date().toISOString() })
-      .eq('user_id', user_id)
+      .eq('id', user_id)
       .select()
       .single()
 

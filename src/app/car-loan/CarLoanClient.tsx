@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Meta from '@/components/Meta';
 import BackButton from '@/components/BackButton';
 import BottomNav from '@/components/BottomNav';
+import ProtectedCTAButton from '@/components/ProtectedCTAButton' 
 import { 
   ChevronDown, Check, Star, Calculator, FileText, Info, HelpCircle, 
   ArrowRight, Car, Zap, DollarSign, Layers, Clock, Shield, 
@@ -61,6 +62,17 @@ const CarLoanClient: React.FC = () => {
   const handleApplyClick = () => {
     alert("Opens Application Form Sheet"); 
   };
+
+  React.useEffect(() => {
+    const handler = (e: any) => {
+      try {
+        const action = e?.detail?.action
+        if (action === 'apply_now') handleApplyClick()
+      } catch (err) {}
+    }
+    window.addEventListener('resume-flow', handler)
+    return () => window.removeEventListener('resume-flow', handler)
+  }, [])
 
   const scrollToSection = (id: string) => {
     setActiveSection(id);
@@ -146,12 +158,7 @@ const CarLoanClient: React.FC = () => {
                 </BackButton>
                 <h1 className="text-sm font-bold text-slate-900 hidden sm:block">Car Loan</h1>
             </div>
-            <button 
-                onClick={handleApplyClick}
-                className="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md shadow-indigo-200 transition-all flex items-center gap-1"
-            >
-                Apply <span className="hidden sm:inline">Now</span> <ArrowRight className="w-3 h-3" />
-            </button>
+            <ProtectedCTAButton label="Apply Now" onContinue={handleApplyClick} className="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md shadow-indigo-200 transition-all flex items-center gap-1">Apply <span className="hidden sm:inline">Now</span> <ArrowRight className="w-3 h-3" /></ProtectedCTAButton>
         </div>
       </nav>
 
@@ -501,12 +508,7 @@ const CarLoanClient: React.FC = () => {
                 <div className="relative z-10">
                     <h3 className="text-2xl font-bold mb-2">Ready to drive?</h3>
                     <p className="text-indigo-200 text-sm mb-6">Get up to ₹47 Lakh loan with 72 months tenure.</p>
-                    <button 
-                        onClick={handleApplyClick}
-                        className="bg-white text-indigo-900 font-bold px-8 py-3 rounded-xl shadow-lg hover:bg-indigo-50 transition-colors w-full sm:w-auto"
-                    >
-                        Apply Now
-                    </button>
+                    <ProtectedCTAButton label="Apply Now" onContinue={handleApplyClick} className="bg-white text-indigo-900 font-bold px-8 py-3 rounded-xl shadow-lg hover:bg-indigo-50 transition-colors w-full sm:w-auto">Apply Now</ProtectedCTAButton>
                 </div>
                 <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
             </div>

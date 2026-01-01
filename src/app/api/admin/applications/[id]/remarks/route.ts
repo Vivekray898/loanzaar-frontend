@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireAdmin } from '@/lib/adminAuth';
+
+export const runtime = 'nodejs';
 
 /**
  * GET /api/admin/applications/[id]/remarks
@@ -10,7 +13,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: applicationId } = await params
-  const { requireAdmin } = await import('@/lib/adminAuth')
   const check = await requireAdmin(request)
   if (!check.ok) {
     return NextResponse.json({ success: false, error: check.message }, { status: check.status })

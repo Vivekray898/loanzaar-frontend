@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { submitApplication } from '@/services/supabaseService';
+import { submitApplication, getClientProfileId } from '@/services/supabaseService';
 import { 
   X, User, Heart, Check, Loader2, MapPin, Shield, Activity, 
   ArrowRight, ArrowLeft, Home, Building 
@@ -110,6 +110,7 @@ export default function HealthInsuranceForm({
     setIsLoading(true);
     
     try {
+      const profileId = await getClientProfileId();
       const payload = {
         full_name: formData.fullName,
         mobile_number: formData.mobile,
@@ -129,7 +130,8 @@ export default function HealthInsuranceForm({
           gender: formData.gender,
           coverageAmount: formData.coverageAmount,
           preExistingConditions: formData.preExisting
-        }
+        },
+        profileId: profileId || undefined
       };
 
       const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;

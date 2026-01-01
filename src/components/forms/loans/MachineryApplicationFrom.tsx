@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { submitApplication } from '@/services/supabaseService';
+import { submitApplication, getClientProfileId } from '@/services/supabaseService';
 import { 
   X, User, Briefcase, Check, Loader2, IndianRupee, 
   MapPin, Building, Home, ArrowRight, ArrowLeft, Building2 
@@ -122,6 +122,7 @@ const MachineryApplicationFrom: React.FC<MachineryApplicationFromProps> = ({
     setIsLoading(true);
 
     try {
+      const profileId = await getClientProfileId();
       const payload = {
         full_name: formData.fullName,
         mobile_number: formData.mobile,
@@ -145,7 +146,8 @@ const MachineryApplicationFrom: React.FC<MachineryApplicationFromProps> = ({
             employmentType: formData.employmentType,
             monthlyIncome: formData.monthlyIncome
           })
-        }
+        },
+        profileId: profileId || undefined
       };
 
       const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;

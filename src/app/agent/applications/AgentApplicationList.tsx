@@ -6,6 +6,8 @@ import {
   Box, FileText, ShieldAlert, Eye, X, Globe, Monitor 
 } from 'lucide-react'
 import RemarksList from './RemarksList'
+import { useAuth } from '@/context/AuthContext'
+import { useSignInModal } from '@/context/SignInModalContext'
 
 interface Application {
   id: string
@@ -27,21 +29,55 @@ export default function AgentApplicationList({ initialData }: { initialData: App
   const [apps, setApps] = useState<Application[]>(initialData)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
+  
+  // Status history state
+  const [statusHistory, setStatusHistory] = useState<any[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
 
-  // Fetch assigned applications
+  // Fetch assigned applications — wait for AuthContext to confirm session & role
+  const { isAuthenticated, loading: authLoading, role, checkSession } = useAuth();
+  const { open: openSignIn } = useSignInModal();
+
   React.useEffect(() => {
     if (initialData && initialData.length > 0) return
 
+    let cancelled = false;
+
     const fetchAssigned = async () => {
       setLoading(true)
+      setError(null)
+
       try {
-        const { data: { session } } = await (await import('@/config/supabase')).supabase.auth.getSession()
-        const token = session?.access_token
+        // Wait for auth to settle
+        if (authLoading) {
+          // Wait up to a short timeout for auth to finish
+          const start = Date.now();
+          while (authLoading && Date.now() - start < 4000) {
+            await new Promise(r => setTimeout(r, 100));
+          }
+        }
+
+        // If not authenticated, attempt to restore via checkSession
+        if (!isAuthenticated) {
+          const restored = await checkSession();
+          if (!restored) {
+            // Show sign-in modal for guests
+            try { openSignIn('/agent/applications'); } catch (e) { window.location.href = '/?modal=login&next=' + encodeURIComponent('/agent/applications'); }
+            setLoading(false)
+            return
+          }
+        }
+
+        // Confirm role
+        if (role !== 'agent') {
+          setError('Insufficient permissions to view agent applications');
+          setLoading(false);
+          return
+        }
 
         const res = await fetch('/api/agent/applications', {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          }
+          credentials: 'include'
         })
 
         if (!res.ok) {
@@ -55,16 +91,45 @@ export default function AgentApplicationList({ initialData }: { initialData: App
         }
 
         const json = await res.json()
-        setApps(json.data || [])
+        if (!cancelled) setApps(json.data || [])
       } catch (err: any) {
         setError(err?.message || 'Failed to load applications')
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     fetchAssigned()
-  }, [initialData])
+
+    return () => { cancelled = true }
+  }, [initialData, isAuthenticated, authLoading, role])
+
+  // Fetch status history when an application is selected
+  React.useEffect(() => {
+    if (!selectedApp?.id) {
+      setStatusHistory([])
+      return
+    }
+
+    const fetchHistory = async () => {
+      setLoadingHistory(true)
+      try {
+        const res = await fetch(`/api/admin/applications/${selectedApp.id}/history`, {
+          credentials: 'include'
+        })
+        if (!res.ok) throw new Error('Failed to fetch history')
+        const json = await res.json()
+        setStatusHistory(json.data || [])
+      } catch (err) {
+        console.error('Failed to load status history:', err)
+        setStatusHistory([])
+      } finally {
+        setLoadingHistory(false)
+      }
+    }
+
+    fetchHistory()
+  }, [selectedApp?.id])
 
   const filteredApps = apps.filter(app =>
     app.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -81,6 +146,44 @@ export default function AgentApplicationList({ initialData }: { initialData: App
   const closeModal = () => {
     setSelectedApp(null)
     document.body.style.overflow = 'unset' // Unlock scroll
+  }
+
+  const handleStatusUpdate = async (appId: string, newStatus: string) => {
+    setUpdatingStatus(true)
+    try {
+      const res = await fetch(`/api/agent/applications/${appId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      if (!res.ok) {
+        const json = await res.json()
+        throw new Error(json?.error || 'Failed to update status')
+      }
+
+      const json = await res.json()
+      const updated = json.data
+
+      // Update local state
+      setApps(prev => prev.map(a => a.id === appId ? { ...a, status: updated.status } : a))
+      if (selectedApp?.id === appId) {
+        setSelectedApp(prev => prev ? { ...prev, status: updated.status } : prev)
+        // Refetch history
+        const historyRes = await fetch(`/api/admin/applications/${appId}/history`, {
+          credentials: 'include'
+        })
+        const historyJson = await historyRes.json()
+        if (historyJson.success) setStatusHistory(historyJson.data || [])
+      }
+
+      alert('Status updated successfully! Awaiting admin approval.')
+    } catch (err: any) {
+      alert('Failed to update status: ' + err.message)
+    } finally {
+      setUpdatingStatus(false)
+    }
   }
 
   if (error) {
@@ -215,10 +318,64 @@ export default function AgentApplicationList({ initialData }: { initialData: App
             {/* Scrollable Body */}
             <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-slate-50/50">
               
+              {/* Status Update Section */}
+              <div className="bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden ring-1 ring-blue-100">
+                <div className="bg-blue-50/50 px-4 py-3 border-b border-blue-200">
+                  <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider">Update Application Status</h4>
+                </div>
+                <StatusUpdateForm 
+                  appId={selectedApp.id}
+                  currentStatus={selectedApp.status}
+                  onUpdate={handleStatusUpdate}
+                  updating={updatingStatus}
+                  metadata={selectedApp.metadata}
+                />
+              </div>
+
               {/* Info Grid */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Application Details</h4>
                 <ApplicationDetails app={selectedApp} />
+              </div>
+
+              {/* Status History */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-slate-50/80 px-4 py-3 border-b border-slate-100">
+                  <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Status History</h4>
+                </div>
+                <div className="p-4 max-h-64 overflow-y-auto">
+                  {loadingHistory ? (
+                    <p className="text-sm text-slate-400 text-center py-4">Loading...</p>
+                  ) : statusHistory.length > 0 ? (
+                    <div className="space-y-3">
+                      {statusHistory.map((log: any) => (
+                        <div key={log.id} className="border-l-2 border-slate-200 pl-4 pb-3">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-2">
+                              {log.action === 'proposed' && <span className="text-xs text-blue-600 font-bold">📝 PROPOSED</span>}
+                              {log.action === 'approved' && <span className="text-xs text-green-600 font-bold">✓ APPROVED</span>}
+                              {log.action === 'rejected' && <span className="text-xs text-red-600 font-bold">✗ REJECTED</span>}
+                              <span className="text-xs text-slate-400">by {log.actor?.full_name || 'Unknown'} ({log.actor_role})</span>
+                            </div>
+                            <span className="text-[10px] text-slate-400">{new Date(log.created_at).toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="font-medium">{log.from_status}</span>
+                            <span className="text-slate-400">→</span>
+                            <span className="font-medium">{log.to_status}</span>
+                          </div>
+                          {log.reason && (
+                            <p className="text-xs text-slate-600 mt-2 bg-slate-50 p-2 rounded border border-slate-100">
+                              <strong>Reason:</strong> {log.reason}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-400 text-center py-4">No status changes yet</p>
+                  )}
+                </div>
               </div>
 
               {/* Remarks Section */}
@@ -378,6 +535,11 @@ function StatusBadge({ status }: { status?: string }) {
     approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     rejected: 'bg-red-50 text-red-700 border-red-200',
     pending: 'bg-amber-50 text-amber-700 border-amber-200',
+    pending_admin_approval: 'bg-purple-50 text-purple-700 border-purple-200',
+    contacted: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+    docs_collected: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    eligible: 'bg-green-50 text-green-700 border-green-200',
+    recommended: 'bg-teal-50 text-teal-700 border-teal-200',
   }
 
   const statusKey = status?.toLowerCase() || 'new'
@@ -387,5 +549,86 @@ function StatusBadge({ status }: { status?: string }) {
     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${activeClass}`}>
       {status || 'New'}
     </span>
+  )
+}
+
+function StatusUpdateForm({ 
+  appId, 
+  currentStatus, 
+  onUpdate, 
+  updating,
+  metadata 
+}: { 
+  appId: string
+  currentStatus?: string
+  onUpdate: (id: string, status: string) => void
+  updating: boolean
+  metadata?: Record<string, any>
+}) {
+  const [selectedStatus, setSelectedStatus] = useState('')
+
+  const allowedStatuses = [
+    { value: 'contacted', label: 'Contacted' },
+    { value: 'docs_collected', label: 'Documents Collected' },
+    { value: 'eligible', label: 'Eligible' },
+    { value: 'rejected', label: 'Rejected' },
+    { value: 'recommended', label: 'Recommended' }
+  ]
+
+  const isPendingApproval = currentStatus === 'pending_admin_approval'
+  const needsRevision = metadata?.needs_revision === true
+  const proposedStatus = metadata?.agent_proposed_status
+  const rejectionReason = metadata?.admin_rejection_reason
+
+  return (
+    <div className="p-4 space-y-4">
+      <div>
+        <label className="text-sm text-slate-600 mb-2 block">Current Status</label>
+        <StatusBadge status={currentStatus} />
+        
+        {isPendingApproval && proposedStatus && (
+          <div className="mt-2 text-xs text-purple-600 bg-purple-50 p-2 rounded border border-purple-200">
+            ⏳ Proposed status: <strong>{proposedStatus}</strong> (awaiting admin approval)
+          </div>
+        )}
+
+        {needsRevision && rejectionReason && (
+          <div className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200">
+            ❌ Admin rejected: {rejectionReason}
+          </div>
+        )}
+      </div>
+
+      {!isPendingApproval && (
+        <>
+          <div>
+            <label className="text-sm text-slate-600 mb-2 block">Update to New Status</label>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+              disabled={updating}
+            >
+              <option value="">-- Select Status --</option>
+              {allowedStatuses.map(s => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={() => selectedStatus && onUpdate(appId, selectedStatus)}
+            disabled={!selectedStatus || updating}
+            className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-semibold rounded-xl transition-colors disabled:cursor-not-allowed"
+          >
+            {updating ? 'Updating...' : 'Submit for Admin Approval'}
+          </button>
+
+          <p className="text-xs text-slate-500 italic">
+            Note: Status changes will be submitted to admin for approval before being finalized.
+          </p>
+        </>
+      )}
+    </div>
   )
 }

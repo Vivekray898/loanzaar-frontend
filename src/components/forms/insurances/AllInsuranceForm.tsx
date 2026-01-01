@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
-import { submitApplication } from '@/services/supabaseService';
+import { submitApplication, getClientProfileId } from '@/services/supabaseService';
 import { 
   X, User, Shield, Check, Loader2, MapPin, Heart, Umbrella, Activity, 
   ArrowRight, ArrowLeft, Home, Building 
@@ -100,6 +100,7 @@ export default function AllInsuranceForm({ isOpen, onClose }: AllInsuranceFormPr
     setIsLoading(true);
     
     try {
+      const profileId = await getClientProfileId();
       const payload = {
         full_name: formData.fullName,
         mobile_number: formData.mobile,
@@ -117,7 +118,8 @@ export default function AllInsuranceForm({ isOpen, onClose }: AllInsuranceFormPr
         metadata: {
           category: formData.category,
           message: formData.message || null
-        }
+        },
+        profileId: profileId || undefined
       };
 
       const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;

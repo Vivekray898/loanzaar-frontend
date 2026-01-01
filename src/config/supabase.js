@@ -65,29 +65,17 @@ export const getCurrentUser = async () => {
  * @returns {Promise<{user: User | null, session: Session | null, error: Error | null}>}
  */
 export const signIn = async (email, password) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  return { user: data?.user || null, session: data?.session || null, error };
+  // Email/password sign-in retired: open SignIn modal for phone OTP
+  try { const { open } = require('@/context/SignInModalContext').useSignInModal(); if (open) open() } catch (e) { /* ignore */ }
+  return { user: null, session: null, error: new Error('Email/password sign-in retired. Use phone OTP.') };
 };
 
 /**
- * Sign up with email and password
- * @param {string} email 
- * @param {string} password 
- * @param {object} metadata - Additional user metadata
- * @returns {Promise<{user: User | null, session: Session | null, error: Error | null}>}
+ * Sign up with email and password (deprecated)
  */
 export const signUp = async (email, password, metadata = {}) => {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: metadata,
-    },
-  });
-  return { user: data?.user || null, session: data?.session || null, error };
+  // Email/password sign-up retired.
+  return { user: null, session: null, error: new Error('Email/password sign-up retired. Use phone OTP.') };
 };
 
 /**
@@ -105,10 +93,8 @@ export const signOut = async () => {
  * @returns {Promise<{error: Error | null}>}
  */
 export const resetPassword = async (email) => {
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`,
-  });
-  return { error };
+  // Password resets via email are retired. Ask users to use phone OTP flows instead.
+  return { error: new Error('Password reset via email retired. Use phone OTP flows.') };
 };
 
 /**
