@@ -28,50 +28,43 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
-    const status = searchParams.get('status') || null;
-    const approvalStatus = searchParams.get('approvalStatus') || null;  // ✅ NEW: Filter by approval_status
-    const product_type = searchParams.get('product_type') || null;
-    const profileId = searchParams.get('profileId') || null;
-    const search = searchParams.get('search') || null;
-    const sortBy = searchParams.get('sortBy') || 'created_at';
-    const sortDir = (searchParams.get('sortDir') || 'desc').toLowerCase() === 'asc' ? { ascending: true } : { ascending: false };
+    const status = searchParams.get('status') || undefined;
+    const approvalStatus = searchParams.get('approvalStatus') || undefined;
+    const product_type = searchParams.get('product_type') || undefined;
+    const product_category = searchParams.get('product_category') || undefined;
+    const assigned_to = searchParams.get('assigned_to') || undefined;
+    const dateFrom = searchParams.get('dateFrom') || undefined;
+    const dateTo = searchParams.get('dateTo') || undefined;
+    const search = searchParams.get('search') || undefined;
 
-    // 3. Select required fields and include related profile info (id, full_name, email, phone)
-    // ✅ UPDATED: Include approval_status, last_agent_action_by, last_agent_action_at
-    // Use explicit selects for stable UI fields
-    let query = supabaseAdmin
-      .from('applications')
-      .select(`id,created_at,full_name,mobile_number,email,city,product_category,product_type,application_stage,status,source,metadata,address_line_1,address_line_2,pincode,state,ip,user_agent,profile_id,approval_status,last_agent_action_by,last_agent_action_at,profiles(id,full_name,email,phone,phone_verified)`, { count: 'exact' })
-      .order(sortBy, sortDir)
-      .range(offset, offset + limit - 1);
+    // Build Prisma where clause
+    const where: any = {};
+    if (status) where.status = status;
+    if (approvalStatus) where.approval_status = approvalStatus;
+    if (product_type) where.product_type = product_type;
+    if (product_category) where.product_category = product_category;
+    if (assigned_to) where.assigned_to = assigned_to;
 
-    // 4. Apply filters
-    if (status) query = query.eq('status', status);
-    if (approvalStatus) query = query.eq('approval_status', approvalStatus);  // ✅ Filter by approval status
-    if (product_type) query = query.eq('product_type', product_type);
-    if (profileId) query = query.eq('profile_id', profileId);
+    if (dateFrom || dateTo) {
+      where.created_at = {};
+      if (dateFrom) where.created_at.gte = new Date(dateFrom);
+      if (dateTo) where.created_at.lte = new Date(dateTo);
+    }
 
-    // 5. Search (name or mobile)
     if (search) {
-      // Use ilike for case-insensitive partial match across full_name and mobile_number
-      const term = `%${search}%`;
-      query = query.or(`full_name.ilike.${term},mobile_number.ilike.${term},email.ilike.${term}`);
+      where.OR = [
+        { full_name: { contains: search, mode: 'insensitive' } },
+        { mobile_number: { contains: search } },
+        { email: { contains: search, mode: 'insensitive' } }
+      ];
     }
 
-    const { data: applications, error, count } = await query;
+    const { getAdminApplications } = await import('@/lib/queries/applications');
+    const { data, total } = await getAdminApplications({ where, skip: offset, take: limit, orderBy: { created_at: 'desc' } });
 
-    if (error) {
-      console.error('Supabase Query Error:', error);
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      data: applications,
-      meta: { total: count, limit, offset }
-    });
-
+    return NextResponse.json({ success: true, data, meta: { total, limit, offset } });
   } catch (error: any) {
+    console.error('GET /api/admin/applications error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

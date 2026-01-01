@@ -8,6 +8,30 @@ function isValidUUID(value: string): boolean {
   return UUID_REGEX.test(value);
 }
 
+export async function GET(request: Request, context: { params: any }) {
+  const { params } = context;
+  const { id: applicationId } = (await params) || {};
+  if (!applicationId || !isValidUUID(applicationId)) {
+    return NextResponse.json({ success: false, error: 'Invalid application ID' }, { status: 400 });
+  }
+
+  const { requireAdmin } = await import('@/lib/adminAuth');
+  const adminCheck = await requireAdmin(request);
+  if (!adminCheck.ok) {
+    return NextResponse.json({ success: false, error: adminCheck.message }, { status: adminCheck.status });
+  }
+
+  try {
+    const { getAdminApplicationById } = await import('@/lib/queries/applications');
+    const result = await getAdminApplicationById(applicationId);
+    if (!result) return NextResponse.json({ success: false, error: 'Application not found' }, { status: 404 });
+    return NextResponse.json({ success: true, data: result });
+  } catch (err: any) {
+    console.error('GET /api/admin/applications/[id] error:', err);
+    return NextResponse.json({ success: false, error: err.message || 'Unknown error' }, { status: 500 });
+  }
+}
+
 export async function PATCH(request: Request, context: { params: any }) {
   // Unwrap dynamic params (Next.js may provide them as a Promise)
   const { params } = context;
