@@ -108,12 +108,17 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: 'profileId required or Authorization header' }, { status: 400 });
     }
 
-    const { data, error } = await supabaseAdmin
+    // ✅ NEW: Filter to show only admin-approved applications to users
+    // Agent submissions pending approval or rejected submissions are hidden
+    let query = supabaseAdmin
       .from('applications')
       .select('id, product_type, product_category, status, application_stage, created_at, metadata')
       .eq('profile_id', profileId)
+      .or('approval_status.is.null,approval_status.eq.approved') // Show if no approval_status OR approved
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching applications for profile:', error);

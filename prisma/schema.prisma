@@ -32,10 +32,16 @@ model applications {
   user_agent        String?   @db.VarChar(512)
   profile_id        String?   @db.Uuid
   
+  // ✅ NEW: Track approval status for agent-submitted status changes
+  approval_status   String?   @default("none") // none | pending_admin_approval | approved | rejected
+  last_agent_action_by String? @db.Uuid       // Track which agent last submitted a status
+  last_agent_action_at DateTime?               // When agent last submitted
+  
   // ✅ UPDATED: SetNull keeps the application if the user is deleted
   profile           profiles? @relation(fields: [profile_id], references: [id], onDelete: SetNull)
 
   @@index([profile_id], map: "idx_applications_profile_id")
+  @@index([approval_status])
   @@schema("public")
 }
 

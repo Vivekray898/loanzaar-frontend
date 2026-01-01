@@ -45,6 +45,11 @@ interface Application {
     phone_verified?: boolean;
   } | null;
   
+  // Approval workflow fields
+  approval_status?: string | null;
+  last_agent_action_by?: string | null;
+  last_agent_action_at?: string | null;
+  
   // Dynamic Data
   metadata?: Record<string, any>;
   [key: string]: any;
@@ -68,12 +73,49 @@ export default function ApplicationList({ initialData }: { initialData: any[] })
   // Local apps state so we can update UI optimistically when status changes
   const [apps, setApps] = useState<Application[]>(initialData || []);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
+  const [approvalStatusFilter, setApprovalStatusFilter] = useState<string>(''); // NEW: approval status filter
 
   // Keep local apps in sync if parent re-fetches initialData
   useEffect(() => { setApps(initialData || []); }, [initialData]);
 
   // Handler to update application status (admin only)
   const handleStatusUpdate = async (appId: string, newStatus: string) => {
+    // Handle approval actions
+    if (newStatus.startsWith('approval_')) {
+      const action = newStatus.replace('approval_', '');
+      setStatusUpdating(prev => ({ ...prev, [appId]: true }));
+      try {
+        const res = await fetch(`/api/admin/applications/${encodeURIComponent(appId)}/approve`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action })
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json?.error || res.statusText);
+        
+        const updated = json.data;
+        setApps(prev => prev.map(a => 
+          a.id === appId 
+            ? { ...a, approval_status: updated.approval_status, status: updated.status } 
+            : a
+        ));
+        if (selectedApp?.id === appId) {
+          setSelectedApp(prev => prev ? { 
+            ...prev, 
+            approval_status: updated.approval_status, 
+            status: updated.status 
+          } : prev);
+        }
+      } catch (err) {
+        alert('Failed to approve/reject: ' + (err as Error).message);
+      } finally {
+        setStatusUpdating(prev => ({ ...prev, [appId]: false }));
+      }
+      return;
+    }
+
+    // Regular status update
     setStatusUpdating(prev => ({ ...prev, [appId]: true }));
     try {
       const { data: { session } } = await (await import('@/config/supabase')).supabase.auth.getSession();
@@ -195,7 +237,33 @@ export default function ApplicationList({ initialData }: { initialData: any[] })
   return (
     <>
       <div className="space-y-4">
-        {/* Search Bar (Unchanged) */}
+        {/* Filter Bar - Status & Approval Status */}
+        <div className="flex flex-col sm:flex-row gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex-1">
+            <label className="text-xs font-semibold text-slate-600 uppercase mb-1.5 block">Filter by Approval Status</label>
+            <select
+              value={approvalStatusFilter}
+              onChange={(e) => setApprovalStatusFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+            >
+              <option value="">All Applications</option>
+              <option value="pending_admin_approval">⏳ Pending Admin Approval</option>
+              <option value="approved">✓ Approved</option>
+              <option value="rejected">✗ Rejected</option>
+              <option value="none">No approval status</option>
+            </select>
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={() => setApprovalStatusFilter('')}
+              className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Clear Filter
+            </button>
+          </div>
+        </div>
+
+        {/* Search Bar */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -205,37 +273,54 @@ export default function ApplicationList({ initialData }: { initialData: any[] })
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
             />
           </div>
-          <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">
-            <Filter size={16} /> Filters
-          </button>
         </div>
 
-        {/* Mobile View */}
-        <div className="md:hidden space-y-3">
-          {apps.map((app) => (
-            <MobileCard key={app.id} app={app} onViewDetails={() => openModal(app)} />
-          ))}
-        </div>
+        {/* Filtered Applications List */}
+        {(() => {
+          const filtered = approvalStatusFilter 
+            ? apps.filter(a => (a.approval_status || 'none') === approvalStatusFilter)
+            : apps;
+          
+          return (
+            <>
+              {filtered.length === 0 && (
+                <div className="bg-white p-8 rounded-xl border border-dashed border-slate-300 text-center">
+                  <p className="text-slate-600 text-sm">No applications match the selected filter</p>
+                </div>
+              )}
+              {filtered.length > 0 && (
+                <>
+                  {/* Mobile View */}
+                  <div className="md:hidden space-y-3">
+                    {filtered.map((app) => (
+                      <MobileCard key={app.id} app={app} onViewDetails={() => openModal(app)} />
+                    ))}
+                  </div>
 
-        {/* Desktop Table */}
-        <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
-                <th className="px-6 py-4 font-semibold">Applicant</th>
-                <th className="px-6 py-4 font-semibold">Product Info</th>
-                <th className="px-6 py-4 font-semibold">Location</th>
-                <th className="px-6 py-4 font-semibold">Stage/Status</th>
-                <th className="px-6 py-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {apps.map((app) => (
-                <DesktopRow key={app.id} app={app} onViewDetails={() => openModal(app)} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  {/* Desktop Table */}
+                  <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50/80 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
+                          <th className="px-6 py-4 font-semibold">Applicant</th>
+                          <th className="px-6 py-4 font-semibold">Product Info</th>
+                          <th className="px-6 py-4 font-semibold">Location</th>
+                          <th className="px-6 py-4 font-semibold">Stage/Status</th>
+                          <th className="px-6 py-4 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {filtered.map((app) => (
+                          <DesktopRow key={app.id} app={app} onViewDetails={() => openModal(app)} />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </>
+          );
+        })()}
       </div>
 
       {selectedApp && (
@@ -455,6 +540,58 @@ function ExpandedDetails({ app, agents, onAssign, assignments, assigning, onStat
               </div>
             </div>
           </div>
+
+          {/* ✅ NEW: Agent Submission Approval Section */}
+          {app.approval_status === 'pending_admin_approval' && (
+            <div className="bg-orange-50 rounded-xl border border-orange-200 shadow-sm overflow-hidden mt-3 ring-1 ring-orange-100">
+              <div className="bg-orange-50 px-4 py-3 border-b border-orange-200 flex items-center gap-2">
+                <AlertCircle size={16} className="text-orange-600" />
+                <h4 className="text-xs font-bold text-orange-700 uppercase tracking-wider">⏳ Pending Agent Approval</h4>
+              </div>
+              <div className="p-5 space-y-4">
+                <div className="bg-white p-4 rounded-lg border border-orange-100">
+                  <p className="text-sm text-slate-700 mb-2">
+                    <strong>Status Change:</strong> {app.status} (submitted by agent)
+                  </p>
+                  {app.last_agent_action_at && (
+                    <p className="text-xs text-slate-500">
+                      Submitted: {new Date(app.last_agent_action_at).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <ApprovalButton 
+                    appId={app.id} 
+                    action="approve" 
+                    label="✓ Approve"
+                    onAction={onStatusUpdate}
+                  />
+                  <ApprovalButton 
+                    appId={app.id} 
+                    action="reject" 
+                    label="✗ Reject"
+                    variant="danger"
+                    onAction={onStatusUpdate}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* ✅ Show approval status badge */}
+          {app.approval_status && app.approval_status !== 'none' && app.approval_status !== 'pending_admin_approval' && (
+            <div className={`rounded-xl border shadow-sm overflow-hidden mt-3 p-4 ${
+              app.approval_status === 'approved' 
+                ? 'bg-green-50 border-green-200' 
+                : 'bg-red-50 border-red-200'
+            }`}>
+              <p className="text-sm font-medium">
+                {app.approval_status === 'approved' 
+                  ? '✓ Approved by Admin' 
+                  : '✗ Rejected by Admin'}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* 3. Address & Location (New Schema Fields) */}
@@ -616,5 +753,29 @@ function StatusBadge({ status, large }: { status: string, large?: boolean }) {
       <span className={`rounded-full bg-current opacity-50 ${large ? 'w-2 h-2' : 'w-1.5 h-1.5'}`}></span>
       {status || 'New'}
     </span>
+  );
+}
+
+// ✅ NEW: Approval Action Button
+interface ApprovalButtonProps {
+  appId: string;
+  action: 'approve' | 'reject';
+  label: string;
+  variant?: 'success' | 'danger';
+  onAction: (appId: string, action: string) => void;
+}
+
+function ApprovalButton({ appId, action, label, variant = 'success', onAction }: ApprovalButtonProps) {
+  const btnClass = variant === 'danger' 
+    ? 'bg-red-100 hover:bg-red-200 text-red-700 border-red-300'
+    : 'bg-green-100 hover:bg-green-200 text-green-700 border-green-300';
+
+  return (
+    <button
+      onClick={() => onAction(appId, `approval_${action}`)}
+      className={`flex-1 px-3 py-2 border rounded-lg text-sm font-medium transition ${btnClass} hover:shadow-sm`}
+    >
+      {label}
+    </button>
   );
 }

@@ -12,7 +12,7 @@ export async function requireAdmin(request: Request) {
   const cookieHeader = request.headers.get('cookie') || '';
   const cookieMatch = cookieHeader.split(';').map(s => s.trim()).find(s => s.startsWith('admin_profile='));
   if (cookieMatch) {
-    const cookieVal = cookieMatch.split('=')[1];
+    const cookieVal = cookieMatch.slice('admin_profile='.length);
     try {
       const { verifyAdminSession } = await import('@/lib/adminSession');
       const profileId = await verifyAdminSession(cookieVal || null);
@@ -32,7 +32,7 @@ export async function requireAdmin(request: Request) {
   // Support unified auth_session cookie (set by verify-otp) so admins can use the same OTP flow
   const authCookieMatch = cookieHeader.split(';').map(s => s.trim()).find(s => s.startsWith('auth_session='));
   if (authCookieMatch) {
-    const cookieVal = authCookieMatch.split('=')[1];
+    const cookieVal = authCookieMatch.slice('auth_session='.length);
     try {
       const { parseSessionFromCookie } = await import('@/lib/auth/session');
       const session = parseSessionFromCookie(cookieVal);

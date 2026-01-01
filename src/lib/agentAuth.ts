@@ -19,7 +19,7 @@ export async function requireAgent(request: Request) {
   const cookieHeader = request.headers.get('cookie') || '';
   const authCookieMatch = cookieHeader.split(';').map(s => s.trim()).find(s => s.startsWith('auth_session='));
   if (authCookieMatch) {
-    const cookieVal = authCookieMatch.split('=')[1];
+    const cookieVal = authCookieMatch.slice('auth_session='.length);
     try {
       const { validateSessionInDb } = await import('@/lib/auth/session');
       const result = await validateSessionInDb(cookieVal);

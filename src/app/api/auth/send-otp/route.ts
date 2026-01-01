@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendOTP } from '@/lib/otp/sendOtp';
+import { generateOTP, OTP_EXPIRY_MINUTES } from '@/lib/otp/generateOtp';
+import { checkRateLimit, recordRateLimitRequest } from '@/lib/otp/rateLimit';
+import type { OTPContext } from '@/lib/otp/templates';
 import crypto from 'crypto';
 
 const supabaseAdmin = createClient(
@@ -9,9 +13,9 @@ const supabaseAdmin = createClient(
 );
 
 const OTP_SIGNING_KEY = process.env.OTP_SIGNING_KEY;
-const SEND_LIMIT_PER_HOUR = Number(process.env.OTP_SEND_LIMIT_PER_HOUR || 5); // per phone
-const SEND_LIMIT_PER_IP_HOUR = Number(process.env.OTP_SEND_LIMIT_PER_IP_HOUR || 20);
-const OTP_TTL_SECONDS = Number(process.env.OTP_TTL_SECONDS || 120); // 2 minutes
+const SEND_LIMIT_PER_HOUR = Number(process.env.OTP_SEND_LIMIT_PER_HOUR || 5); // per phone (kept for backward compat)
+const SEND_LIMIT_PER_IP_HOUR = Number(process.env.OTP_SEND_LIMIT_PER_IP_HOUR || 20); // per IP (kept for backward compat)
+const OTP_TTL_SECONDS = OTP_EXPIRY_MINUTES * 60; // 5 minutes (300 seconds)
 
 function hmacOtp(otp: string) {
   if (!OTP_SIGNING_KEY) throw new Error('OTP_SIGNING_KEY not configured');
@@ -20,13 +24,26 @@ function hmacOtp(otp: string) {
 
 export async function POST(req: Request) {
   try {
-    let { mobile, profileId } = await req.json();
+    let { mobile, profileId, context = 'login' } = await req.json();
     if (!mobile || typeof mobile !== 'string' || mobile.replace(/\D/g, '').length < 10) {
       return NextResponse.json({ success: true }); // silent accept to avoid info leakage
     }
 
+    // Validate context type
+    const validContexts = ['registration', 'login'];
+    if (!validContexts.includes(context)) {
+      context = 'login'; // default to login
+    }
+
     const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '0.0.0.0';
     const userAgent = req.headers.get('user-agent') || null;
+
+    // ✅ NEW: Check rate limiting (3 sends per phone per 10 minutes)
+    const rateLimitCheck = checkRateLimit(mobile);
+    if (!rateLimitCheck.allowed) {
+      console.warn(`[Rate Limit] Phone ${mobile} exceeded 3 sends per 10 minutes. Reset at ${rateLimitCheck.resetTime}`);
+      return NextResponse.json({ success: false, error: 'Too many requests. Please try again later.' }, { status: 429 });
+    }
 
     // Rate-limiting using recent *active* rows in otp_challenges (unconsumed & created within last hour)
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -77,6 +94,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true });
     }
 
+    // ✅ NEW: Silent resend logic - check if an unexpired OTP already exists for this phone
+    // If it exists and hasn't expired, reuse it instead of creating a new one
+    const expiryWindowMs = OTP_EXPIRY_MINUTES * 60 * 1000;
+    const minCreatedTime = new Date(Date.now() - expiryWindowMs).toISOString();
+
+    const { data: existingOtp, error: existingErr } = await supabaseAdmin
+      .from('otp_challenges')
+      .select('otp_hash, expires_at, id')
+      .eq('phone', mobile)
+      .eq('consumed', false)
+      .gt('created_at', minCreatedTime)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (existingOtp && !existingErr) {
+      // ✅ Reuse existing unexpired OTP (silent resend)
+      console.info(`[Silent Resend] Reusing existing OTP for ${mobile} (expires at ${existingOtp.expires_at})`);
+      // Record the resend attempt for rate limiting
+      recordRateLimitRequest(mobile);
+      // Send the same OTP using the context-specific message (we pass empty string for OTP since we're just resending message)
+      const sendResult = await sendOTP(mobile, '', context as OTPContext);
+      if (!sendResult.success) {
+        console.error(`[OTP Route] Failed to send resend OTP via provider:`, sendResult.error);
+      }
+      return NextResponse.json({ success: true });
+    }
+
     // Prevent multiple active OTPs: mark any existing unconsumed challenges for this phone as consumed
     try {
       await supabaseAdmin.from('otp_challenges').update({ consumed: true }).eq('phone', mobile).eq('consumed', false)
@@ -84,8 +129,8 @@ export async function POST(req: Request) {
       console.warn('Failed to expire existing OTP challenges for phone (non-fatal):', e)
     }
 
-    // Generate OTP securely using crypto.randomInt
-    const otp = String(crypto.randomInt(100000, 999999));
+    // ✅ Generate 4-digit OTP (1000-9999) using secure random generation
+    const otp = generateOTP();
     const h = hmacOtp(otp);
     const expiresAt = new Date(Date.now() + OTP_TTL_SECONDS * 1000).toISOString();
 
@@ -181,30 +226,16 @@ export async function POST(req: Request) {
       console.info(`🔐 [SERVER OTP] for ${mobile}: ${otp} (expires at ${expiresAt}) — id=${insertRes?.id}`);
     }
 
-    // DEV MODE: optionally return plaintext OTP to client for local dev convenience. NEVER enable in production.
-    const devReturn = process.env.DEV_RETURN_OTP === 'true' && process.env.NODE_ENV !== 'production';
-    if (devReturn) {
-      return NextResponse.json({ success: true, debugOtp: otp, id: insertRes?.id });
+    // ✅ NEW: Send OTP using pluggable provider system with context-specific message
+    const sendResult = await sendOTP(mobile, otp, context as OTPContext);
+    if (!sendResult.success) {
+      console.error(`[OTP Route] Failed to send OTP via provider:`, sendResult.error);
+      // Still return success to client to not leak failure information
+      // User can retry if SMS doesn't arrive
     }
 
-    return NextResponse.json({ success: true });
-    if (insertErr) {
-      // Log detailed error to server logs for debugging (do not leak to client)
-      console.error('Failed to insert otp_challenge:', insertErr);
-      if (insertErr?.code === '42501') {
-        console.error('Permission denied for schema public. Make sure SUPABASE_SERVICE_ROLE_KEY is set and has DB privileges.');
-      }
-      if ((insertErr?.message || '').toLowerCase().includes('does not exist') || (insertErr?.details || '').toLowerCase().includes('does not exist')) {
-        console.error('OTP table missing. Run prisma migrate dev to create otp_challenges table.');
-      }
-      // Still return success to the client to avoid leaking information about accounts
-      return NextResponse.json({ success: true });
-    }
-
-    // For test/dev: log OTP to server console (no SMS cost)
-    // In prod, replace with real SMS provider integration
-    // eslint-disable-next-line no-console
-    console.info(`🔐 [SERVER OTP] for ${mobile}: ${otp} (expires at ${expiresAt})`);
+    // ✅ NEW: Record the send for rate limiting
+    recordRateLimitRequest(mobile);
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

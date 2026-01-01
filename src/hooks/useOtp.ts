@@ -3,9 +3,10 @@ import { useToast } from '@/context/ToastContext';
 
 interface UseOtpProps {
   mobile: string;
+  context?: 'registration' | 'login';
 }
 
-export const useOtp = ({ mobile }: UseOtpProps) => {
+export const useOtp = ({ mobile, context = 'login' }: UseOtpProps) => {
   const toast = useToast();
   const [otp, setOtp] = useState<string | null>(null);
   const [enteredOtp, setEnteredOtp] = useState('');
@@ -45,13 +46,14 @@ export const useOtp = ({ mobile }: UseOtpProps) => {
       const leadUserId = typeof window !== 'undefined' ? localStorage.getItem('lead_user_id') : null;
       const res = await fetch('/api/auth/send-otp', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobile, profileId: leadUserId || undefined })
+        body: JSON.stringify({ mobile, context, profileId: leadUserId || undefined })
       });
       const data = await res.json();
       // backend logs OTP to server console for testing; treat as success
       setCooldown(30);
-      expiryRef.current = Date.now() + 2 * 60 * 1000;
+      expiryRef.current = Date.now() + 5 * 60 * 1000; // 5 minutes (new OTP TTL)
 
       // Mark that we used the server-based flow so verify uses server verification regardless of env flag
       serverModeRef.current = true;
@@ -83,6 +85,7 @@ export const useOtp = ({ mobile }: UseOtpProps) => {
       try {
         const res = await fetch('/api/auth/verify-otp', {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mobile, otp: enteredOtp, fullName })
         });
@@ -138,6 +141,7 @@ export const useOtp = ({ mobile }: UseOtpProps) => {
       try {
         const res = await fetch('/api/auth/create-user', {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mobile, fullName })
         });

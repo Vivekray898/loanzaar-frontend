@@ -1,17 +1,16 @@
 'use client'
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
-import { OtpVerifier } from './OtpVerifier';
-import { X, Phone, ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
+import { X, Phone, ArrowRight, Loader2, Edit2, ShieldCheck } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
+// --- Types ---
 interface SignInModalProps {
   open?: boolean;
   onClose?: () => void;
   next?: string | undefined;
-  // Force-open the modal without relying on query params (used by some pages)
   forceOpen?: boolean;
   onForceClose?: () => void;
 }
@@ -21,39 +20,41 @@ export default function SignInModal({ open = false, onClose = () => {}, next, fo
   const searchParams = useSearchParams();
   const { checkSession } = useAuth();
   const modalParam = searchParams?.get('modal');
-  // effective open state: either the query param is set OR a parent forces it open
   const isOpen = forceOpen ? true : (modalParam === 'login');
 
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  // --- State ---
+  const [showOtp, setShowOtp] = useState(false);
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // OTP State (4 Digits)
+  const [otp, setOtp] = useState(['', '', '', '']);
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Derive scroll lock and reset behavior
+  // --- Effects (Scroll lock, URL management) ---
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'; 
     } else {
       document.body.style.overflow = 'unset';
+      // Reset state on close
       setTimeout(() => {
-        setStep('phone');
+        setShowOtp(false);
         setPhone('');
+        setOtp(['', '', '', '']);
         setError(null);
       }, 300);
     }
     return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
 
-  // URL state management for modal
   useEffect(() => {
     if (open && !isOpen) {
       if (typeof window !== 'undefined') {
         const url = new URL(window.location.href);
         url.searchParams.set('modal', 'login');
         router.push(url.pathname + url.search);
-        setTimeout(() => {
-          try { window.history.replaceState({ ...(window.history.state || {}), modalOpened: true }, ''); } catch (e) {}
-        }, 50);
       }
     }
     if (open === false && isOpen) {
@@ -61,98 +62,146 @@ export default function SignInModal({ open = false, onClose = () => {}, next, fo
     }
   }, [open]);
 
-  // Listen for global OTP verified events (e.g., from other tabs/windows or hooks)
+  // Focus first OTP input when shown
   useEffect(() => {
-    const onOtpVerified = (e: any) => {
-      try {
-        const detail = e?.detail || {};
-        handleSuccess(detail);
-      } catch (err) {}
-    };
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('otp-verified', onOtpVerified);
+    if (showOtp && otpInputRefs.current[0]) {
+      otpInputRefs.current[0].focus();
     }
-
-    return () => {
-      try { if (typeof window !== 'undefined') window.removeEventListener('otp-verified', onOtpVerified); } catch (e) {}
-    };
-  }, []);
+  }, [showOtp]);
 
   const closeModalByUrl = () => {
     if (forceOpen) {
-      try { if (typeof onForceClose === 'function') onForceClose(); } catch (e) {}
+      if (typeof onForceClose === 'function') onForceClose();
       return;
     }
-
     if (typeof window === 'undefined') {
       try { onClose(); } catch (e) {}
       return;
     }
-    const state = window.history.state || {};
-    if (state && state.modalOpened) {
-      window.history.back();
-    } else {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('modal');
-      router.replace(url.pathname + url.search);
-    }
+    const url = new URL(window.location.href);
+    url.searchParams.delete('modal');
+    router.replace(url.pathname + url.search);
     try { onClose(); } catch (e) {}
   };
 
+  // --- Handlers ---
 
-  const handlePhoneSubmit = async (e: React.FormEvent) => {
+  const handleGetOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
-    setTimeout(() => {
+    try {
       const pn = parsePhoneNumberFromString(phone, 'IN');
       if (!pn || !pn.isValid()) {
         setError('Please enter a valid 10-digit mobile number');
         setIsLoading(false);
         return;
       }
+
+      // Call the actual API to send OTP
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobile: phone, context: 'login' })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to send OTP');
+      }
+
+      console.log('OTP sent successfully to', phone);
       setIsLoading(false);
-      setStep('otp');
-    }, 600);
+      setShowOtp(true);
+    } catch (err: any) {
+      setError(err.message || 'Failed to send OTP. Please try again.');
+      setIsLoading(false);
+    }
   };
 
-  const handleSuccess = (data: { userId?: string; role?: string }) => {
-    // Close modal immediately
+  const handleVerifyOtp = async () => {
+    const enteredOtp = otp.join('');
+    if (enteredOtp.length !== 4) {
+      setError('Please enter the 4-digit code');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Call Backend to Verify OTP
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobile: phone, otp: enteredOtp, context: 'login' })
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Invalid OTP. Please try again.');
+      }
+
+      // Success Handler
+      handleSuccess();
+
+    } catch (err: any) {
+      setError(err.message || 'Invalid OTP. Please try again.');
+      setIsLoading(false);
+    }
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (isNaN(Number(value))) return;
+    const newOtp = [...otp];
+    
+    // Allow typing only 1 digit
+    newOtp[index] = value.substring(value.length - 1);
+    setOtp(newOtp);
+
+    // Move to next input
+    if (value && index < 3 && otpInputRefs.current[index + 1]) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Move to prev input on Backspace
+    if (e.key === 'Backspace' && !otp[index] && index > 0 && otpInputRefs.current[index - 1]) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleEditPhone = () => {
+    setShowOtp(false);
+    setOtp(['', '', '', '']);
+    setError(null);
+  };
+
+  const handleSuccess = () => {
     if (forceOpen) {
-      try { if (typeof onForceClose === 'function') onForceClose(); } catch (e) {}
+      if (typeof onForceClose === 'function') onForceClose();
     } else {
       closeModalByUrl();
     }
 
-    // Small delay to ensure modal close is processed
     setTimeout(async () => {
       try {
-        // Call AuthContext's checkSession to restore session from cookie
         await checkSession();
-
-        // Dispatch resume flow event for CTA intent
-        try {
-          let intent: any = null;
-          const raw = sessionStorage.getItem('auth_intent');
-          if (raw) {
-            try { intent = JSON.parse(raw); } catch (e) {}
-            try { sessionStorage.removeItem('auth_intent'); } catch (e) {}
-          }
-
-          if (intent) {
-            window.dispatchEvent(new CustomEvent('resume-flow', { detail: intent }));
-          }
-        } catch (e) {}
+        // Resume flow logic
+        const raw = sessionStorage.getItem('auth_intent');
+        if (raw) {
+          const intent = JSON.parse(raw);
+          window.dispatchEvent(new CustomEvent('resume-flow', { detail: intent }));
+          sessionStorage.removeItem('auth_intent');
+        }
       } catch (err) {
-        console.error('Failed to restore session after OTP:', err);
+        console.error('Session restore failed', err);
       }
-
-      // If a specific next route was provided, redirect there
-      if (next) {
-        window.location.href = next;
-      }
+      if (next) window.location.href = next;
     }, 100);
   };
 
@@ -160,130 +209,151 @@ export default function SignInModal({ open = false, onClose = () => {}, next, fo
 
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6">
-      {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-slate-900/70 backdrop-blur-md transition-opacity animate-in fade-in duration-200" 
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200" 
         onClick={forceOpen ? undefined : closeModalByUrl} 
       />
 
-      {/* Modal Content */}
-      <div className="relative w-full max-w-lg md:max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 ring-1 ring-white/10">
+      <div className="relative w-full max-w-lg md:max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 ring-1 ring-white/10">
         
         {/* Close Button */}
         {!forceOpen && (
-          <button 
-            onClick={closeModalByUrl} 
-            className="absolute top-4 right-4 z-20 p-2 bg-white/80 hover:bg-white rounded-full text-slate-500 hover:text-slate-800 transition-colors backdrop-blur-md shadow-sm"
-          >
+          <button onClick={closeModalByUrl} className="absolute top-4 right-4 z-20 p-2 bg-white/80 hover:bg-white rounded-full text-slate-500 hover:text-slate-800 transition-colors backdrop-blur-md shadow-sm">
             <X className="w-5 h-5" />
           </button>
         )}
 
-        {/* Left Panel (Blue Branding - Visible on MD/LG) */}
-        <div className="hidden md:flex md:w-5/12 bg-blue-600 relative overflow-hidden flex-col justify-between p-8 text-white">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-700 opacity-90" />
+        {/* Left Panel (Marketing) - Kept Clean */}
+        <div className="hidden md:flex md:w-5/12 bg-slate-900 relative overflow-hidden flex-col justify-between p-8 text-white">
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-950 opacity-90" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
           
-          {/* Decorative Circles */}
-          <div className="absolute -top-12 -left-12 w-48 h-48 bg-white/10 rounded-full blur-3xl mix-blend-overlay" />
-          <div className="absolute top-1/2 -right-12 w-32 h-32 bg-blue-300/20 rounded-full blur-2xl" />
-          
-          <div className="relative z-10">
-            <h2 className="text-2xl font-bold mb-2">Welcome Back</h2>
-            <p className="text-blue-100 text-sm leading-relaxed">Sign in to access your dashboard, track applications, and manage your profile efficiently.</p>
+          <div className="relative z-10 mt-10">
+            <h2 className="text-3xl font-bold mb-4">Welcome Back</h2>
+            <p className="text-slate-300 text-sm leading-relaxed max-w-xs">
+              Securely access your dashboard, track loans, and manage your financial profile.
+            </p>
           </div>
 
-          <div className="relative z-10 space-y-5">
-            <div className="flex items-center gap-3 text-sm text-blue-50 font-medium">
-              <div className="p-2.5 bg-white/15 rounded-xl backdrop-blur-sm shadow-inner"><ShieldCheck className="w-5 h-5 text-white" /></div>
-              <span>Bank-grade 256-bit Security</span>
+          <div className="relative z-10 space-y-4 mb-10">
+            <div className="flex items-center gap-3 text-sm text-slate-300">
+              <div className="p-2 bg-white/5 rounded-lg border border-white/10"><ShieldCheck className="w-4 h-4 text-emerald-400" /></div>
+              <span>Bank-grade Security</span>
             </div>
-            <div className="flex items-center gap-3 text-sm text-blue-50 font-medium">
-              <div className="p-2.5 bg-white/15 rounded-xl backdrop-blur-sm shadow-inner"><ArrowRight className="w-5 h-5 text-white" /></div>
-              <span>Fast & Paperless Process</span>
+            <div className="flex items-center gap-3 text-sm text-slate-300">
+              <div className="p-2 bg-white/5 rounded-lg border border-white/10"><ArrowRight className="w-4 h-4 text-emerald-400" /></div>
+              <span>One-Click Verification</span>
             </div>
           </div>
         </div>
 
-        {/* Right Panel (Form) */}
-        <div className="w-full md:w-7/12 p-6 sm:p-10 flex flex-col justify-center bg-white min-h-[480px]">
-          
+        {/* Right Panel (Red Design Form) */}
+        <div className="w-full md:w-7/12 p-8 sm:p-12 bg-white min-h-[500px] flex flex-col justify-center">
           <div className="max-w-sm mx-auto w-full">
-            {step === 'phone' && (
-              <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                <div className="mb-8">
-                  <div className="inline-flex md:hidden items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-600 mb-4 border border-blue-100">
-                    <Phone className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-slate-900">Sign In</h3>
-                  <p className="text-slate-500 mt-1">Enter your mobile number to proceed securely.</p>
-                </div>
+            
+            {/* Header */}
+            <div className="mb-10 text-center md:text-left">
+              <h3 className="text-3xl font-bold text-slate-900 tracking-tight">Sign In To Your Account</h3>
+            </div>
 
-                <form onSubmit={handlePhoneSubmit}>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 ml-1">
-                    Mobile Number
-                  </label>
+            <form onSubmit={(e) => { e.preventDefault(); if(showOtp) handleVerifyOtp(); else handleGetOtp(e); }}>
+              
+              {/* Phone Input */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Phone Number
+                </label>
+                <div className="flex gap-3">
+                  {/* Country Code Box */}
+                  <div className="w-16 h-12 flex items-center justify-center border border-slate-300 rounded-lg bg-white text-slate-700 font-medium">
+                    +91
+                  </div>
                   
-                  <div className={`flex items-center border rounded-xl overflow-hidden transition-all duration-200 ${error ? 'border-red-300 ring-2 ring-red-100' : 'border-slate-200 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10'}`}>
-                    <div className="bg-slate-50 px-4 py-3.5 border-r border-slate-200 text-slate-600 font-bold text-sm flex items-center gap-2">
-                      <img src="https://flagcdn.com/w20/in.png" alt="India" className="w-5 rounded-sm opacity-90 shadow-sm" />
-                      <span>+91</span>
-                    </div>
+                  {/* Number Input */}
+                  <div className="flex-1 relative">
                     <input
                       type="tel"
                       inputMode="numeric"
                       maxLength={10}
-                      autoFocus
+                      disabled={showOtp}
                       value={phone}
                       onChange={(e) => {
                         setPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
                         if (error) setError(null);
                       }}
-                      className="w-full px-4 py-3.5 outline-none text-slate-900 font-semibold placeholder:font-normal placeholder:text-slate-400 bg-white"
-                      placeholder="99999 00000"
+                      className={`w-full h-12 px-4 border rounded-lg outline-none font-medium transition-colors ${
+                        showOtp 
+                          ? 'bg-slate-100 border-slate-200 text-slate-500' // Disabled Look
+                          : 'bg-white border-slate-300 text-slate-900 focus:border-slate-800'
+                      }`}
+                      placeholder="Enter mobile number"
                     />
+                    {showOtp && (
+                      <button 
+                        type="button" 
+                        onClick={handleEditPhone}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
-                  
-                  {error && (
-                    <p className="text-red-600 text-xs mt-2 flex items-center gap-1.5 animate-in slide-in-from-top-1 ml-1 font-medium">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-600" /> {error}
-                    </p>
-                  )}
-
-                  <div className="mt-8">
-                    <button 
-                      type="submit"
-                      disabled={isLoading || phone.length < 10}
-                      className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-100 disabled:text-slate-400 text-white font-bold rounded-xl shadow-lg shadow-blue-200 disabled:shadow-none hover:shadow-blue-300 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm uppercase tracking-wide"
-                    >
-                      {isLoading ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <>
-                          Get OTP <ArrowRight className="w-4 h-4" />
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-
-                <div className="mt-8 text-center border-t border-slate-100 pt-6">
-                  <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto">
-                    By continuing, you agree to our <a href="#" className="underline hover:text-blue-600 font-medium text-slate-500">Terms of Service</a> & <a href="#" className="underline hover:text-blue-600 font-medium text-slate-500">Privacy Policy</a>.
-                  </p>
                 </div>
               </div>
-            )}
 
-            {step === 'otp' && (
-              <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                <OtpVerifier 
-                  mobile={phone} 
-                  fullName={''} 
-                  onSuccess={(data) => handleSuccess({ userId: data.userId })} 
-                  onBack={() => setStep('phone')} 
-                />
-              </div>
-            )}
+              {/* OTP Section */}
+              {showOtp && (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex gap-4 mb-2">
+                    {otp.map((digit, index) => (
+                      <input
+                        key={index}
+                        ref={(el) => (otpInputRefs.current[index] = el)}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(index, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                        className="w-12 h-12 sm:w-14 sm:h-14 border border-slate-300 rounded-lg text-center text-xl font-bold text-slate-800 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+                      />
+                    ))}
+                  </div>
+                  
+                  <div className="mb-8">
+                    <button 
+                      type="button"
+                      onClick={handleGetOtp}
+                      className="text-sm font-semibold text-red-500 hover:text-red-600 transition-colors"
+                    >
+                      Resend otp
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {error && (
+                <p className="text-red-600 text-sm mb-4 bg-red-50 p-3 rounded-lg border border-red-100 font-medium">
+                  {error}
+                </p>
+              )}
+
+              {/* Action Button */}
+              <button 
+                type="submit"
+                disabled={isLoading || phone.length < 10}
+                className="w-full h-12 bg-red-500 hover:bg-red-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-base"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  showOtp ? 'Login with OTP' : 'Get OTP'
+                )}
+              </button>
+
+            </form>
+
           </div>
         </div>
       </div>

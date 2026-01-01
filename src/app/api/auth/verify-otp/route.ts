@@ -2,6 +2,7 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { OTP_EXPIRY_MINUTES } from '@/lib/otp/generateOtp';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
     const fullName = body?.fullName;
 
     // Strict request validation
-    if (!mobileRaw || typeof mobileRaw !== 'string' || !otp || typeof otp !== 'string' || !/^\d{6}$/.test(otp)) {
+    if (!mobileRaw || typeof mobileRaw !== 'string' || !otp || typeof otp !== 'string' || !/^\d{4}$/.test(otp)) {
       return NextResponse.json({ success: false, code: 'INVALID_REQUEST' }, { status: 400 });
     }
 
@@ -81,9 +82,9 @@ export async function POST(req: Request) {
       }
     }
 
-    // Expiry check
+    // Expiry check (OTP valid for 5 minutes)
     if (new Date(challenge.expires_at) < new Date()) {
-      console.warn('[Auth][verify-otp] Challenge expired for phone', mobile, 'challengeId', challenge.id);
+      console.warn('[Auth][verify-otp] Challenge expired for phone', mobile, 'challengeId', challenge.id, 'expiresAt', challenge.expires_at);
       // Mark consumed to prevent reuse
       try {
         await supabaseAdmin.from('otp_challenges').update({ consumed: true }).eq('id', challenge.id);
@@ -170,12 +171,21 @@ export async function POST(req: Request) {
       }
 
       // Create unified auth_session cookie for all roles (admin, agent, user)
-      // This is the SINGLE authentication method for all user types
+      // Also create an entry in `auth_sessions` so server-side validation can find the session.
       try {
         if (profileId && profileRole) {
           console.log('[Auth][verify-otp] Creating auth cookie for profile', profileId, 'role', profileRole);
           const { createSession } = await import('@/lib/auth/session');
           const { cookieHeader } = createSession(profileId, profileRole);
+
+          // Best-effort: insert auth_sessions record with 30-day expiry
+          try {
+            const expiresAt = new Date(Date.now() + (Number(process.env.SESSION_TTL_MS) || 30 * 24 * 60 * 60 * 1000));
+            const ua = (req.headers.get('user-agent') || null);
+            await supabaseAdmin.from('auth_sessions').insert([{ profile_id: profileId, ip: ip || null, user_agent: ua, expires_at: expiresAt.toISOString() }]);
+          } catch (e) {
+            console.warn('[Auth][verify-otp] Failed to insert auth_sessions record (non-fatal):', e);
+          }
 
           const res = NextResponse.json({
             success: true,

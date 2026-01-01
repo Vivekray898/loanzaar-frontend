@@ -39,70 +39,120 @@ export default function AgentApplicationList({ initialData }: { initialData: App
   const { isAuthenticated, loading: authLoading, role, checkSession } = useAuth();
   const { open: openSignIn } = useSignInModal();
 
-  React.useEffect(() => {
-    if (initialData && initialData.length > 0) return
+  const [sessionExpired, setSessionExpired] = useState(false)
 
-    let cancelled = false;
+  const fetchAssigned = React.useCallback(async () => {
+    setLoading(true)
+    setSessionExpired(false)
+    setError(null)
 
-    const fetchAssigned = async () => {
-      setLoading(true)
-      setError(null)
+    let cancelled = false
 
-      try {
-        // Wait for auth to settle
-        if (authLoading) {
-          // Wait up to a short timeout for auth to finish
-          const start = Date.now();
-          while (authLoading && Date.now() - start < 4000) {
-            await new Promise(r => setTimeout(r, 100));
-          }
+    try {
+      // Wait for auth to settle
+      if (authLoading) {
+        const start = Date.now();
+        while (authLoading && Date.now() - start < 4000) {
+          await new Promise(r => setTimeout(r, 100));
         }
+      }
 
-        // If not authenticated, attempt to restore via checkSession
-        if (!isAuthenticated) {
-          const restored = await checkSession();
-          if (!restored) {
-            // Show sign-in modal for guests
-            try { openSignIn('/agent/applications'); } catch (e) { window.location.href = '/?modal=login&next=' + encodeURIComponent('/agent/applications'); }
-            setLoading(false)
-            return
-          }
-        }
-
-        // Confirm role
-        if (role !== 'agent') {
-          setError('Insufficient permissions to view agent applications');
-          setLoading(false);
+      // If not authenticated, attempt to restore via checkSession
+      if (!isAuthenticated) {
+        const restored = await checkSession();
+        if (!restored) {
+          try { openSignIn('/agent/applications'); } catch (e) { window.location.href = '/?modal=login&next=' + encodeURIComponent('/agent/applications'); }
+          setLoading(false)
           return
         }
+      }
 
-        const res = await fetch('/api/agent/applications', {
+      // Confirm role
+      if (role !== 'agent') {
+        setError('Insufficient permissions to view agent applications');
+        setLoading(false);
+        return
+      }
+
+      // Mirror AgentLayout: query authoritative session endpoint first
+      // to discover agent profile and any single-assigned application.
+      let sessionProfile: any = null
+      try {
+        const sessionRes = await fetch('/api/auth/session', { method: 'GET', credentials: 'include' })
+        if (sessionRes.ok) {
+          const sessionJson = await sessionRes.json()
+          sessionProfile = sessionJson?.profile || null
+        }
+      } catch (e) {
+        // ignore — we'll rely on server-side validation for applications fetch
+        sessionProfile = null
+      }
+
+      if (sessionProfile && sessionProfile.role !== 'agent') {
+        setError('Insufficient permissions to view agent applications')
+        setLoading(false)
+        return
+      }
+
+      // If session indicates a single assigned application ID, fetch it directly
+      let res: Response
+      const assignedAppId = sessionProfile?.assigned_application_id || sessionProfile?.assigned_application || null
+      if (assignedAppId) {
+        res = await fetch(`/api/agent/applications/${encodeURIComponent(assignedAppId)}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'include'
         })
-
-        if (!res.ok) {
-          try {
-            const j = await res.json()
-            setError(j?.error || `Failed to load applications (Status: ${res.status})`)
-          } catch (e) {
-            setError(`Failed to load applications (Status: ${res.status})`)
-          }
-          return
-        }
-
-        const json = await res.json()
-        if (!cancelled) setApps(json.data || [])
-      } catch (err: any) {
-        setError(err?.message || 'Failed to load applications')
-      } finally {
-        if (!cancelled) setLoading(false)
+      } else {
+        // Otherwise fetch the list of assigned applications
+        res = await fetch('/api/agent/applications', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include'
+        })
       }
+
+      // ✅ Check for HTML response (middleware redirect)
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('text/html')) {
+        console.error('❌ Applications fetch returned HTML instead of JSON');
+        setSessionExpired(true)
+        setError('Session expired. Please log in again.')
+        return
+      }
+
+      if (res.status === 401) {
+        console.warn('[AgentApplications] Session invalid or expired (401)')
+        setSessionExpired(true)
+        setError('Your session has expired. Please log in again.')
+        return
+      }
+
+      if (!res.ok) {
+        try {
+          const j = await res.json()
+          setError(j?.error || `Failed to load applications (Status: ${res.status})`)
+        } catch (e) {
+          setError(`Failed to load applications (Status: ${res.status})`)
+        }
+        return
+      }
+
+      // Only parse JSON on success
+      const json = await res.json()
+      if (!cancelled) setApps(json.data || [])
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load applications')
+    } finally {
+      if (!cancelled) setLoading(false)
     }
+  }, [authLoading, checkSession, isAuthenticated, openSignIn, role])
 
+  React.useEffect(() => {
+    if (initialData && initialData.length > 0) return
     fetchAssigned()
-
-    return () => { cancelled = true }
-  }, [initialData, isAuthenticated, authLoading, role])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData, fetchAssigned])
 
   // Fetch status history when an application is selected
   React.useEffect(() => {
@@ -114,13 +164,34 @@ export default function AgentApplicationList({ initialData }: { initialData: App
     const fetchHistory = async () => {
       setLoadingHistory(true)
       try {
-        const res = await fetch(`/api/admin/applications/${selectedApp.id}/history`, {
+        const res = await fetch(`/api/agent/applications/${selectedApp.id}/history`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'include'
         })
-        if (!res.ok) throw new Error('Failed to fetch history')
+
+        // ✅ Check for HTML response (middleware redirect)
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('text/html')) {
+          console.error('❌ History fetch returned HTML instead of JSON');
+          throw new Error('Session expired. Please log in again.');
+        }
+
+        if (!res.ok) {
+          if (res.status === 401) throw new Error('Session expired. Please log in again.');
+          if (res.status === 403) throw new Error('You are not assigned to this application.');
+          if (res.status === 404) {
+            // No history available yet
+            setStatusHistory([]);
+            setLoadingHistory(false);
+            return;
+          }
+          throw new Error(`Failed to fetch history (${res.status})`);
+        }
+
         const json = await res.json()
         setStatusHistory(json.data || [])
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to load status history:', err)
         setStatusHistory([])
       } finally {
@@ -151,6 +222,7 @@ export default function AgentApplicationList({ initialData }: { initialData: App
   const handleStatusUpdate = async (appId: string, newStatus: string) => {
     setUpdatingStatus(true)
     try {
+      // ✅ Ensure credentials are included to send auth_session cookie
       const res = await fetch(`/api/agent/applications/${appId}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -158,24 +230,61 @@ export default function AgentApplicationList({ initialData }: { initialData: App
         body: JSON.stringify({ status: newStatus })
       })
 
+      // ✅ Check for HTML response (middleware redirect)
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('text/html')) {
+        console.error('❌ Received HTML instead of JSON. Status:', res.status);
+        throw new Error('Session expired. Please log in again.');
+      }
+
       if (!res.ok) {
-        const json = await res.json()
-        throw new Error(json?.error || 'Failed to update status')
+        try {
+          const json = await res.json()
+          throw new Error(json?.error || `Failed to update status (${res.status})`)
+        } catch (parseErr) {
+          throw new Error(`Failed to update status (${res.status})`);
+        }
       }
 
       const json = await res.json()
       const updated = json.data
 
-      // Update local state
+      // ✅ Update local state
       setApps(prev => prev.map(a => a.id === appId ? { ...a, status: updated.status } : a))
       if (selectedApp?.id === appId) {
         setSelectedApp(prev => prev ? { ...prev, status: updated.status } : prev)
-        // Refetch history
-        const historyRes = await fetch(`/api/admin/applications/${appId}/history`, {
-          credentials: 'include'
-        })
-        const historyJson = await historyRes.json()
-        if (historyJson.success) setStatusHistory(historyJson.data || [])
+        
+        // ✅ Refetch history after status update
+        if (appId) {
+          try {
+            const historyRes = await fetch(`/api/agent/applications/${appId}/history`, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include'
+            })
+
+            // ✅ Check for HTML response
+            const historyContentType = historyRes.headers.get('content-type') || '';
+            if (historyContentType.includes('text/html')) {
+              console.error('❌ History fetch returned HTML instead of JSON');
+              return;
+            }
+
+            if (historyRes.status === 401) {
+              alert('Session expired. Please re-login.')
+            } else if (historyRes.status === 403) {
+              alert('You are not assigned to this application.')
+            } else if (historyRes.status === 404) {
+              // No history yet; clear history UI
+              setStatusHistory([])
+            } else if (historyRes.ok) {
+              const historyJson = await historyRes.json()
+              if (historyJson.success) setStatusHistory(historyJson.data || [])
+            }
+          } catch (e) {
+            console.error('Failed to fetch history after status update:', e)
+          }
+        }
       }
 
       alert('Status updated successfully! Awaiting admin approval.')
@@ -194,6 +303,30 @@ export default function AgentApplicationList({ initialData }: { initialData: App
         </div>
         <h3 className="text-lg font-semibold text-slate-900">Unable to load applications</h3>
         <p className="text-slate-500 mt-2 max-w-md">{error}</p>
+
+        {sessionExpired ? (
+          <div className="mt-6 flex items-center gap-3">
+            <button
+              onClick={() => {
+                try { openSignIn('/agent/applications') } catch (e) { window.location.href = '/?modal=login&next=' + encodeURIComponent('/agent/applications') }
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold"
+            >
+              Re-login
+            </button>
+            <button
+              onClick={() => fetchAssigned()}
+              className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg"
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <div className="mt-6">
+            <button onClick={() => fetchAssigned()} className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg">Retry</button>
+          </div>
+        )}
+
       </div>
     )
   }

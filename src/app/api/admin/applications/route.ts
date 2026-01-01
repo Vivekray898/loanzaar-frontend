@@ -29,6 +29,7 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
     const status = searchParams.get('status') || null;
+    const approvalStatus = searchParams.get('approvalStatus') || null;  // ✅ NEW: Filter by approval_status
     const product_type = searchParams.get('product_type') || null;
     const profileId = searchParams.get('profileId') || null;
     const search = searchParams.get('search') || null;
@@ -36,15 +37,17 @@ export async function GET(request: Request) {
     const sortDir = (searchParams.get('sortDir') || 'desc').toLowerCase() === 'asc' ? { ascending: true } : { ascending: false };
 
     // 3. Select required fields and include related profile info (id, full_name, email, phone)
+    // ✅ UPDATED: Include approval_status, last_agent_action_by, last_agent_action_at
     // Use explicit selects for stable UI fields
     let query = supabaseAdmin
       .from('applications')
-      .select(`id,created_at,full_name,mobile_number,email,city,product_category,product_type,application_stage,status,source,metadata,address_line_1,address_line_2,pincode,state,ip,user_agent,profile_id,profiles(id,full_name,email,phone,phone_verified)`, { count: 'exact' })
+      .select(`id,created_at,full_name,mobile_number,email,city,product_category,product_type,application_stage,status,source,metadata,address_line_1,address_line_2,pincode,state,ip,user_agent,profile_id,approval_status,last_agent_action_by,last_agent_action_at,profiles(id,full_name,email,phone,phone_verified)`, { count: 'exact' })
       .order(sortBy, sortDir)
       .range(offset, offset + limit - 1);
 
     // 4. Apply filters
     if (status) query = query.eq('status', status);
+    if (approvalStatus) query = query.eq('approval_status', approvalStatus);  // ✅ Filter by approval status
     if (product_type) query = query.eq('product_type', product_type);
     if (profileId) query = query.eq('profile_id', profileId);
 

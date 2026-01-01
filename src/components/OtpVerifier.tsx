@@ -6,13 +6,15 @@ import { useOtp } from '@/hooks/useOtp';
 interface OtpVerifierProps {
   mobile: string;
   fullName: string;
+  context?: 'registration' | 'login';
   onSuccess: (data: { userId: string; role?: string }) => void;
   onBack?: () => void;
 }
 
 export const OtpVerifier: React.FC<OtpVerifierProps> = ({ 
   mobile, 
-  fullName, 
+  fullName,
+  context = 'login',
   onSuccess, 
   onBack 
 }) => {
@@ -24,7 +26,7 @@ export const OtpVerifier: React.FC<OtpVerifierProps> = ({
     cooldown,
     requestOtp,
     verifyOtp
-  } = useOtp({ mobile });
+  } = useOtp({ mobile, context });
 
   // Auto-send on mount (guard against double mounts e.g., React Strict Mode)
   const autoSentRef = useRef(false);
@@ -69,18 +71,19 @@ export const OtpVerifier: React.FC<OtpVerifierProps> = ({
 
       <div>
         <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">
-          Enter OTP
+          Enter 4-Digit OTP
         </label>
         <input
           value={enteredOtp}
           onChange={(e) => {
-            const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+            const val = e.target.value.replace(/\D/g, '').slice(0, 4);
             setEnteredOtp(val);
           }}
-          placeholder="123456"
-          maxLength={6}
-          className="w-full p-3.5 text-center tracking-widest text-lg bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all font-medium"
+          placeholder="1234"
+          maxLength={4}
+          className="w-full p-3.5 text-center tracking-widest text-2xl bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all font-bold"
           autoFocus
+          inputMode="numeric"
         />
         {error && <p className="text-xs text-red-600 mt-2 text-center font-medium">{error}</p>}
         {/* Dev Hint */}
@@ -95,7 +98,7 @@ export const OtpVerifier: React.FC<OtpVerifierProps> = ({
         )}
         <button
           onClick={handleVerify}
-          disabled={enteredOtp.length !== 6 || loading}
+          disabled={enteredOtp.length !== 4 || loading}
           className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-teal-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Verify & Proceed'}
