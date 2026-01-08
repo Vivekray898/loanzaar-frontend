@@ -89,10 +89,9 @@ export async function getAdminApplicationById(applicationId: string) {
 
   // Active assignment
   const assignment = await prisma.application_assignments.findFirst({ where: { application_id: applicationId, is_active: true }, select: { id: true, application_id: true, agent_user_id: true, assigned_at: true } });
-  let agent_profile = null;
-  if (assignment?.agent_user_id) {
-    agent_profile = await prisma.profiles.findUnique({ where: { id: assignment.agent_user_id }, select: { id: true, full_name: true, phone: true } });
-  }
+  const agent_profile = assignment?.agent_user_id
+    ? await prisma.profiles.findUnique({ where: { id: assignment.agent_user_id }, select: { id: true, full_name: true, phone: true } })
+    : null;
 
   // Status history (descending)
   const statusHistory = await prisma.application_status_logs.findMany({ where: { application_id: applicationId }, orderBy: { created_at: 'desc' }, select: { id: true, from_status: true, to_status: true, actor_role: true, actor_user_id: true, created_at: true, reason: true } });
