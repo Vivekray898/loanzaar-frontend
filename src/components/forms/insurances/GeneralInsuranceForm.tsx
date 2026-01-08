@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import { submitApplication, getClientProfileId } from '@/services/supabaseService';
+import { validateIndianMobile } from '@/utils/phoneValidation';
 import { 
   X, User, Shield, Check, Loader2, MapPin, Truck, Home, Plane, 
   ArrowRight, ArrowLeft, Building 
 } from 'lucide-react';
-import Turnstile from '@/components/Turnstile';
+
 
 interface FormData {
   fullName: string;
@@ -36,6 +37,7 @@ export default function GeneralInsuranceForm({
   
   const [step, setStep] = useState<number>(1);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>({
     fullName: '',
     mobile: '',
@@ -49,10 +51,6 @@ export default function GeneralInsuranceForm({
     pincode: ''
   });
 
-  // Captcha State
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
-
   // Reset state on open/close
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -61,7 +59,6 @@ export default function GeneralInsuranceForm({
     } else {
       timer = setTimeout(() => {
         setStep(1);
-        setCaptchaToken(null);
       }, 300);
       document.body.style.overflow = '';
     }
@@ -73,14 +70,27 @@ export default function GeneralInsuranceForm({
 
   const handleInput = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    if (name === 'mobile') {
+      const cleaned = value.replace(/\D/g, '').slice(0, 10);
+      setFormData(prev => ({ ...prev, [name]: cleaned }));
+      if (phoneError) setPhoneError(null);
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const nextStep = () => {
     // Step 1 Validation
     if (step === 1) {
-      if (!formData.fullName.trim() || formData.mobile.length < 10) {
-        alert('Please enter a valid Name and 10-digit Mobile Number.');
+      const phoneValidation = validateIndianMobile(formData.mobile);
+      if (!phoneValidation.isValid) {
+        setPhoneError(phoneValidation.error || 'Invalid phone number');
+        return;
+      }
+      
+      if (!formData.fullName.trim()) {
+        alert('Please enter your full name.');
         return;
       }
     }
@@ -133,7 +143,7 @@ export default function GeneralInsuranceForm({
         profileId: profileId || undefined
       };
 
-      const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;
+      const submitPayload = payload;
 
       console.log('📤 Submitting General Insurance application...', { mobile: payload.mobile_number });
 
@@ -141,7 +151,6 @@ export default function GeneralInsuranceForm({
       
       if (res && res.success) {
         setStep(4); // Move to Success Step
-        setCaptchaToken(null);
       } else {
         alert(res?.message || 'Submission failed. Please try again.');
       }
@@ -216,14 +225,18 @@ export default function GeneralInsuranceForm({
                   <span className="absolute left-4 top-3.5 text-slate-400 font-medium">+91</span>
                   <input 
                     name="mobile" 
-                    type="tel" 
+                    type="tel"
+                    inputMode="numeric"
                     maxLength={10} 
                     value={formData.mobile} 
                     onChange={handleInput} 
                     placeholder="99999 00000" 
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-medium"
+                    className={`w-full pl-12 pr-4 py-3.5 bg-slate-50 border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-medium ${phoneError ? 'border-red-500' : 'border-slate-200'}`}
                   />
                 </div>
+                {phoneError && (
+                  <p className="text-red-600 text-sm mt-1">{phoneError}</p>
+                )}
               </div>
 
               <button 
@@ -347,12 +360,7 @@ export default function GeneralInsuranceForm({
                 </div>
               </div>
 
-              {/* Captcha */}
-              {TURNSTILE_SITE_KEY && (
-                <div className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl flex justify-center">
-                  <Turnstile sitekey={TURNSTILE_SITE_KEY} onVerify={(token) => setCaptchaToken(token)} />
-                </div>
-              )}
+
 
               <div className="flex gap-3 pt-2">
                 <button onClick={prevStep} className="px-5 bg-slate-100 text-slate-600 font-bold py-4 rounded-xl hover:bg-slate-200 transition-colors">
@@ -360,7 +368,7 @@ export default function GeneralInsuranceForm({
                 </button>
                 <button 
                   onClick={handleFinalSubmit} 
-                  disabled={isLoading || (!!TURNSTILE_SITE_KEY && !captchaToken)} 
+                  disabled={isLoading} 
                   className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Get Quote'}

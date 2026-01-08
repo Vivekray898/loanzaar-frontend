@@ -1,3 +1,4 @@
+import React from 'react'
 import ApplyHubClient from './ApplyHubClient';
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 }
 
 export default function ApplyHubPage() {
-  return <ApplyHubClient />
+  return (
+    <React.Suspense fallback={<div />}>
+      <ApplyHubClient />
+    </React.Suspense>
+  )
 }

@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import Turnstile from '@/components/Turnstile';
 import { submitApplication, getClientProfileId } from '@/services/supabaseService';
+import { validateIndianMobile } from '@/utils/phoneValidation';
 import { 
   User, Mail, Phone, ChevronDown, X, CheckCircle2, LucideIcon 
 } from 'lucide-react';
@@ -33,6 +34,7 @@ const CreditCardFormModal: React.FC<CreditCardFormModalProps> = ({ isOpen, onClo
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [formData, setFormData] = useState<FormData>({
     fullName: '',
@@ -58,8 +60,14 @@ const CreditCardFormModal: React.FC<CreditCardFormModalProps> = ({ isOpen, onClo
         else delete errors.fullName;
         break;
       case 'phone':
-        if (!/^[6-9]\d{9}$/.test(value)) errors.phone = 'Invalid 10-digit number';
-        else delete errors.phone;
+        const phoneValidation = validateIndianMobile(value);
+        if (!phoneValidation.isValid) {
+          setPhoneError(phoneValidation.error || 'Invalid phone number');
+          errors.phone = phoneValidation.error || 'Invalid phone number';
+        } else {
+          setPhoneError(null);
+          delete errors.phone;
+        }
         break;
       case 'email':
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) errors.email = 'Invalid email address';
@@ -172,10 +180,12 @@ const CreditCardFormModal: React.FC<CreditCardFormModalProps> = ({ isOpen, onClo
                          <div className="relative">
                             <Phone className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
                             <input 
-                               type="tel" maxLength={10}
+                               type="tel"
+                               inputMode="numeric"
+                               maxLength={10}
                                value={formData.phone}
-                               onChange={(e) => { setFormData({...formData, phone: e.target.value.replace(/\D/g, '')}); validateField('phone', e.target.value); }}
-                               className={`w-full pl-12 pr-4 py-3 bg-slate-50 border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 ${fieldErrors.phone ? 'border-red-300' : 'border-slate-200'}`}
+                               onChange={(e) => { const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10); setFormData({...formData, phone: cleaned}); if (phoneError) setPhoneError(null); validateField('phone', cleaned); }}
+                               className={`w-full pl-12 pr-4 py-3 bg-slate-50 border rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 ${phoneError || fieldErrors.phone ? 'border-red-300' : 'border-slate-200'}`}
                                placeholder="Mobile Number"
                             />
                          </div>
@@ -190,6 +200,8 @@ const CreditCardFormModal: React.FC<CreditCardFormModalProps> = ({ isOpen, onClo
                             />
                          </div>
                       </div>
+                      {phoneError && <p className="text-xs text-red-500 mt-1">{phoneError}</p>}
+                      {fieldErrors.phone && <p className="text-xs text-red-500 mt-1">{fieldErrors.phone}</p>}
                    </div>
 
                    {/* Employment Details */}

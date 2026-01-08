@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { sendOTP } from '@/lib/otp/sendOtp';
 import { generateOTP, OTP_EXPIRY_MINUTES } from '@/lib/otp/generateOtp';
 import { checkRateLimit, recordRateLimitRequest } from '@/lib/otp/rateLimit';
+import { validateIndianMobile, normalizePhoneToE164 } from '@/utils/phoneValidation';
 import type { OTPContext } from '@/lib/otp/templates';
 import crypto from 'crypto';
 
@@ -25,9 +26,20 @@ function hmacOtp(otp: string) {
 export async function POST(req: Request) {
   try {
     let { mobile, profileId, context = 'login' } = await req.json();
-    if (!mobile || typeof mobile !== 'string' || mobile.replace(/\D/g, '').length < 10) {
+    
+    // Validate phone number using utility (do this BEFORE any other checks)
+    if (!mobile || typeof mobile !== 'string') {
       return NextResponse.json({ success: true }); // silent accept to avoid info leakage
     }
+
+    const phoneValidation = validateIndianMobile(mobile);
+    if (!phoneValidation.isValid) {
+      console.warn('[OTP Route] Invalid phone format provided:', phoneValidation.error);
+      return NextResponse.json({ success: true }); // silent accept to avoid info leakage
+    }
+
+    // Use validated/cleaned phone number for all subsequent operations
+    mobile = phoneValidation.cleaned;
 
     // Validate context type
     const validContexts = ['registration', 'login'];
@@ -75,17 +87,15 @@ export async function POST(req: Request) {
 
     // Normalize phone to E.164 using libphonenumber-js to avoid duplicate entries
     try {
-      const { parsePhoneNumberFromString } = await import('libphonenumber-js')
-      const parsed = parsePhoneNumberFromString(mobile, 'IN')
-      if (!parsed || !parsed.isValid()) {
-        // Silent accept to avoid account enumeration
-        return NextResponse.json({ success: true })
+      const normalized = normalizePhoneToE164(mobile);
+      if (!normalized) {
+        console.warn('[OTP Route] Phone normalization failed for:', mobile);
+        return NextResponse.json({ success: true });
       }
-      // Use E.164 normalized format for storage and comparison
-      mobile = parsed.number
+      mobile = normalized;
     } catch (e) {
-      // If parsing library fails for any reason, continue with provided raw value
-      console.warn('Phone normalization failed; proceeding with raw value', e)
+      console.warn('Phone normalization failed; proceeding with validated value', e);
+      // Continue with validated mobile (already cleaned by validateIndianMobile)
     }
 
     // Ensure OTP signing key is configured

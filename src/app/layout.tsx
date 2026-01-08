@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import React from 'react'
 import '../index.css'
 import '../App.css'
 
@@ -72,17 +73,19 @@ export default function RootLayout({
         />
 
         {/* 2. Main Application Content (No Pull Refresh Wrapper) */}
-        <Providers>
-          <NavBar />
+        <React.Suspense fallback={<div />}>
+          <Providers>
+            <NavBar />
 
-          <main>
-            <Container>
-              {children}
-            </Container>
-          </main>
+            <main>
+              <Container>
+                {children}
+              </Container>
+            </main>
 
-          <Footer />
-        </Providers>
+            <Footer />
+          </Providers>
+        </React.Suspense>
         
       </body>
     </html>

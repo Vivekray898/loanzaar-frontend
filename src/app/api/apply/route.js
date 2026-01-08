@@ -1,12 +1,14 @@
 export const runtime = 'nodejs';
 import { createServerSupabase } from '@/config/supabaseServer';
-import { Resend } from 'resend';
-
-// Initialize Resend (Email Service)
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+import { sendAdminNotification } from '@/lib/email/sendAdminNotification';
+import { formatApplicationEmail } from '@/lib/email/templates';
 
 export async function POST(req) {
   try {
+    // Debug: Check if API key is available
+    console.log('API Key present:', !!process.env.RESEND_API_KEY);
+    console.log('Admin Email present:', !!process.env.ADMIN_EMAIL);
+    
     const body = await req.json();
 
     // IMPORTANT INVARIANT: If the request is authenticated (contains a valid Supabase
@@ -45,32 +47,14 @@ export async function POST(req) {
       });
     }
 
-    // 4. Captcha Verification (Turnstile / reCAPTCHA)
-    const secret = process.env.TURNSTILE_SECRET_KEY || process.env.RECAPTCHA_SECRET_KEY;
-    if (secret) {
-      if (!captchaToken) {
-        return new Response(JSON.stringify({ error: 'Missing captcha token' }), { status: 400 });
-      }
-      const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ secret, response: captchaToken }),
-      });
-      const verifyJson = await verifyRes.json();
-      if (!verifyJson.success) {
-        console.error('Captcha failed:', verifyJson);
-        return new Response(JSON.stringify({ error: 'Security check failed. Please try again.' }), { status: 400 });
-      }
-    }
-
-    // 5. Initialize Supabase
+    // 4. Initialize Supabase (Captcha verification removed from loan applications)
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!supabaseServiceKey) {
       return new Response(JSON.stringify({ error: 'Server Error: Database configuration missing' }), { status: 500 });
     }
     const supabase = createServerSupabase(supabaseServiceKey);
 
-    // 6. Prepare Database Payload (Matches 'applications' table structure)
+    // 5. Prepare Database Payload (Matches 'applications' table structure)
     const dbPayload = {
       full_name: String(nameToSave).trim(),
       mobile_number: String(mobileToSave).trim(),
@@ -212,30 +196,37 @@ export async function POST(req) {
       return new Response(JSON.stringify({ error: 'Failed to save application' }), { status: 500 });
     }
 
-    // 8. Send Admin Notification Email (Optional)
-    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'no-reply@loanzaar.in';
-
-    if (resend && adminEmail) {
-      // Don't await email to keep response fast
-      const emailHtml = `
-        <h2>New ${escapeHtml(dbPayload.product_type)} Application</h2>
-        <ul>
-          <li><strong>Name:</strong> ${escapeHtml(dbPayload.full_name)}</li>
-          <li><strong>Phone:</strong> ${escapeHtml(dbPayload.mobile_number)}</li>
-          <li><strong>Location:</strong> ${escapeHtml(dbPayload.city)}, ${escapeHtml(dbPayload.state)}</li>
-          <li><strong>Income:</strong> ₹${metadata?.monthlyIncome || 'N/A'}</li>
-        </ul>
-        <p>View full details in your admin dashboard.</p>
-      `;
-      
-      resend.emails.send({
-        from: fromEmail,
-        to: adminEmail,
-        subject: `New Lead: ${escapeHtml(dbPayload.full_name)}`,
-        html: emailHtml
-      }).catch(err => console.error('Email failed:', err));
-    }
+    // 8. Send Admin Notification Email (Non-blocking)
+    console.log('Attempting to send application email...');
+    
+    sendAdminNotification({
+      subject: 'New Application Submitted',
+      html: formatApplicationEmail({
+        id: data.id,
+        full_name: data.full_name,
+        mobile_number: data.mobile_number,
+        email: data.email,
+        city: data.city,
+        state: data.state,
+        pincode: data.pincode,
+        product_category: data.product_category,
+        product_type: data.product_type,
+        application_stage: data.application_stage,
+        status: data.status,
+        source: data.source,
+        created_at: data.created_at,
+        assigned_to: data.assigned_to,
+      }),
+      replyTo: data.email,
+    }).then(result => {
+      if (result.success) {
+        console.log('Email sent successfully for application:', data.id);
+      } else {
+        console.error('Email failed for application:', data.id, result.error);
+      }
+    }).catch(err => {
+      console.error('[EMAIL_FAILED] Application notification exception:', err);
+    });
 
     // 9. Success Response
     return new Response(JSON.stringify({ success: true, id: data?.id }), { 
@@ -247,12 +238,4 @@ export async function POST(req) {
     console.error('API Route Error:', err);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
   }
-}
-
-// Helper to prevent XSS in emails
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str).replace(/[&<>"']/g, (m) => ({ 
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' 
-  })[m]);
 }

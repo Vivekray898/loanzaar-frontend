@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import Turnstile from '@/components/Turnstile';
 import { submitApplication, getClientProfileId } from '@/services/supabaseService';
+import { validateIndianMobile } from '@/utils/phoneValidation';
 import { User, Phone, CreditCard, X, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 interface CibilScoreFormModalProps {
@@ -16,6 +17,7 @@ const CibilScoreFormModal: React.FC<CibilScoreFormModalProps> = ({ isOpen, onClo
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -32,8 +34,14 @@ const CibilScoreFormModal: React.FC<CibilScoreFormModalProps> = ({ isOpen, onClo
         else delete errors.fullName;
         break;
       case 'phone':
-        if (!/^[6-9]\d{9}$/.test(value)) errors.phone = 'Invalid phone';
-        else delete errors.phone;
+        const phoneValidation = validateIndianMobile(value);
+        if (!phoneValidation.isValid) {
+          errors.phone = phoneValidation.error || 'Invalid phone';
+          setPhoneError(phoneValidation.error || 'Invalid phone');
+        } else {
+          delete errors.phone;
+          setPhoneError(null);
+        }
         break;
       case 'panNumber':
         if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value.toUpperCase())) errors.panNumber = 'Invalid PAN';
@@ -58,7 +66,8 @@ const CibilScoreFormModal: React.FC<CibilScoreFormModalProps> = ({ isOpen, onClo
     const pan = (formData.panNumber || '').toString().trim().toUpperCase();
 
     if (!fullName) errors.fullName = 'Required'; else delete errors.fullName;
-    if (!/^[6-9]\d{9}$/.test(phone)) errors.phone = 'Invalid phone'; else delete errors.phone;
+    const phoneValidation = validateIndianMobile(phone);
+    if (!phoneValidation.isValid) errors.phone = phoneValidation.error || 'Invalid phone'; else delete errors.phone;
     if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) errors.panNumber = 'Invalid PAN'; else delete errors.panNumber;
 
     setFieldErrors(errors);
@@ -152,17 +161,21 @@ const CibilScoreFormModal: React.FC<CibilScoreFormModalProps> = ({ isOpen, onClo
                 <div className="relative">
                   <Phone className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
                   <input 
-                    type="tel" maxLength={10}
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
                     value={formData.phone}
                     onChange={(e) => { 
-                      const v = e.target.value.replace(/\D/g,''); 
+                      const v = e.target.value.replace(/\D/g,'').slice(0, 10); 
                       setFormData({...formData, phone: v}); 
+                      if (phoneError) setPhoneError(null);
                       validateField('phone', v); 
                     }}
-                    className={`w-full pl-10 pr-3 py-2.5 bg-slate-50 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 ${fieldErrors.phone ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
+                    className={`w-full pl-10 pr-3 py-2.5 bg-slate-50 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 ${phoneError || fieldErrors.phone ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
                     placeholder="9876543210"
                   />
                 </div>
+                {phoneError && <p className="text-[10px] text-red-500 mt-1 font-medium">{phoneError}</p>}
                 {fieldErrors.phone && <p className="text-[10px] text-red-500 mt-1 font-medium">{fieldErrors.phone}</p>}
               </div>
 

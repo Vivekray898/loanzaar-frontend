@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import { submitApplication, getClientProfileId } from '@/services/supabaseService';
+import { validateIndianMobile } from '@/utils/phoneValidation';
 import { 
   X, User, Briefcase, Check, Loader2, IndianRupee, 
   MapPin, Building, Home, ArrowRight, ArrowLeft 
 } from 'lucide-react';
-import Turnstile from '@/components/Turnstile';
+
 
 interface FormData {
   fullName: string;
@@ -34,6 +35,7 @@ const HomeApplicationForm: React.FC<HomeApplicationFormProps> = ({
 }) => {
   const [step, setStep] = useState<number>(1);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>({
     fullName: '',
     mobile: '',
@@ -46,15 +48,14 @@ const HomeApplicationForm: React.FC<HomeApplicationFormProps> = ({
     pincode: ''
   });
 
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
+
 
   // Reset state when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
       const timer = setTimeout(() => {
         setStep(1);
-        setCaptchaToken(null);
+
       }, 300);
       return () => clearTimeout(timer);
     }
@@ -71,14 +72,25 @@ const HomeApplicationForm: React.FC<HomeApplicationFormProps> = ({
   }, [isOpen]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'mobile') {
+      setFormData({ ...formData, [name]: value.replace(/\D/g, '').slice(0, 10) });
+      setPhoneError(null);
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const nextStep = () => {
     // Step 1 Validation
     if (step === 1) {
-      if (!formData.fullName.trim() || formData.mobile.length < 10) {
-        alert("Please enter a valid Name and 10-digit Mobile Number.");
+      if (!formData.fullName.trim()) {
+        alert('Please enter a valid name.');
+        return;
+      }
+      const phoneValidation = validateIndianMobile(formData.mobile);
+      if (!phoneValidation.isValid) {
+        setPhoneError(phoneValidation.error || 'Invalid phone number');
         return;
       }
     }
@@ -128,7 +140,7 @@ const HomeApplicationForm: React.FC<HomeApplicationFormProps> = ({
         profileId: profileId || undefined
       };
 
-      const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;
+      const submitPayload = payload;
 
       console.log('📤 Submitting home application...', payload);
 
@@ -136,7 +148,6 @@ const HomeApplicationForm: React.FC<HomeApplicationFormProps> = ({
 
       if (res && res.success) {
         setStep(4); // Success Step
-        setCaptchaToken(null);
       } else {
         alert(res?.message || 'Failed to submit application. Please try again.');
       }
@@ -212,13 +223,15 @@ const HomeApplicationForm: React.FC<HomeApplicationFormProps> = ({
                   <input 
                     name="mobile" 
                     type="tel" 
+                    inputMode="numeric"
                     maxLength={10} 
                     value={formData.mobile} 
                     onChange={handleInputChange}
                     placeholder="99999 00000"
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all font-medium"
+                    className={`w-full pl-12 pr-4 py-3.5 bg-slate-50 border ${phoneError ? 'border-red-500' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all font-medium`}
                   />
                 </div>
+                {phoneError && <p className="text-red-600 text-sm mt-1">{phoneError}</p>}
               </div>
 
               <button 
@@ -333,12 +346,7 @@ const HomeApplicationForm: React.FC<HomeApplicationFormProps> = ({
                 </div>
               </div>
 
-              {/* Captcha */}
-              {TURNSTILE_SITE_KEY && (
-                <div className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl flex justify-center">
-                  <Turnstile sitekey={TURNSTILE_SITE_KEY} onVerify={(token) => setCaptchaToken(token)} />
-                </div>
-              )}
+
 
               <div className="flex gap-3 pt-2">
                 <button onClick={prevStep} className="px-5 bg-slate-100 text-slate-600 font-bold py-4 rounded-xl hover:bg-slate-200 transition-colors">
@@ -346,7 +354,7 @@ const HomeApplicationForm: React.FC<HomeApplicationFormProps> = ({
                 </button>
                 <button 
                   onClick={handleFinalSubmit} 
-                  disabled={isLoading || (!!TURNSTILE_SITE_KEY && !captchaToken)} 
+                  disabled={isLoading} 
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Submit Application'}

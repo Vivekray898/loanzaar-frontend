@@ -6,7 +6,7 @@ import Turnstile from '@/components/Turnstile';
 import { submitContactForm } from '@/config/api';
 import StructuredData from '@/components/StructuredData';
 import { generateWebPageSchema } from '@/utils/schema';
-import { isValidPhoneNumber } from '@/utils/phone';
+import { validateIndianMobile } from '@/utils/phoneValidation';
 
 const ContactUsPage = () => {
   const turnstileRef = useRef(null);
@@ -37,6 +37,8 @@ const ContactUsPage = () => {
     message: ''
   });
 
+  const [phoneError, setPhoneError] = useState(null);
+
   // Validation functions
   const validateField = (fieldName, value) => {
     switch (fieldName) {
@@ -51,7 +53,8 @@ const ContactUsPage = () => {
         return '';
       case 'mobile':
         if (!value.trim()) return 'Mobile number is required';
-        if (!isValidPhoneNumber(value)) return 'Please enter a valid mobile number';
+        const phoneValidation = validateIndianMobile(value);
+        if (!phoneValidation.isValid) return phoneValidation.error || 'Invalid mobile number';
         return '';
       case 'state':
         if (!value.trim()) return 'State is required';
@@ -307,14 +310,17 @@ const ContactUsPage = () => {
                     maxLength="10"
                     value={formData.mobile}
                     onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '');
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 10);
                       setFormData(prevFormData => ({ ...prevFormData, mobile: value }));
+                      if (phoneError) setPhoneError(null);
                       
                       const error = validateField('mobile', value);
                       setFieldErrors(prev => {
                         if (error) {
+                          setPhoneError(error);
                           return { ...prev, mobile: error };
                         } else {
+                          setPhoneError(null);
                           const { mobile, ...rest } = prev;
                           return rest;
                         }

@@ -2,8 +2,12 @@
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import { submitApplication, getClientProfileId } from '@/services/supabaseService';
+import { validateIndianMobile } from '@/utils/phoneValidation';
 import { X, User, Car, Check, Loader2, MapPin, Calendar, IndianRupee, Shield } from 'lucide-react';
 import Turnstile from '@/components/Turnstile';
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
 
 interface FormData {
   fullName: string;
@@ -30,6 +34,8 @@ export default function UsedCarLoanForm({
   
   const [step, setStep] = useState<number>(1);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>({
     fullName: '',
     mobile: '',
@@ -40,10 +46,6 @@ export default function UsedCarLoanForm({
     tenure: '',
     pincode: ''
   });
-
-  // Captcha State
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
 
   // Reset state on open/close
   useEffect(() => {
@@ -65,13 +67,23 @@ export default function UsedCarLoanForm({
 
   const handleInput = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'mobile') {
+      setFormData(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 10) }));
+      setPhoneError(null);
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleNextStep = () => {
     if (step === 1) {
-      if (!formData.fullName.trim() || formData.mobile.length < 10) {
-        alert('Please enter a valid Name and 10-digit Mobile Number.');
+      if (!formData.fullName.trim()) {
+        alert('Please enter a valid name.');
+        return;
+      }
+      const phoneValidation = validateIndianMobile(formData.mobile);
+      if (!phoneValidation.isValid) {
+        setPhoneError(phoneValidation.error || 'Invalid phone number');
         return;
       }
       setStep(2);
@@ -105,7 +117,7 @@ export default function UsedCarLoanForm({
         profileId: profileId || undefined
       };
 
-      const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;
+      const submitPayload = payload;
 
       console.log('📤 Submitting Used Car Loan application...', { mobile: payload.mobile });
 
@@ -190,13 +202,15 @@ export default function UsedCarLoanForm({
                   <input 
                     name="mobile" 
                     type="tel" 
+                    inputMode="numeric"
                     maxLength={10} 
                     value={formData.mobile} 
                     onChange={handleInput} 
                     placeholder="99999 00000" 
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all font-medium"
+                    className={`w-full pl-12 pr-4 py-3.5 bg-slate-50 border ${phoneError ? 'border-red-500' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all font-medium`}
                   />
                 </div>
+                {phoneError && <p className="text-red-600 text-sm mt-1">{phoneError}</p>}
               </div>
 
               <div>
@@ -323,7 +337,7 @@ export default function UsedCarLoanForm({
                 </button>
                 <button 
                   onClick={handleFinalSubmit} 
-                  disabled={isLoading || (!!TURNSTILE_SITE_KEY && !captchaToken)} 
+                  disabled={isLoading} 
                   className="flex-[2] bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (!!TURNSTILE_SITE_KEY && !captchaToken ? 'Complete Security Check' : 'Get Offers')}

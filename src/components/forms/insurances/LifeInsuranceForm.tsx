@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import { X, User, Shield, Check, Loader2, Calendar, Phone, MapPin, Heart, Home, Building, ArrowRight, ArrowLeft } from 'lucide-react';
-import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { submitApplication, getClientProfileId } from '@/services/supabaseService';
-import Turnstile from '@/components/Turnstile';
+import { validateIndianMobile } from '@/utils/phoneValidation';
+
 import { OtpVerifier } from '@/components/OtpVerifier';
 
 interface LifeInsuranceFormData {
@@ -47,8 +47,7 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
     pincode: ''
   });
   
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
+
 
   // OTP flow handled by `OtpVerifier` component
   const [otpVerified, setOtpVerified] = useState<boolean>(false);
@@ -62,7 +61,6 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
     if (!isOpen) {
       const timer = setTimeout(() => {
           setStep(1);
-        setCaptchaToken(null);
 
         // Reset OTP state
         setOtpVerified(false);
@@ -91,6 +89,7 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
     if (name === 'mobile') {
       const digits = value.replace(/\D/g, '').slice(0, 10);
       setFormData({ ...formData, mobile: digits });
+      // Clear error immediately when user starts typing
       if (contactError) setContactError(null);
       return;
     }
@@ -107,14 +106,14 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
         return;
       }
 
-      // Validate mobile using libphonenumber-js
-      const phone = parsePhoneNumberFromString(formData.mobile, 'IN');
-      if (!phone || !phone.isValid() || phone.country !== 'IN') {
-        setContactError('Please enter a valid 10-digit Indian mobile number.');
+      // Validate mobile using phone validation utility
+      const validation = validateIndianMobile(formData.mobile);
+      if (!validation.isValid) {
+        setContactError(validation.error || 'Invalid mobile number');
         return;
       }
 
-      // Normalize to national digits (keep existing UI value, server expects raw digits)
+      // Validation passed
       setContactError(null);
 
       // Show OTP step (actual sending / verification handled by `OtpVerifier`)
@@ -185,7 +184,7 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
         }
       };
 
-      const submitPayload = captchaToken ? { ...payload, captchaToken } : payload;
+      const submitPayload = payload;
 
       console.log(`📤 Submitting ${insuranceType} Inquiry...`, { mobile: payload.mobile_number, user_id: payload.user_id });
 
@@ -193,7 +192,6 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
 
       if (res && res.success) {
         setStep(4); // Success Step
-        setCaptchaToken(null);
       } else {
         alert(res?.message || 'Submission failed. Please try again.');
       }
@@ -422,12 +420,7 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
                 </div>
               </div>
 
-              {/* Captcha */}
-              {TURNSTILE_SITE_KEY && (
-                <div className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl flex justify-center">
-                  <Turnstile sitekey={TURNSTILE_SITE_KEY} onVerify={(token) => setCaptchaToken(token)} />
-                </div>
-              )}
+
 
               <div className="flex gap-3 pt-2">
                 <button onClick={prevStep} className="px-5 bg-slate-100 text-slate-600 font-bold py-4 rounded-xl hover:bg-slate-200 transition-colors">
@@ -435,7 +428,7 @@ const LifeInsuranceForm: React.FC<LifeInsuranceFormProps> = ({
                 </button>
                 <button 
                   onClick={handleFinalSubmit} 
-                  disabled={isLoading || (!!TURNSTILE_SITE_KEY && !captchaToken)} 
+                  disabled={isLoading} 
                   className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-teal-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Get Free Quote'}

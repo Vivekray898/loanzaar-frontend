@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useEffect, useState, useRef } from 'react';
-import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { X, Phone, ArrowRight, Loader2, Edit2, ShieldCheck } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { validateIndianMobile } from '@/utils/phoneValidation';
 
 // --- Types ---
 interface SignInModalProps {
@@ -92,9 +92,10 @@ export default function SignInModal({ open = false, onClose = () => {}, next, fo
     setError(null);
 
     try {
-      const pn = parsePhoneNumberFromString(phone, 'IN');
-      if (!pn || !pn.isValid()) {
-        setError('Please enter a valid 10-digit mobile number');
+      // Validate phone number using utility
+      const validation = validateIndianMobile(phone);
+      if (!validation.isValid) {
+        setError(validation.error || 'Invalid phone number');
         setIsLoading(false);
         return;
       }
@@ -103,7 +104,7 @@ export default function SignInModal({ open = false, onClose = () => {}, next, fo
       const res = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobile: phone, context: 'login' })
+        body: JSON.stringify({ mobile: validation.cleaned, context: 'login' })
       });
 
       const data = await res.json();
@@ -112,7 +113,7 @@ export default function SignInModal({ open = false, onClose = () => {}, next, fo
         throw new Error(data.error || 'Failed to send OTP');
       }
 
-      console.log('OTP sent successfully to', phone);
+      console.log('OTP sent successfully to', validation.cleaned);
       setIsLoading(false);
       setShowOtp(true);
     } catch (err: any) {
@@ -278,7 +279,8 @@ export default function SignInModal({ open = false, onClose = () => {}, next, fo
                       disabled={showOtp}
                       value={phone}
                       onChange={(e) => {
-                        setPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
+                        const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setPhone(digits);
                         if (error) setError(null);
                       }}
                       className={`w-full h-12 px-4 border rounded-lg outline-none font-medium transition-colors ${
@@ -308,7 +310,7 @@ export default function SignInModal({ open = false, onClose = () => {}, next, fo
                     {otp.map((digit, index) => (
                       <input
                         key={index}
-                        ref={(el) => (otpInputRefs.current[index] = el)}
+                        ref={(el) => { otpInputRefs.current[index] = el }}
                         type="text"
                         inputMode="numeric"
                         maxLength={1}

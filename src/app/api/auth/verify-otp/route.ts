@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { OTP_EXPIRY_MINUTES } from '@/lib/otp/generateOtp';
+import { validateIndianMobile, normalizePhoneToE164, normalizePhoneForStorage } from '@/utils/phoneValidation';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -40,18 +41,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, code: 'INVALID_REQUEST' }, { status: 400 });
     }
 
-    // Normalize phone to E.164 (same logic as send-otp)
-    let mobile = mobileRaw;
+    // Validate phone number using utility (server-side enforcement)
+    const phoneValidation = validateIndianMobile(mobileRaw);
+    if (!phoneValidation.isValid) {
+      console.warn('[Auth][verify-otp] Invalid phone format:', phoneValidation.error);
+      return NextResponse.json({ success: false, code: 'INVALID_REQUEST' }, { status: 400 });
+    }
+
+    // Normalize phone to E.164 (same logic as send-otp) using validated number
+    let mobile = phoneValidation.cleaned;
     try {
-      const { parsePhoneNumberFromString } = await import('libphonenumber-js');
-      const parsed = parsePhoneNumberFromString(mobile, 'IN');
-      if (!parsed || !parsed.isValid()) {
+      const normalized = normalizePhoneToE164(mobile);
+      if (!normalized) {
+        console.warn('[Auth][verify-otp] Phone normalization failed for:', mobile);
         return NextResponse.json({ success: false, code: 'INVALID_REQUEST' }, { status: 400 });
       }
-      mobile = parsed.number;
+      mobile = normalized;
     } catch (e) {
-      // Normalization failed; proceed with raw value but log in non-prod
-      if (process.env.NODE_ENV !== 'production') console.warn('[Auth][verify-otp] Phone normalization failed; using raw value', e);
+      // Normalization failed; proceed with validated value
+      if (process.env.NODE_ENV !== 'production') console.warn('[Auth][verify-otp] Phone normalization failed; using validated value', e);
     }
 
     // Extract request IP (same as send-otp)
@@ -130,8 +138,11 @@ export async function POST(req: Request) {
     // Create or find a profile (phone = primary identity). Set phone_verified and verified_at.
     try {
       // Normalize phone for DB storage (store local 10-digit numbers without country code)
-      const { normalizePhoneForStorage } = await import('@/lib/phone');
       const storagePhone = normalizePhoneForStorage(mobile);
+      if (!storagePhone) {
+        console.error('[Auth][verify-otp] Failed to normalize phone for storage:', mobile);
+        return NextResponse.json({ success: false, code: 'INVALID_REQUEST' }, { status: 400 });
+      }
 
       // Try to find an existing profile by phone and fetch role (so we can auto-set admin cookie)
       const { data: existingRows, error: findErr } = await supabaseAdmin
