@@ -24,7 +24,31 @@ export async function GET(request: Request) {
     const { data, total } = await getAgentApplications(agentUserId, { skip: 0, take: 100 })
     return NextResponse.json({ success: true, data, meta: { total } })
   } catch (error: any) {
-    console.error('Fetch agent applications error:', error)
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+    const errorMessage = error?.message || String(error);
+    const errorName = error?.name || 'UnknownError';
+
+    // Handle Prisma connection errors specifically
+    if (
+      errorName === 'PrismaClientInitializationError' ||
+      errorMessage.includes('Can\'t reach database server') ||
+      errorMessage.includes('connect ECONNREFUSED') ||
+      errorMessage.includes('timeout')
+    ) {
+      console.error(`[DB Connection Error] ${errorName}: ${errorMessage}`, {
+        timestamp: new Date().toISOString(),
+        route: '/api/agent/applications',
+        agentUserId: check.user.id
+      });
+      return NextResponse.json(
+        { success: false, error: 'Database connection unavailable. Please try again.' },
+        { status: 503 }
+      );
+    }
+
+    console.error(`[Agent Applications Error] ${errorName}: ${errorMessage}`, error);
+    return NextResponse.json(
+      { success: false, error: errorMessage || 'Failed to fetch applications' },
+      { status: 500 }
+    );
   }
 }

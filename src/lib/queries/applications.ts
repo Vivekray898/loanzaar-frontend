@@ -125,26 +125,39 @@ export async function getAgentApplications(agentUserId: string, { skip = 0, take
   const appIds = assignments.map(a => a.application_id);
   if (appIds.length === 0) return { data: [], total: 0 };
 
-  const data = await prisma.applications.findMany({ where: { id: { in: appIds } }, select: {
-    id: true,
-    created_at: true,
-    full_name: true,
-    mobile_number: true,
-    email: true,
-    city: true,
-    state: true,
-    product_category: true,
-    product_type: true,
-    application_stage: true,
-    status: true,
-    approval_status: true,
-    last_agent_action_at: true
-  }, orderBy: { created_at: 'desc' }, skip, take });
-
-  // Attach agent-specific assignment record and their remarks
-  const appIdSet = data.map(d => d.id);
-  const beAssignments = await prisma.application_assignments.findMany({ where: { application_id: { in: appIdSet }, agent_user_id: agentUserId }, select: { id: true, application_id: true, agent_user_id: true, assigned_at: true, is_active: true } });
-  const remarks = await prisma.application_remarks.findMany({ where: { application_id: { in: appIdSet }, agent_user_id: agentUserId }, select: { id: true, application_id: true, agent_user_id: true, remark: true, created_at: true } });
+  // Fetch all related data in parallel to reduce connection pool pressure
+  const appIdSet = appIds.slice(skip, skip + take);
+  const [data, beAssignments, remarks] = await Promise.all([
+    prisma.applications.findMany({
+      where: { id: { in: appIds } },
+      select: {
+        id: true,
+        created_at: true,
+        full_name: true,
+        mobile_number: true,
+        email: true,
+        city: true,
+        state: true,
+        product_category: true,
+        product_type: true,
+        application_stage: true,
+        status: true,
+        approval_status: true,
+        last_agent_action_at: true
+      },
+      orderBy: { created_at: 'desc' },
+      skip,
+      take
+    }),
+    prisma.application_assignments.findMany({
+      where: { application_id: { in: appIds }, agent_user_id: agentUserId },
+      select: { id: true, application_id: true, agent_user_id: true, assigned_at: true, is_active: true }
+    }),
+    prisma.application_remarks.findMany({
+      where: { application_id: { in: appIds }, agent_user_id: agentUserId },
+      select: { id: true, application_id: true, agent_user_id: true, remark: true, created_at: true }
+    })
+  ]);
 
   const beAssignmentsByApp = Object.fromEntries(beAssignments.map(a => [a.application_id, a]));
   const remarksByApp = appIdSet.reduce((acc: Record<string, any[]>, id) => { acc[id] = []; return acc; }, {} as Record<string, any[]>);
@@ -160,31 +173,31 @@ export async function getAgentApplicationById(agentUserId: string, applicationId
   const assignment = await prisma.application_assignments.findFirst({ where: { application_id: applicationId, agent_user_id: agentUserId } });
   if (!assignment) return null;
 
-  // Fetch permitted fields for agent
-  const app = await prisma.applications.findUnique({ where: { id: applicationId }, select: {
-    id: true,
-    created_at: true,
-    full_name: true,
-    mobile_number: true,
-    email: true,
-    city: true,
-    state: true,
-    product_category: true,
-    product_type: true,
-    application_stage: true,
-    status: true,
-    approval_status: true,
-    last_agent_action_at: true,
-    profile_id: true
-  }});
+  // Fetch all related data in parallel
+  const [app, agentRemarks, statusHistory] = await Promise.all([
+    prisma.applications.findUnique({ where: { id: applicationId }, select: {
+      id: true,
+      created_at: true,
+      full_name: true,
+      mobile_number: true,
+      email: true,
+      city: true,
+      state: true,
+      product_category: true,
+      product_type: true,
+      application_stage: true,
+      status: true,
+      approval_status: true,
+      last_agent_action_at: true,
+      profile_id: true
+    }}),
+    prisma.application_remarks.findMany({ where: { application_id: applicationId, agent_user_id: agentUserId }, select: { id: true, remark: true, created_at: true } }),
+    prisma.application_status_logs.findMany({ where: { application_id: applicationId, actor_role: 'agent' }, orderBy: { created_at: 'desc' }, select: { id: true, from_status: true, to_status: true, actor_user_id: true, actor_role: true, created_at: true, reason: true } })
+  ]);
 
   if (!app) return null;
 
-  // Agent's own remarks and their assignment
-  const agentRemarks = await prisma.application_remarks.findMany({ where: { application_id: applicationId, agent_user_id: agentUserId }, select: { id: true, remark: true, created_at: true } });
-
-  // Status history where actor_role = 'agent'
-  const statusHistory = await prisma.application_status_logs.findMany({ where: { application_id: applicationId, actor_role: 'agent' }, orderBy: { created_at: 'desc' }, select: { id: true, from_status: true, to_status: true, actor_user_id: true, actor_role: true, created_at: true, reason: true } });
+  // Fetch actor profiles for status history
   const actorIds = Array.from(new Set(statusHistory.map(s => s.actor_user_id)));
   const actors = actorIds.length > 0 ? await prisma.profiles.findMany({ where: { id: { in: actorIds } }, select: { id: true, full_name: true, phone: true } }) : [];
   const actorsById = Object.fromEntries(actors.map(a => [a.id, a]));
